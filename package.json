@@ -23,6 +23,9 @@
     "akai": "bin/akai.mjs",
     "aurekai": "bin/akai.mjs"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "help": "node ./bin/akai.mjs --help",
     "doctor": "node ./bin/akai.mjs doctor --deep",

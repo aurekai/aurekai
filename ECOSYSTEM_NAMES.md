@@ -22,9 +22,9 @@ Priority order listed below.
   - Reserve: `pip install twine && twine upload` with a stub `aurekai` package
   - Stub setup: `pyproject.toml` with `name = "aurekai"` and `version = "0.8.0a1"`
 
-- [ ] **Docker Hub aurekai**
-  - URL: https://hub.docker.com/orgs
-  - Create org `aurekai`, push `aurekai/runtime:0.8.0-alpha.1`
+
+Docker/GHCR publishing deferred until after alpha.1 to reduce early cost and maintenance.
+Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 
 ---
 
@@ -71,8 +71,6 @@ Priority order listed below.
 | npm scope      | `@aurekai`                           | [ ] |
 | npm package    | `@aurekai/runtime`                   | [ ] |
 | PyPI           | `aurekai`                            | [ ] |
-| Docker Hub     | `aurekai`                            | [ ] |
-| GHCR           | `ghcr.io/aurekai/runtime`            | [ ] |
 | HuggingFace    | `aurekai`                            | [ ] |
 | Domain         | `aurekai.ai`                         | [ ] |
 | Domain         | `aurekai.dev`                        | [ ] |
