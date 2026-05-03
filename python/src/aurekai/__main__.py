@@ -2,7 +2,7 @@
 from __future__ import annotations
 import argparse, json, shutil, subprocess, sys
 from pathlib import Path
-from . import __version__, OPERATORS
+from . import __version__, OPERATORS, LLM_PROVIDERS
 from .manifest import validate_manifest
 
 
@@ -68,6 +68,19 @@ def _inspect_operator(cmd: str) -> int:
     return 0
 
 
+def _list_providers(fmt: str) -> int:
+    if fmt == "json":
+        print(json.dumps(LLM_PROVIDERS, indent=2))
+    else:
+        print(f"{'provider':<14}  {'model':<28}  {'env_key':<22}  capabilities")
+        print("-" * 90)
+        for name, info in sorted(LLM_PROVIDERS.items()):
+            caps = ", ".join(info["capabilities"][:3])
+            env = info["env_key"] or "(none)"
+            print(f"  {name:<12}  {info['model']:<28}  {env:<22}  {caps}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="aurekai", description="Aurekai Python SDK")
     p.add_argument("--version", action="store_true")
@@ -89,6 +102,9 @@ def build_parser() -> argparse.ArgumentParser:
     ip = sub.add_parser("inspect", help="inspect an operator")
     ip.add_argument("operator")
 
+    pp = sub.add_parser("providers", help="list LLM provider integrations")
+    pp.add_argument("--format", "-f", choices=["table", "json"], default="table")
+
     return p
 
 
@@ -108,6 +124,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_operator(args.operator, args.args)
     if args.command == "inspect":
         return _inspect_operator(args.operator)
+    if args.command == "providers":
+        return _list_providers(args.format)
     p.print_help()
     return 0
 

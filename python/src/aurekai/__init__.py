@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Aurekai Python SDK — bridge for the Aurekai Native Runtime."""
 
-__version__ = "0.8.0a2"
+__version__ = "0.8.0a3"
 
 OPERATORS = {
     "api": {"binary": "BonfyreAPI", "category": "platform", "description": "BonfyreAPI v2 \u2014 Async HTTP gateway for the Bonfyre binary family"},
@@ -94,3 +94,80 @@ OPERATORS = {
     "wire": {"binary": "BonfyreWire", "category": "platform", "description": "BonfyreWire operator"},
     "workflow": {"binary": "BonfyreWorkflow", "category": "pipeline", "description": "bonfyre-workflow - workflow profile browser"},
 }
+
+# LLM provider adapters (aurekai-llm-integrations)
+LLM_PROVIDERS = {
+    "openai": {
+        "model": "gpt-4.1-mini",
+        "capabilities": ["function_calling", "remote_mcp", "batch", "structured_outputs"],
+        "cost_per_m_input": 0.80,
+        "cost_per_m_output": 2.40,
+        "env_key": "OPENAI_API_KEY",
+        "demo": "npm run openai:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "anthropic": {
+        "model": "claude-3-7-sonnet-latest",
+        "capabilities": ["tool_use", "mcp", "computer_use"],
+        "cost_per_m_input": 3.00,
+        "cost_per_m_output": 15.00,
+        "env_key": "ANTHROPIC_API_KEY",
+        "demo": "npm run anthropic:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "gemini": {
+        "model": "gemini-2.5-pro",
+        "capabilities": ["function_calling", "context_caching", "batch"],
+        "cost_per_m_input": 1.25,
+        "cost_per_m_output": 5.00,
+        "env_key": "GEMINI_API_KEY",
+        "demo": "npm run gemini:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "groq": {
+        "model": "moonshard-80b-8192",
+        "capabilities": ["function_calling", "remote_mcp", "low_latency", "batch"],
+        "cost_per_m_input": 0.27,
+        "cost_per_m_output": 0.27,
+        "env_key": "GROQ_API_KEY",
+        "demo": "npm run groq:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "perplexity": {
+        "model": "sonar-pro",
+        "capabilities": ["web_grounded", "citations", "streaming"],
+        "cost_per_m_input": 3.00,
+        "cost_per_m_output": 15.00,
+        "env_key": "PERPLEXITY_API_KEY",
+        "demo": "npm run perplexity:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "mistral": {
+        "model": "mistral-medium-3",
+        "capabilities": ["function_calling", "managed_connectors", "batch"],
+        "cost_per_m_input": 0.40,
+        "cost_per_m_output": 2.00,
+        "env_key": "MISTRAL_API_KEY",
+        "demo": "npm run mistral:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "xai": {
+        "model": "grok-3",
+        "capabilities": ["function_calling", "json_schema_tools", "long_context"],
+        "cost_per_m_input": 3.00,
+        "cost_per_m_output": 15.00,
+        "env_key": "XAI_API_KEY",
+        "demo": "npm run xai:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "cohere": {
+        "model": "rerank-v3.5",
+        "capabilities": ["rerank", "embeddings", "enterprise_controls"],
+        "cost_per_m_input": 0.0,
+        "cost_per_m_output": 0.0,
+        "env_key": "COHERE_API_KEY",
+        "demo": "npm run cohere:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+    "local": {
+        "model": "llama3.3",
+        "capabilities": ["ollama", "llama_cpp", "mcp"],
+        "cost_per_m_input": 0.0,
+        "cost_per_m_output": 0.0,
+        "env_key": None,
+        "demo": "npm run local:demo --prefix $AUREKAI_LLM_INTEGRATIONS_DIR",
+    },
+}
+
