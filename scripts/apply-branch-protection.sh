@@ -17,24 +17,37 @@ done < <(jq -r '.integrations[].repo' "$REGISTRY_FILE" | sed -E 's#https://githu
 applied=0
 failed=0
 
+payload_file="$(mktemp)"
+cat > "$payload_file" << 'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["validate"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null
+}
+EOF
+
 for repo in "${repos[@]}"; do
   echo "applying protection: $repo"
   if gh api \
     --method PUT \
     -H "Accept: application/vnd.github+json" \
     "repos/$repo/branches/main/protection" \
-    -f required_status_checks.strict=true \
-    -f required_status_checks.contexts[]="validate" \
-    -f enforce_admins=true \
-    -f required_pull_request_reviews.dismiss_stale_reviews=true \
-    -f required_pull_request_reviews.required_approving_review_count=1 \
-    -f restrictions= >/dev/null 2>&1; then
+    --input "$payload_file" >/dev/null 2>&1; then
     applied=$((applied + 1))
   else
     echo "failed: $repo"
     failed=$((failed + 1))
   fi
 done
+
+rm -f "$payload_file"
 
 echo "branch protection applied: $applied"
 echo "branch protection failed: $failed"
