@@ -1,25 +1,87 @@
 {
+  "schema_version": "aurekai.integration.v1",
   "integrations": [
     {
       "name": "Kestra",
       "repo": "https://github.com/aurekai/aurekai-kestra",
       "type": "workflow-blueprints",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
-      ]
-    },
-    {
-      "name": "Airflow",
-      "repo": "https://github.com/aurekai/aurekai-airflow",
-      "type": "workflow-orchestration",
-      "status": "active",
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "transcript.clean",
+        "brief.generate",
+        "proof.bundle",
+        "meter.record",
+        "pay.invoice",
+        "fpq.compress",
+        "fpqx.align",
+        "graph.lineage",
+        "reason.branch",
+        "physics.run",
+        "tel.sim_call",
+        "wire.report"
+      ],
+      "host_native_surfaces": [
+        "namespace-files",
+        "secrets",
+        "subflows",
+        "webhook-triggers",
+        "realtime-triggers",
+        "task-outputs",
+        "human-approval",
+        "execution-labels",
+        "metrics",
+        "typed-plugin"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "flows": [
+        "flows/runtime/doctor-deep.yaml",
+        "flows/runtime/capability-registry-check.yaml",
+        "flows/runtime/queue-work-drain.yaml",
+        "flows/commerce/client-job-to-invoice.yaml",
+        "flows/commerce/api-key-to-metered-usage.yaml",
+        "flows/commerce/outreach-followup.yaml",
+        "flows/commerce/cms-entry-to-distribution.yaml",
+        "flows/media/audio-to-deliverable.yaml",
+        "flows/media/video-to-scenes-to-brief.yaml",
+        "flows/media/watch-folder-to-pack.yaml",
+        "flows/media/speech-loop-transform.yaml",
+        "flows/memory/model-memory-build.yaml",
+        "flows/memory/fpq-roundtrip-benchmark.yaml",
+        "flows/memory/fpqx-align-and-eval.yaml",
+        "flows/memory/sli-auto-run-convergence.yaml",
+        "flows/proof/artifact-lineage-export.yaml",
+        "flows/proof/merkle-validate.yaml",
+        "flows/proof/equivalence-collapse-plan.yaml",
+        "flows/reason/reason-branch-diff.yaml",
+        "flows/reason/physics-trajectory-proof.yaml",
+        "flows/wire/call-to-brief-to-invoice.yaml",
+        "flows/wire/wire-pcap-to-report.yaml",
+        "flows/wire/network-capture-to-recipe.yaml",
+        "flows/hardening/netlist-seal-and-eval.yaml",
+        "flows/hardening/violence-coupling-test.yaml"
+      ],
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -29,8 +91,78 @@
         "proof-bundle-export",
         "release-gate"
       ],
-      "starter_templates": [
-        "dags/aurekai_release_gate_dag.py"
+      "flagship_demo": "AkaiTel call -> Kestra trigger -> AkaiTranscribe -> AkaiBrief -> AkaiProof -> AkaiMeter -> AkaiPay -> AkaiOutreach"
+    },
+    {
+      "name": "Airflow",
+      "repo": "https://github.com/aurekai/aurekai-airflow",
+      "type": "workflow-orchestration",
+      "status": "active",
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "intake",
+        "memory",
+        "proof",
+        "commerce",
+        "wire",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "transcript.clean",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "graph.lineage",
+        "meter.record",
+        "invoice.generate",
+        "wire.report",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "datasets",
+        "dynamic-task-mapping",
+        "taskflow-api",
+        "connections",
+        "sla-miss-callbacks",
+        "asset-watchers",
+        "object-storage",
+        "json-schema-params",
+        "deferrable-operators",
+        "data-aware-scheduling"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "operators": [
+        "AurekaiDoctorOperator",
+        "AurekaiRuntimeCapabilitiesOperator",
+        "AurekaiManifestVerifyOperator",
+        "AurekaiQueueWorkOperator",
+        "AurekaiTranscribeOperator",
+        "AurekaiTranscriptCleanOperator",
+        "AurekaiBriefOperator",
+        "AurekaiProofBundleOperator",
+        "AurekaiFPQCompressOperator",
+        "AurekaiFPQRoundtripOperator",
+        "AurekaiFPQxAlignOperator",
+        "AurekaiSLIAutoRunOperator",
+        "AurekaiVecSearchOperator",
+        "AurekaiGraphLineageOperator",
+        "AurekaiMeterRecordOperator",
+        "AurekaiInvoiceOperator",
+        "AurekaiWireReportOperator"
       ]
     },
     {
@@ -38,14 +170,66 @@
       "repo": "https://github.com/aurekai/aurekai-prefect",
       "type": "workflow-orchestration",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "intake",
+        "memory",
+        "proof",
+        "commerce",
+        "wire",
+        "publish"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "meter.record",
+        "invoice.generate",
+        "wire.report"
+      ],
+      "host_native_surfaces": [
+        "artifacts",
+        "variables",
+        "automations",
+        "events",
+        "work-pools",
+        "deployments",
+        "concurrency-limits",
+        "ray-dask-task-runners",
+        "markdown-summaries"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "blocks": [
+        "AurekaiRuntimeBlock",
+        "AurekaiModelMemoryBlock",
+        "AurekaiProofStoreBlock",
+        "AurekaiCommerceBlock",
+        "AurekaiWireBlock",
+        "AurekaiHuggingFaceBlock",
+        "AurekaiProviderKeysBlock"
+      ],
+      "flows": [
+        "audio_to_deliverable_flow",
+        "call_to_invoice_flow",
+        "model_memory_build_flow",
+        "semantic_cache_bench_flow",
+        "reasoning_branch_proof_flow",
+        "wire_report_flow",
+        "release_gate_flow"
       ]
     },
     {
@@ -53,14 +237,82 @@
       "repo": "https://github.com/aurekai/aurekai-dagster",
       "type": "workflow-orchestration",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "intake",
+        "memory",
+        "proof",
+        "commerce",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "transcript.clean",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "graph.lineage",
+        "meter.record",
+        "invoice.generate",
+        "wire.report",
+        "reason.branch",
+        "physics.run"
+      ],
+      "host_native_surfaces": [
+        "asset-observations",
+        "sensors",
+        "schedules-with-partitions",
+        "io-managers",
+        "resources",
+        "subset-execution",
+        "metadata-tables",
+        "multiple-code-locations",
+        "freshness-policies",
+        "asset-based-testing"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "assets": [
+        "ak_runtime_capabilities",
+        "ak_manifest",
+        "ak_input_artifact",
+        "ak_transcript",
+        "ak_clean_transcript",
+        "ak_brief",
+        "ak_proof_bundle",
+        "ak_model_pack",
+        "ak_sae_dictionary",
+        "ak_fpqx_alignment",
+        "ak_vector_index",
+        "ak_lineage_graph",
+        "ak_usage_ledger",
+        "ak_invoice",
+        "ak_wire_report"
+      ],
+      "asset_checks": [
+        "runtime_doctor_passed",
+        "manifest_schema_valid",
+        "proof_bundle_complete",
+        "merkle_root_valid",
+        "feature_gate_clear",
+        "fpq_fidelity_above_threshold",
+        "semantic_cache_hit_rate_above_threshold",
+        "invoice_balanced",
+        "wire_capture_authorized"
       ]
     },
     {
@@ -68,14 +320,74 @@
       "repo": "https://github.com/aurekai/aurekai-temporal",
       "type": "workflow-orchestration",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "meter.record",
+        "invoice.generate",
+        "wire.report",
+        "reason.branch",
+        "physics.run",
+        "tel.sim_call",
+        "doctor.deep",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "schedules",
+        "child-workflows",
+        "updates",
+        "nexus-services",
+        "versioning-patching",
+        "side-effects",
+        "heartbeats",
+        "search-attributes",
+        "worker-versioning",
+        "codec-server"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "nexus_services": [
+        "AurekaiRuntimeService",
+        "AurekaiIntakeService",
+        "AurekaiMemoryService",
+        "AurekaiProofService",
+        "AurekaiCommerceService",
+        "AurekaiReasonService",
+        "AurekaiWireService",
+        "AurekaiPublishService"
+      ],
+      "workflows": [
+        "AurekaiClientJobWorkflow",
+        "AurekaiCallIntakeWorkflow",
+        "AurekaiModelMemoryWorkflow",
+        "AurekaiReasoningWorkflow",
+        "AurekaiWireReportWorkflow",
+        "AurekaiReleaseWorkflow",
+        "AurekaiInvoiceWorkflow",
+        "AurekaiOutreachWorkflow"
       ]
     },
     {
@@ -83,14 +395,53 @@
       "repo": "https://github.com/aurekai/aurekai-n8n",
       "type": "workflow-orchestration",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "commerce",
+        "intake",
+        "proof",
+        "publish",
+        "wire",
+        "runtime"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "meter.record",
+        "invoice.generate",
+        "wire.report",
+        "outreach.followup",
+        "ingest.file",
+        "pack.deliverable"
+      ],
+      "host_native_surfaces": [
+        "sub-workflows",
+        "wait-webhook-resume",
+        "error-workflows",
+        "expressions",
+        "community-node-package"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "community_package": "n8n-nodes-aurekai",
+      "workflows": [
+        "Inbound Call to Invoice",
+        "Webhook to Proof Bundle",
+        "Form Submission to Client Deliverable",
+        "New File to Packed Artifact",
+        "Outreach Reply to Project Update",
+        "API Key to Metered Usage",
+        "CMS Entry to Distribution",
+        "Wire Report to Routing Suggestion"
       ]
     },
     {
@@ -98,335 +449,1054 @@
       "repo": "https://github.com/aurekai/aurekai-node-red",
       "type": "workflow-orchestration",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "wire",
+        "intake",
+        "proof",
+        "substrate",
+        "publish"
+      ],
+      "native_commands": [
+        "tel.sim_call",
+        "tel.listen",
+        "wire.ingest_pcap",
+        "wire.report",
+        "wire.recipe",
+        "transcribe.audio",
+        "proof.bundle",
+        "meter.record",
+        "moq.video_relay",
+        "net.seal",
+        "space.put"
+      ],
+      "host_native_surfaces": [
+        "persistent-context",
+        "dashboard-2.0",
+        "link-call-subflows",
+        "mqtt",
+        "http-in"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-wire-report.json"
+      ],
+      "flows": [
+        "MQTT Event to Akai Artifact",
+        "HTTP Upload to Pipeline",
+        "FreeSWITCH Sim Call to Transcript",
+        "PCAP Upload to Wire Report",
+        "Device Event to Space",
+        "MoQ Video Relay Monitor",
+        "Netlist Seal and Eval"
       ]
     },
     {
       "name": "GitHub Actions",
       "repo": "https://github.com/aurekai/aurekai-github-actions",
-      "type": "workflow-orchestration",
+      "type": "ci-cd",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "memory",
+        "proof",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities",
+        "manifest.verify",
+        "fpq.roundtrip",
+        "model.verify",
+        "proof.bundle",
+        "proof.export",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "reusable-workflows",
+        "environments",
+        "oidc-keyless-auth",
+        "step-summary",
+        "artifacts",
+        "matrix-jobs",
+        "merge-queue",
+        "releases-packages",
+        "sbom-generation",
+        "deployments-api"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "workflows": [
+        "aurekai-doctor.yml",
+        "aurekai-capabilities.yml",
+        "aurekai-manifest-verify.yml",
+        "aurekai-fpq-roundtrip.yml",
+        "aurekai-model-memory-pack.yml",
+        "aurekai-proof-export.yml",
+        "aurekai-release-gate.yml",
+        "aurekai-integration-registry-check.yml",
+        "aurekai-benchmark-regression.yml"
       ]
     },
     {
       "name": "GitLab CI",
       "repo": "https://github.com/aurekai/aurekai-gitlab-ci",
-      "type": "workflow-orchestration",
+      "type": "ci-cd",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities",
+        "manifest.verify",
+        "fpq.roundtrip",
+        "proof.bundle",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "ci-components",
+        "rules",
+        "needs",
+        "cache",
+        "artifacts",
+        "environments",
+        "oidc",
+        "trigger-pipelines"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Argo Workflows",
       "repo": "https://github.com/aurekai/aurekai-argo-workflows",
-      "type": "workflow-orchestration",
+      "type": "ci-cd",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "fpq.roundtrip",
+        "proof.bundle",
+        "release.gate",
+        "model.verify"
+      ],
+      "host_native_surfaces": [
+        "templates",
+        "dag-templates",
+        "workflow-templates",
+        "artifacts",
+        "parameters",
+        "ttl-strategy"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Tekton",
       "repo": "https://github.com/aurekai/aurekai-tekton",
-      "type": "workflow-orchestration",
+      "type": "ci-cd",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "fpq.roundtrip",
+        "proof.bundle",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "tasks",
+        "pipelines",
+        "workspaces",
+        "results",
+        "triggers",
+        "event-listeners"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Terraform",
       "repo": "https://github.com/aurekai/aurekai-terraform",
-      "type": "infrastructure-templates",
+      "type": "infrastructure",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate",
+        "wire"
       ],
-      "starter_templates": [
-        "examples/release-gate/main.tf"
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities",
+        "manifest.verify",
+        "proof.bundle",
+        "model.verify",
+        "gate.issue",
+        "space.put",
+        "net.seal"
+      ],
+      "host_native_surfaces": [
+        "check-blocks",
+        "postconditions",
+        "provider-resources",
+        "terraform-tests",
+        "state-backends",
+        "drift-detection"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "provider_resources": [
+        "aurekai_runtime",
+        "aurekai_model_memory",
+        "aurekai_proof_store",
+        "aurekai_space",
+        "aurekai_api_key"
       ]
     },
     {
       "name": "Pulumi",
       "repo": "https://github.com/aurekai/aurekai-pulumi",
-      "type": "infrastructure-templates",
+      "type": "infrastructure",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate",
+        "wire"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "proof.bundle",
+        "model.verify",
+        "queue.enqueue",
+        "net.seal"
+      ],
+      "host_native_surfaces": [
+        "stack-references",
+        "automation-api",
+        "crossguard-policies",
+        "pulumi-esc"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Helm",
       "repo": "https://github.com/aurekai/aurekai-helm",
-      "type": "infrastructure-templates",
+      "type": "infrastructure",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate",
+        "wire"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "proof.bundle",
+        "model.verify",
+        "queue.stats",
+        "net.seal"
+      ],
+      "host_native_surfaces": [
+        "hooks",
+        "library-chart",
+        "crds",
+        "admission-webhooks",
+        "rbac",
+        "autoscaling-policies"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "future_crds": [
+        "AkaiPipelineRun",
+        "AkaiProof",
+        "AkaiModelMemory",
+        "AkaiWireCapture",
+        "AkaiReleaseGate",
+        "AkaiSpace"
       ]
     },
     {
       "name": "Kubernetes",
       "repo": "https://github.com/aurekai/aurekai-kubernetes",
-      "type": "infrastructure-templates",
+      "type": "infrastructure",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "memory",
+        "substrate",
+        "wire"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "proof.bundle",
+        "model.verify",
+        "queue.stats",
+        "net.seal"
+      ],
+      "host_native_surfaces": [
+        "jobs",
+        "configmaps",
+        "secrets",
+        "rbac",
+        "crds",
+        "admission-webhooks",
+        "hpa",
+        "namespace-isolation"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Nix",
       "repo": "https://github.com/aurekai/aurekai-nix",
-      "type": "infrastructure-templates",
+      "type": "infrastructure",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities",
+        "manifest.verify"
+      ],
+      "host_native_surfaces": [
+        "flake",
+        "overlay",
+        "dev-shell",
+        "nixpkgs-module",
+        "reproducible-builds"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "MCP",
       "repo": "https://github.com/aurekai/aurekai-mcp",
-      "type": "agent-platform",
+      "type": "protocol",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "runtime.capabilities",
+        "runtime.dispatch",
+        "api.status",
+        "control.route",
+        "queue.enqueue",
+        "queue.stats",
+        "tier.route",
+        "workflow.run",
+        "auth.verify",
+        "gate.issue",
+        "gate.guard",
+        "meter.record",
+        "pay.invoice",
+        "finance.margin",
+        "outreach.followup",
+        "cms.entry.create",
+        "ingest.file",
+        "transcribe.audio",
+        "transcript.clean",
+        "brief.generate",
+        "speech_loop.transform",
+        "frame_extract.video",
+        "model.pull",
+        "model.route",
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "sae.activate",
+        "canon.hash",
+        "graph.lineage",
+        "index.equivalence",
+        "proof.export",
+        "reason.start",
+        "reason.branch",
+        "reason.diff",
+        "physics.run",
+        "tel.sim_call",
+        "wire.ingest_pcap",
+        "wire.report",
+        "net.seal",
+        "pack.deliverable",
+        "distribute.bundle",
+        "repurpose.content"
+      ],
+      "host_native_surfaces": [
+        "tool-annotations",
+        "streamable-http",
+        "resource-pagination",
+        "resource-subscriptions",
+        "logging-capability",
+        "meta-proof-propagation",
+        "embedded-resources",
+        "multi-server-composition",
+        "oauth-dynamic-client-registration"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json"
+      ],
+      "server_split": [
+        "@aurekai/mcp-runtime",
+        "@aurekai/mcp-commerce",
+        "@aurekai/mcp-intake",
+        "@aurekai/mcp-memory",
+        "@aurekai/mcp-proof",
+        "@aurekai/mcp-reason",
+        "@aurekai/mcp-wire",
+        "@aurekai/mcp-publish",
+        "@aurekai/mcp-proxy"
+      ],
+      "mcp_resources": [
+        "aurekai://runtime/capabilities",
+        "aurekai://queue/stats",
+        "aurekai://ledger/portfolio",
+        "aurekai://models",
+        "aurekai://model-memory",
+        "aurekai://features/{artifact}",
+        "aurekai://proof/{id}",
+        "aurekai://graph/{node}/lineage",
+        "aurekai://space/{name}",
+        "aurekai://wire/{capture_id}",
+        "aurekai://project/{id}",
+        "aurekai://invoice/{id}",
+        "aurekai://cms/{entry_id}"
+      ],
+      "mcp_prompts": [
+        "turn-this-call-into-a-deliverable",
+        "inspect-this-artifact-lineage",
+        "build-a-model-memory-pack",
+        "compare-these-reasoning-branches",
+        "generate-client-invoice-from-usage",
+        "produce-wire-device-report",
+        "run-a-release-gate",
+        "make-a-client-brief-from-this-audio"
       ]
     },
     {
       "name": "LangChain",
       "repo": "https://github.com/aurekai/aurekai-langchain",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
       ],
-      "starter_templates": [
-        "examples/doctor_deep_chain.py"
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "reason.branch",
+        "physics.run",
+        "meter.record",
+        "invoice.generate",
+        "wire.report"
+      ],
+      "host_native_surfaces": [
+        "callbacks",
+        "lcel-runnables",
+        "output-parsers",
+        "base-store",
+        "document-transformers",
+        "text-splitters",
+        "embeddings",
+        "vector-store",
+        "chat-history",
+        "langgraph-nodes",
+        "langgraph-persistence",
+        "langgraph-human-review",
+        "langsmith-tracing",
+        "langchain-hub"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "toolkits": [
+        "AurekaiRuntimeToolkit",
+        "AurekaiMediaToolkit",
+        "AurekaiMemoryToolkit",
+        "AurekaiProofToolkit",
+        "AurekaiCommerceToolkit",
+        "AurekaiReasonToolkit",
+        "AurekaiWireToolkit",
+        "AurekaiPublishToolkit"
       ]
     },
     {
       "name": "LlamaIndex",
       "repo": "https://github.com/aurekai/aurekai-llamaindex",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "sli.auto_run",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "reason.branch",
+        "frame_extract.video",
+        "model.route",
+        "wire.report"
+      ],
+      "host_native_surfaces": [
+        "event-driven-workflows",
+        "structured-outputs",
+        "postprocessor-chains",
+        "observability-hooks",
+        "multi-modal-nodes",
+        "agent-workers",
+        "router-decisions"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "readers": [
+        "AurekaiArtifactReader",
+        "AurekaiTranscriptReader",
+        "AurekaiProofReader",
+        "AurekaiLineageGraphReader",
+        "AurekaiModelMemoryReader",
+        "AurekaiWireReportReader"
+      ],
+      "postprocessors": [
+        "AurekaiFeatureActivationPostprocessor",
+        "AurekaiDangerFeatureFilter",
+        "AurekaiFeatureSimilarityRanker",
+        "AurekaiGraphHandler",
+        "AurekaiMultiModalReader",
+        "AurekaiModelRouter"
       ]
     },
     {
       "name": "Haystack",
       "repo": "https://github.com/aurekai/aurekai-haystack",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "intake",
+        "memory",
+        "proof",
+        "reason"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "transcript.clean",
+        "brief.generate",
+        "proof.bundle",
+        "vec.search",
+        "sae.activate",
+        "control.route",
+        "meter.record"
+      ],
+      "host_native_surfaces": [
+        "component-base",
+        "router-components",
+        "pipeline-graphs",
+        "custom-components"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Semantic Kernel",
       "repo": "https://github.com/aurekai/aurekai-semantic-kernel",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "reason.branch",
+        "wire.report",
+        "meter.record"
+      ],
+      "host_native_surfaces": [
+        "kernel-plugins",
+        "function-calling",
+        "memory-store",
+        "planner",
+        "filters",
+        "prompt-templates"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "plugins": [
+        "AurekaiRuntimePlugin",
+        "AurekaiMediaPlugin",
+        "AurekaiMemoryPlugin",
+        "AurekaiProofPlugin",
+        "AurekaiCommercePlugin",
+        "AurekaiReasonPlugin",
+        "AurekaiWirePlugin",
+        "AurekaiPublishPlugin"
       ]
     },
     {
       "name": "AutoGen",
       "repo": "https://github.com/aurekai/aurekai-autogen",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "reason.branch",
+        "wire.report",
+        "meter.record",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "specialist-agents",
+        "group-chat",
+        "tool-use",
+        "human-in-loop",
+        "code-execution",
+        "message-filtering"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "agent_types": [
+        "RuntimeInspectionAgent",
+        "MediaProductionAgent",
+        "ModelMemoryAgent",
+        "GraphLineageAgent",
+        "PhysicsTrajectoryAgent",
+        "ProofArchivalAgent",
+        "BillingAgent",
+        "WireAnalysisAgent",
+        "ReleaseGateAgent"
       ]
     },
     {
       "name": "CrewAI",
       "repo": "https://github.com/aurekai/aurekai-crewai",
-      "type": "agent-platform",
+      "type": "agent-framework",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "fpq.compress",
+        "fpqx.align",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "reason.branch",
+        "wire.report",
+        "meter.record",
+        "release.gate"
+      ],
+      "host_native_surfaces": [
+        "crews",
+        "agents",
+        "tasks",
+        "tools",
+        "process-types",
+        "memory",
+        "callbacks"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json",
+        "aurekai-brief.json",
+        "aurekai-wire-report.json"
+      ],
+      "crews": [
+        "ClientDeliveryCrew",
+        "ModelMemoryCrew",
+        "WireReportCrew",
+        "ReasoningProofCrew",
+        "ReleaseValidationCrew",
+        "CommerceOpsCrew"
       ]
     },
     {
       "name": "VS Code",
       "repo": "https://github.com/aurekai/aurekai-vscode",
-      "type": "ide-dev",
+      "type": "ide",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "intake",
+        "memory",
+        "proof",
+        "reason",
+        "wire",
+        "publish",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities",
+        "proof.bundle",
+        "proof.export",
+        "fpq.compress",
+        "vec.search",
+        "graph.lineage",
+        "reason.branch",
+        "wire.report",
+        "watch.path"
+      ],
+      "host_native_surfaces": [
+        "language-server-protocol",
+        "notebook-api",
+        "custom-editor",
+        "diagnostics",
+        "codelens",
+        "debug-adapter-protocol",
+        "notebook-kernel",
+        "chat-participant",
+        "background-worker",
+        "remote-development"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "deliverables": [
+        "Aurekai Language Server",
+        "Aurekai Proof Custom Editor",
+        "Aurekai Recipe CodeLens",
+        "Aurekai Pipeline Debug Adapter",
+        "Aurekai Notebook Kernel",
+        "@aurekai Chat Participant",
+        "AkaiWatch background worker",
+        "Remote Akai edge runtime connector",
+        "DuckDB WASM proof query panel"
       ]
     },
     {
       "name": "Open VSX",
       "repo": "https://github.com/aurekai/aurekai-openvsx",
-      "type": "ide-dev",
+      "type": "ide",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "proof",
+        "publish"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "proof.bundle",
+        "pack.deliverable"
+      ],
+      "host_native_surfaces": [
+        "open-vsx-registry",
+        "vsix-packaging"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Dev Container",
       "repo": "https://github.com/aurekai/aurekai-devcontainer",
-      "type": "ide-dev",
+      "type": "ide",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities"
+      ],
+      "host_native_surfaces": [
+        "devcontainer-json",
+        "lifecycle-hooks",
+        "features",
+        "customizations"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Codespaces",
       "repo": "https://github.com/aurekai/aurekai-codespaces",
-      "type": "ide-dev",
+      "type": "ide",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities"
+      ],
+      "host_native_surfaces": [
+        "devcontainer-json",
+        "codespaces-prebuild",
+        "secrets",
+        "port-forwarding"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Gitpod",
       "repo": "https://github.com/aurekai/aurekai-gitpod",
-      "type": "ide-dev",
+      "type": "ide",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "substrate"
+      ],
+      "native_commands": [
+        "doctor.deep",
+        "runtime.capabilities"
+      ],
+      "host_native_surfaces": [
+        "gitpod-yml",
+        "workspace-image",
+        "tasks",
+        "ports",
+        "environment-variables"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
@@ -434,14 +1504,48 @@
       "repo": "https://github.com/aurekai/aurekai-mlflow",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "memory",
+        "proof"
+      ],
+      "native_commands": [
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "sli.auto_run",
+        "model.pull",
+        "model.verify",
+        "proof.bundle",
+        "vec.search"
+      ],
+      "host_native_surfaces": [
+        "recipes",
+        "gateway",
+        "deployments",
+        "prompt-engineering-ui",
+        "system-metrics",
+        "tracing",
+        "model-signatures",
+        "evaluate",
+        "registry-plugin"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "deliverables": [
+        "mlflow-aurekai-recipes",
+        "mlflow-aurekai-gateway-route",
+        "mlflow-aurekai-registry-plugin",
+        "aurekai.pyfunc flavor",
+        "AurekaiProofEvaluationMetric",
+        "AkaiArtifactSchema",
+        "Akai pipeline tracing spans"
       ]
     },
     {
@@ -449,14 +1553,41 @@
       "repo": "https://github.com/aurekai/aurekai-wandb",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "memory",
+        "proof"
+      ],
+      "native_commands": [
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "sli.auto_run",
+        "model.pull",
+        "proof.bundle"
+      ],
+      "host_native_surfaces": [
+        "launch",
+        "weave",
+        "model-registry",
+        "prompts",
+        "feature-drift-dashboard"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "deliverables": [
+        "wandb launch --queue aurekai",
+        "Akai pipeline Weave Ops",
+        "FPQ model registry entries",
+        "Prompt versioning for brief/proof templates",
+        "Feature drift dashboard",
+        "Proof completeness dashboard"
       ]
     },
     {
@@ -464,14 +1595,33 @@
       "repo": "https://github.com/aurekai/aurekai-dvc",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "substrate"
+      ],
+      "native_commands": [
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "model.verify",
+        "proof.bundle",
+        "hash.file"
+      ],
+      "host_native_surfaces": [
+        "pipeline-stages",
+        "dvc-params",
+        "remote-storage",
+        "experiments",
+        "metrics"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
@@ -479,14 +1629,37 @@
       "repo": "https://github.com/aurekai/aurekai-duckdb",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "proof",
+        "memory",
+        "substrate"
+      ],
+      "native_commands": [
+        "proof.bundle",
+        "proof.export",
+        "graph.lineage",
+        "vec.search",
+        "index.equivalence",
+        "query.sql"
+      ],
+      "host_native_surfaces": [
+        "httpfs",
+        "spatial-extension",
+        "arrow-integration",
+        "duckdb-wasm",
+        "json-functions"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "example_queries": [
+        "SELECT * FROM read_json('aurekai://proofs/') WHERE completeness_score > 0.9",
+        "SELECT artifact_id, similarity FROM akai_vectors ORDER BY similarity DESC LIMIT 10"
       ]
     },
     {
@@ -494,14 +1667,33 @@
       "repo": "https://github.com/aurekai/aurekai-sqlite",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "proof",
+        "memory",
+        "substrate",
+        "commerce"
+      ],
+      "native_commands": [
+        "proof.bundle",
+        "graph.lineage",
+        "meter.record",
+        "invoice.generate",
+        "space.put"
+      ],
+      "host_native_surfaces": [
+        "wal-mode",
+        "fts5",
+        "json-functions",
+        "virtual-tables",
+        "attached-databases"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
@@ -509,168 +1701,481 @@
       "repo": "https://github.com/aurekai/aurekai-postgres",
       "type": "data-ml",
       "status": "active",
-      "templates": [
-        "doctor-deep",
-        "manifest-verify",
-        "model-memory-pack",
-        "sae-audit",
-        "semantic-cache-bench",
-        "proof-bundle-export",
-        "release-gate"
+      "runtime_target": "akai",
+      "capability_families": [
+        "proof",
+        "memory",
+        "substrate",
+        "commerce"
+      ],
+      "native_commands": [
+        "proof.bundle",
+        "graph.lineage",
+        "vec.search",
+        "meter.record",
+        "invoice.generate"
+      ],
+      "host_native_surfaces": [
+        "pgvector-hnsw",
+        "row-level-security",
+        "logical-replication",
+        "listen-notify",
+        "generated-columns"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "OpenAI",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/openai",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-openai",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "function-calling",
-        "remote-mcp",
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "intake",
+        "publish",
+        "reason"
+      ],
+      "native_commands": [
+        "ingest.file",
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "vec.search",
+        "sae.activate",
+        "frame_extract.video",
+        "fpq.compress",
+        "reason.branch"
+      ],
+      "host_native_surfaces": [
+        "agents-sdk",
         "responses-api",
-        "proof-bundles",
-        "semantic-cache",
-        "model-memory"
-      ]
+        "file-inputs",
+        "vector-store",
+        "evals",
+        "webhooks",
+        "vision",
+        "function-calling",
+        "structured-outputs"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json"
+      ],
+      "bindings": {
+        "agents_sdk": "Aurekai MCP as MCPServerSse",
+        "responses_file_input": "AkaiIngest normalization",
+        "vector_store": "AkaiVec sync",
+        "evals": "AkaiProof ground truth",
+        "webhooks": "AkaiQueue resume",
+        "vision": "AkaiFrameExtract keyframes + transcript segments"
+      }
     },
     {
       "name": "Anthropic",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/anthropic",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-anthropic",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "tool-use",
-        "mcp",
-        "code-execution-bridge",
-        "proof-bundles",
-        "semantic-cache",
-        "model-memory"
-      ]
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "intake",
+        "publish",
+        "reason"
+      ],
+      "native_commands": [
+        "ingest.file",
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "narrate.brief",
+        "fpq.compress",
+        "reason.branch",
+        "tel.listen",
+        "cms.entry.create"
+      ],
+      "host_native_surfaces": [
+        "mcp-resources",
+        "extended-thinking",
+        "files-api",
+        "prompt-caching",
+        "computer-use",
+        "claude-code-subagents",
+        "streaming",
+        "tool-use"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json"
+      ],
+      "bindings": {
+        "mcp_resources": "Akai artifacts/proofs as documents",
+        "extended_thinking": "AkaiReason session",
+        "files_api": "AkaiArtifact upload",
+        "prompt_caching": "Aurekai capability manifest",
+        "computer_use": "AkaiCMS / AkaiDashboard operation",
+        "code_subagents": "per-stage Akai binary execution",
+        "streaming": "AkaiTel / AkaiNarrate loop"
+      }
     },
     {
       "name": "Gemini",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/gemini",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-gemini",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "function-calling",
-        "context-caching",
-        "batch",
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "intake",
+        "wire",
+        "reason"
+      ],
+      "native_commands": [
+        "tel.listen",
+        "transcribe.audio",
+        "brief.generate",
+        "proof.bundle",
+        "vec.search",
+        "sae.activate",
+        "net.eval_sealed",
+        "index.equivalence",
+        "fpq.compress",
+        "reason.branch"
+      ],
+      "host_native_surfaces": [
+        "gemini-live",
         "code-execution",
-        "proof-bundles",
-        "semantic-cache"
-      ]
+        "vertex-feature-store",
+        "grounding",
+        "context-cache",
+        "batch-jobs",
+        "function-declarations",
+        "multimodal"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json"
+      ],
+      "bindings": {
+        "live_api": "AkaiTel streaming",
+        "code_execution": "AkaiNet netlist evaluator",
+        "vertex_feature_store": "AkaiSAE activations",
+        "grounding": "AkaiIndex verified artifacts",
+        "context_cache": "Akai semantic cache",
+        "batch_jobs": "AkaiProof eval output"
+      }
     },
     {
       "name": "Mistral",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/mistral",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-mistral",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "function-calling",
-        "managed-connectors",
-        "remote-mcp",
-        "batch",
-        "proof-bundles",
-        "semantic-cache"
-      ]
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "intake",
+        "publish"
+      ],
+      "native_commands": [
+        "ingest.file",
+        "brief.generate",
+        "proof.bundle",
+        "index.equivalence",
+        "query.sql",
+        "fpq.compress"
+      ],
+      "host_native_surfaces": [
+        "managed-connector-templates",
+        "mcp-connector",
+        "document-library",
+        "agent-tools",
+        "batch"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "bindings": {
+        "agent_tools": "generated Akai schemas",
+        "managed_connector": "Aurekai MCP",
+        "document_library": "AkaiIndex / AkaiQuery",
+        "outputs": "AkaiProof bundle"
+      }
     },
     {
       "name": "Groq",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/groq",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-groq",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "local-tool-calling",
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "runtime"
+      ],
+      "native_commands": [
+        "fpq.compress",
+        "fpq.roundtrip",
+        "proof.bundle",
+        "gate.guard",
+        "vec.search"
+      ],
+      "host_native_surfaces": [
         "remote-mcp",
-        "batch",
-        "low-latency",
-        "proof-bundles",
-        "semantic-cache"
-      ]
+        "local-tools",
+        "batch-inference",
+        "low-latency-function-calling"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "bindings": {
+        "remote_mcp": "Aurekai MCP",
+        "local_tools": "generated Akai schemas",
+        "batch": "semantic cache benchmark",
+        "low_latency": "feature gate/proof fastpath"
+      }
     },
     {
       "name": "xAI",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/xai",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-xai",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "function-calling",
-        "json-schema-tools",
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "reason"
+      ],
+      "native_commands": [
+        "graph.lineage",
+        "proof.bundle",
+        "reason.diff",
+        "compress.family",
+        "hash.file"
+      ],
+      "host_native_surfaces": [
         "long-context",
-        "proof-bundles",
-        "semantic-cache",
-        "model-memory"
-      ]
+        "function-calls",
+        "reasoning-comparison",
+        "compression-summaries"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "bindings": {
+        "long_context": "Akai artifact family digest",
+        "function_calls": "AkaiGraph / AkaiProof",
+        "reasoning_comparison": "AkaiReason diff",
+        "compression_summaries": "AkaiCompress / AkaiHash"
+      }
     },
     {
       "name": "Perplexity",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/perplexity",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-perplexity",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "web-grounded-research",
+      "runtime_target": "akai",
+      "capability_families": [
+        "proof",
+        "publish"
+      ],
+      "native_commands": [
+        "canon.parse",
+        "canon.hash",
+        "graph.lineage",
+        "proof.bundle",
+        "cms.entry.create",
+        "distribute.bundle"
+      ],
+      "host_native_surfaces": [
         "citations",
-        "tool-calling",
-        "proof-bundles",
-        "semantic-cache",
-        "artifact-lineage"
-      ]
+        "search-api",
+        "structured-responses"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "pipeline": "Perplexity answer -> citations -> AkaiCanon parse/hash -> AkaiGraph evidence nodes -> AkaiProof bundle -> CMS/report/distribution"
     },
     {
       "name": "Cohere",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/cohere",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-cohere",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "rerank",
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof"
+      ],
+      "native_commands": [
+        "embed.text",
+        "vec.search",
+        "sae.activate",
+        "graph.lineage",
+        "proof.bundle"
+      ],
+      "host_native_surfaces": [
         "embeddings",
-        "batch-evals",
-        "proof-bundles",
-        "semantic-cache",
-        "model-memory"
-      ]
+        "rerank",
+        "enterprise-search",
+        "connectors"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
+      ],
+      "bindings": {
+        "embeddings": "AkaiVec",
+        "rerank": "compare against AkaiSAE feature rerank",
+        "enterprise_search": "AkaiGraph lineage + AkaiProof"
+      }
     },
     {
       "name": "Local Llama Stacks",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/local",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai-llama",
+      "type": "llm-provider",
       "status": "active",
-      "surfaces": [
-        "local-tool-calling",
-        "mcp",
-        "batch-evals",
-        "proof-bundles",
-        "semantic-cache",
-        "model-memory"
+      "runtime_target": "akai",
+      "capability_families": [
+        "memory",
+        "proof",
+        "runtime"
+      ],
+      "native_commands": [
+        "model.pull",
+        "model.route",
+        "model.verify",
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "sae.activate",
+        "vec.search",
+        "proof.bundle"
+      ],
+      "host_native_surfaces": [
+        "llama-cpp",
+        "ollama",
+        "local-inference",
+        "gguf-quantisation",
+        "model-file"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     },
     {
       "name": "Aurekai Gateway",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/gateway",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai",
+      "type": "platform",
       "status": "active",
-      "surfaces": [
-        "provider-normalization",
-        "tool-injection",
-        "model-routing",
-        "proof-capture",
-        "semantic-cache",
-        "artifact-lineage"
+      "runtime_target": "akai",
+      "capability_families": [
+        "runtime",
+        "commerce",
+        "proof"
+      ],
+      "native_commands": [
+        "api.status",
+        "control.route",
+        "gate.issue",
+        "gate.guard",
+        "meter.record",
+        "tier.route",
+        "proof.bundle"
+      ],
+      "host_native_surfaces": [
+        "provider-routing",
+        "rate-limiting",
+        "metering",
+        "auth-middleware"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json",
+        "aurekai-invoice.json"
       ]
     },
     {
       "name": "Aurekai Evals",
-      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/evals",
-      "type": "llm-providers",
+      "repo": "https://github.com/aurekai/aurekai",
+      "type": "platform",
       "status": "active",
-      "surfaces": [
-        "cross-provider-benchmark",
-        "batch-processing",
-        "schema-compliance",
-        "proof-completeness",
-        "cost-latency-tracking",
-        "feature-drift"
+      "runtime_target": "akai",
+      "capability_families": [
+        "proof",
+        "memory",
+        "reason"
+      ],
+      "native_commands": [
+        "fpq.roundtrip",
+        "fpqx.eval",
+        "sli.auto_run",
+        "proof.bundle",
+        "graph.validate",
+        "index.equivalence",
+        "reason.diff",
+        "learn.feedback"
+      ],
+      "host_native_surfaces": [
+        "eval-harness",
+        "benchmark-suites",
+        "regression-tracking",
+        "proof-completeness-scoring"
+      ],
+      "generated_artifacts": [
+        "aurekai-run.json",
+        "aurekai-proof.akproof.json",
+        "aurekai-feature-report.json",
+        "aurekai-lineage.json",
+        "aurekai-metering.json"
       ]
     }
   ]

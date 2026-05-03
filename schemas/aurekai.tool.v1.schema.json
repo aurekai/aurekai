@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.tool.v1.schema.json",
+  "title": "Aurekai Tool Definition",
+  "description": "Schema for generated tool/function definitions emitted from registry/aurekai.capabilities.json — used for MCP tools, OpenAI function schemas, Anthropic tool definitions, Gemini function declarations, and agent-framework tool registrations.",
+  "type": "object",
+  "required": ["schema_version", "tools"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^aurekai\\.tool\\.v\\d+$"
+    },
+    "generated_from": {
+      "type": "string",
+      "description": "Source capability registry path, e.g. registry/aurekai.capabilities.json"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/Tool" }
+    }
+  },
+  "definitions": {
+    "Tool": {
+      "type": "object",
+      "required": ["name", "description", "family", "command", "input_schema"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^akai\\.[a-z_]+\\.[a-z_]+$",
+          "description": "Fully qualified tool name, e.g. akai.transcribe.audio"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable tool description for LLM tool calling."
+        },
+        "family": {
+          "type": "string",
+          "enum": ["runtime", "commerce", "intake", "memory", "proof", "reason", "wire", "publish", "substrate"],
+          "description": "Capability family this tool belongs to."
+        },
+        "command": {
+          "type": "string",
+          "pattern": "^[a-z_]+\\.[a-z_]+$",
+          "description": "Underlying Akai command, e.g. transcribe.audio"
+        },
+        "cli_form": {
+          "type": "string",
+          "description": "CLI invocation form, e.g. akai transcribe.audio --input FILE"
+        },
+        "input_schema": {
+          "type": "object",
+          "description": "JSON Schema for the tool's input parameters.",
+          "required": ["type", "properties"],
+          "properties": {
+            "type": { "type": "string", "const": "object" },
+            "properties": { "type": "object" },
+            "required": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "output_artifacts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Aurekai artifact filenames this tool may emit."
+        },
+        "proof_emitting": {
+          "type": "boolean",
+          "description": "Whether this tool emits a proof bundle on completion."
+        },
+        "metering": {
+          "type": "boolean",
+          "description": "Whether this tool records metering events."
+        },
+        "annotations": {
+          "type": "object",
+          "description": "MCP tool annotations (read-only, destructive, idempotent, etc.)",
+          "properties": {
+            "readOnlyHint": { "type": "boolean" },
+            "destructiveHint": { "type": "boolean" },
+            "idempotentHint": { "type": "boolean" },
+            "openWorldHint": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}
