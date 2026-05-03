@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.integration.v1.schema.json",
+  "title": "Aurekai Integration Entry",
+  "description": "Schema for entries in registry/integrations.json — capability-aware integration definitions.",
+  "type": "object",
+  "required": ["schema_version", "integrations"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^aurekai\\.integration\\.v\\d+$"
+    },
+    "integrations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/Integration" }
+    }
+  },
+  "definitions": {
+    "Integration": {
+      "type": "object",
+      "required": ["name", "repo", "type", "status", "runtime_target", "capability_families", "native_commands", "host_native_surfaces", "generated_artifacts"],
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable integration name."
+        },
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "description": "GitHub repo URL."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["workflow-blueprints", "workflow-orchestration", "ci-cd", "infrastructure", "protocol", "agent-framework", "ide", "data-ml", "llm-provider", "platform"],
+          "description": "Integration category."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "beta", "planned", "deprecated"]
+        },
+        "runtime_target": {
+          "type": "string",
+          "const": "akai",
+          "description": "All integrations target the akai CLI."
+        },
+        "capability_families": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["runtime", "commerce", "intake", "memory", "proof", "reason", "wire", "publish", "substrate"]
+          },
+          "description": "Which Aurekai capability families this integration exposes."
+        },
+        "native_commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z_]+\\.[a-z_]+$"
+          },
+          "description": "Specific Akai commands bound by this integration."
+        },
+        "host_native_surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Host-platform-native primitives exploited by this integration."
+        },
+        "generated_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Aurekai artifact filenames emitted by this integration's runs."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.capabilities.v1.schema.json",
+  "title": "Aurekai Capability Registry",
+  "description": "Schema for registry/aurekai.capabilities.json — the generated source of truth for all Akai runtime command families.",
+  "type": "object",
+  "required": ["schema_version", "runtime", "families"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^aurekai\\.capabilities\\.v\\d+$",
+      "description": "Schema version string."
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["name", "cli", "binary_prefix", "native_prefix", "release"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "cli": { "type": "string", "description": "CLI binary name, e.g. akai" },
+        "binary_prefix": { "type": "string" },
+        "native_prefix": { "type": "string" },
+        "release": { "type": "string", "description": "SemVer release string" }
+      }
+    },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "commands"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": ["runtime", "commerce", "intake", "memory", "proof", "reason", "wire", "publish", "substrate"]
+          },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "commands": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z_]+\\.[a-z_]+$",
+              "description": "Command in family.verb format, e.g. transcribe.audio"
+            }
+          }
+        }
+      }
+    },
+    "experimental_tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "commands"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "packs": {
+      "type": "object",
+      "description": "Named command packs (A–I) for integration scaffolding.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "commands"],
+        "properties": {
+          "label": { "type": "string" },
+          "commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "generated_artifacts": {
+      "type": "array",
+      "description": "Standard artifact filenames emitted by Aurekai runs.",
+      "items": { "type": "string" }
+    }
+  }
+}
