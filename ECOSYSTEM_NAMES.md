@@ -7,15 +7,15 @@ Priority order listed below.
 
 ## Priority 1 — Must reserve before first public push
 
-- [ ] **github.com/aurekai** (org)
-  - URL: https://github.com/organizations/plan
-  - Create org, then create repo `aurekai/aurekai`
-  - Run `scripts/split-aurekai-repo.sh --push` after org exists
+- [x] **github.com/aurekai** (org) ✅ COMPLETE
+  - URL: https://github.com/aurekai
+  - Org created with `aurekai/aurekai` repo
+  - Main branch + v0.8.0-alpha.1 tag live at https://github.com/aurekai/aurekai
 
-- [ ] **npm @aurekai scope**
-  - URL: https://www.npmjs.com/org/create
-  - Create org `aurekai`, publish `@aurekai/runtime@0.8.0-alpha.1`
-  - Command: `npm publish --access public --tag alpha` (from Aurekai/)
+- [x] **npm @aurekai scope** ✅ COMPLETE
+  - URL: https://www.npmjs.com/org/aurekai
+  - Org `aurekai` created, `@aurekai/runtime@0.8.0-alpha.1` published
+  - Alpha tag live: `npm install @aurekai/runtime@0.8.0-alpha.1`
 
 - [ ] **PyPI aurekai**
   - URL: https://pypi.org/account/register/
@@ -30,9 +30,13 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 
 ## Priority 2 — Reserve before first public announcement
 
-- [ ] **HuggingFace aurekai org**
-  - URL: https://huggingface.co/organizations/new
-  - Create repos: `aurekai/model-memory`, `aurekai/sae-dictionaries`, `aurekai/fpqx-alignments`
+- [x] **HuggingFace aurekai org** ✅ COMPLETE
+  - URL: https://huggingface.co/aurekai
+  - Org created with 4 model repos + READMEs:
+    - [aurekai/model-memory](https://huggingface.co/aurekai/model-memory) — with qwen3-8b tarballs + manifests
+    - [aurekai/sae-dictionaries](https://huggingface.co/aurekai/sae-dictionaries) — SAE format reference docs
+    - [aurekai/fpqx-alignments](https://huggingface.co/aurekai/fpqx-alignments) — FPQx alignment reference docs
+    - [aurekai/semantic-cache-bench](https://huggingface.co/aurekai/semantic-cache-bench) — Benchmark reference docs
 
 - [ ] **aurekai.ai** domain
   - Registrar: Namecheap / Cloudflare / Google Domains
