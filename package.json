@@ -1,0 +1,38 @@
+{
+  "name": "@aurekai/runtime",
+  "version": "0.8.0-alpha.1",
+  "description": "Aurekai is the public platform layer for the Bonfyre native runtime.",
+  "type": "module",
+  "homepage": "https://aurekai.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aurekai/aurekai.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "aurekai",
+    "akai",
+    "runtime",
+    "appliance",
+    "semantic-memory",
+    "proof",
+    "sae",
+    "fpqx"
+  ],
+  "bin": {
+    "akai": "bin/akai.mjs",
+    "aurekai": "bin/akai.mjs"
+  },
+  "scripts": {
+    "help": "node ./bin/akai.mjs --help",
+    "doctor": "node ./bin/akai.mjs doctor --deep",
+    "dashboard": "node ./bin/akai.mjs dashboard",
+    "manifest": "node ./bin/akai.mjs manifest:print",
+    "manifest:render": "node ./src/render-manifest.mjs",
+    "release": "make release",
+    "release-check": "make release-check"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
