@@ -12,16 +12,17 @@
     "name": "Aurekai Native Runtime",
     "legacy_codename": "Bonfyre",
     "repo": "https://github.com/aurekai/native-runtime",
-    "version": "0.8.0-alpha.1",
-    "revision": "git:4a1b7478a4470d805632c86aba21a73a37fbce84",
+    "version": "0.8.0-alpha.2",
+    "revision": "git:1ba1f19",
     "abi": "bonfyre-abi-v1",
     "operator_count": 89,
     "library_count": 88,
     "schema_count": 31
   },
   "runtime": {
-    "operator_count": 53,
-    "legacy_operator_prefix": "Bonfyre"
+    "operator_count": 89,
+    "legacy_operator_prefix": "Bonfyre",
+    "operator_count_note": "full count reconciled from aurekai/native-runtime cmd/ inventory (previously 53)"
   },
   "compatibility": {
     "bonfyre_aliases": true,
