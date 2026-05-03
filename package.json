@@ -1,7 +1,7 @@
 {
   "name": "@aurekai/runtime",
   "version": "0.8.0-alpha.2",
-  "description": "Aurekai is the public platform layer for the Bonfyre native runtime.",
+  "description": "Aurekai \u2014 the operating fabric for intelligent work.",
   "type": "module",
   "homepage": "https://aurekai.ai",
   "repository": {

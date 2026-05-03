@@ -9,6 +9,7 @@
 
 export const AUREKAI_VERSION = "0.8.0-alpha.2";
 export const NATIVE_RUNTIME_VERSION = "0.8.0-alpha.2";
+/** Versioned binary artifact protocol ID — stable across Aurekai releases. */
 export const ABI = "bonfyre-abi-v1";
 
 // ---- Manifest types ----
