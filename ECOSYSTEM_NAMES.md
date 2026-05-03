@@ -113,7 +113,7 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 Workflow/orchestration templates:
 
 - `https://github.com/aurekai/aurekai-kestra` (active)
-- `https://github.com/aurekai/aurekai-airflow`
+- `https://github.com/aurekai/aurekai-airflow` (active)
 - `https://github.com/aurekai/aurekai-prefect`
 - `https://github.com/aurekai/aurekai-dagster`
 - `https://github.com/aurekai/aurekai-temporal`
@@ -126,7 +126,7 @@ Workflow/orchestration templates:
 
 Infrastructure templates:
 
-- `https://github.com/aurekai/aurekai-terraform`
+- `https://github.com/aurekai/aurekai-terraform` (active)
 - `https://github.com/aurekai/aurekai-pulumi`
 - `https://github.com/aurekai/aurekai-helm`
 - `https://github.com/aurekai/aurekai-kubernetes`
@@ -135,7 +135,7 @@ Infrastructure templates:
 Agent/platform templates:
 
 - `https://github.com/aurekai/aurekai-mcp` (active)
-- `https://github.com/aurekai/aurekai-langchain`
+- `https://github.com/aurekai/aurekai-langchain` (active)
 - `https://github.com/aurekai/aurekai-llamaindex`
 - `https://github.com/aurekai/aurekai-haystack`
 - `https://github.com/aurekai/aurekai-semantic-kernel`

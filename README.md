@@ -134,6 +134,11 @@ Full ecosystem integration matrix is tracked in:
 - `registry/integrations.json`
 - `ECOSYSTEM_NAMES.md`
 
+Integration operations scripts:
+
+- `scripts/sync-integration-scaffold.sh` to synchronize baseline README/LICENSE/CI scaffold across integration repos
+- `scripts/apply-branch-protection.sh` to apply a baseline main-branch protection policy across repos listed in the integration registry
+
 Bonfyre remains the compatibility lineage for ABI, command aliases, and legacy
 format support during migration.
 

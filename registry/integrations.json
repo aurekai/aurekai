@@ -19,7 +19,7 @@
       "name": "Airflow",
       "repo": "https://github.com/aurekai/aurekai-airflow",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -28,6 +28,9 @@
         "semantic-cache-bench",
         "proof-bundle-export",
         "release-gate"
+      ],
+      "starter_templates": [
+        "dags/aurekai_release_gate_dag.py"
       ]
     },
     {
@@ -169,7 +172,7 @@
       "name": "Terraform",
       "repo": "https://github.com/aurekai/aurekai-terraform",
       "type": "infrastructure-templates",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -178,6 +181,9 @@
         "semantic-cache-bench",
         "proof-bundle-export",
         "release-gate"
+      ],
+      "starter_templates": [
+        "examples/release-gate/main.tf"
       ]
     },
     {
@@ -259,7 +265,7 @@
       "name": "LangChain",
       "repo": "https://github.com/aurekai/aurekai-langchain",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -268,6 +274,9 @@
         "semantic-cache-bench",
         "proof-bundle-export",
         "release-gate"
+      ],
+      "starter_templates": [
+        "examples/doctor_deep_chain.py"
       ]
     },
     {
