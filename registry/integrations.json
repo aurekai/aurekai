@@ -37,7 +37,7 @@
       "name": "Prefect",
       "repo": "https://github.com/aurekai/aurekai-prefect",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -52,7 +52,7 @@
       "name": "Dagster",
       "repo": "https://github.com/aurekai/aurekai-dagster",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -67,7 +67,7 @@
       "name": "Temporal",
       "repo": "https://github.com/aurekai/aurekai-temporal",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -82,7 +82,7 @@
       "name": "n8n",
       "repo": "https://github.com/aurekai/aurekai-n8n",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -97,7 +97,7 @@
       "name": "Node-RED",
       "repo": "https://github.com/aurekai/aurekai-node-red",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -112,7 +112,7 @@
       "name": "GitHub Actions",
       "repo": "https://github.com/aurekai/aurekai-github-actions",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -127,7 +127,7 @@
       "name": "GitLab CI",
       "repo": "https://github.com/aurekai/aurekai-gitlab-ci",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -142,7 +142,7 @@
       "name": "Argo Workflows",
       "repo": "https://github.com/aurekai/aurekai-argo-workflows",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -157,7 +157,7 @@
       "name": "Tekton",
       "repo": "https://github.com/aurekai/aurekai-tekton",
       "type": "workflow-orchestration",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -190,7 +190,7 @@
       "name": "Pulumi",
       "repo": "https://github.com/aurekai/aurekai-pulumi",
       "type": "infrastructure-templates",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -205,7 +205,7 @@
       "name": "Helm",
       "repo": "https://github.com/aurekai/aurekai-helm",
       "type": "infrastructure-templates",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -220,7 +220,7 @@
       "name": "Kubernetes",
       "repo": "https://github.com/aurekai/aurekai-kubernetes",
       "type": "infrastructure-templates",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -235,7 +235,7 @@
       "name": "Nix",
       "repo": "https://github.com/aurekai/aurekai-nix",
       "type": "infrastructure-templates",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -283,7 +283,7 @@
       "name": "LlamaIndex",
       "repo": "https://github.com/aurekai/aurekai-llamaindex",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -298,7 +298,7 @@
       "name": "Haystack",
       "repo": "https://github.com/aurekai/aurekai-haystack",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -313,7 +313,7 @@
       "name": "Semantic Kernel",
       "repo": "https://github.com/aurekai/aurekai-semantic-kernel",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -328,7 +328,7 @@
       "name": "AutoGen",
       "repo": "https://github.com/aurekai/aurekai-autogen",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -343,7 +343,7 @@
       "name": "CrewAI",
       "repo": "https://github.com/aurekai/aurekai-crewai",
       "type": "agent-platform",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -358,7 +358,7 @@
       "name": "VS Code",
       "repo": "https://github.com/aurekai/aurekai-vscode",
       "type": "ide-dev",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -373,7 +373,7 @@
       "name": "Open VSX",
       "repo": "https://github.com/aurekai/aurekai-openvsx",
       "type": "ide-dev",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -388,7 +388,7 @@
       "name": "Dev Container",
       "repo": "https://github.com/aurekai/aurekai-devcontainer",
       "type": "ide-dev",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -403,7 +403,7 @@
       "name": "Codespaces",
       "repo": "https://github.com/aurekai/aurekai-codespaces",
       "type": "ide-dev",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -418,7 +418,7 @@
       "name": "Gitpod",
       "repo": "https://github.com/aurekai/aurekai-gitpod",
       "type": "ide-dev",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -433,7 +433,7 @@
       "name": "MLflow",
       "repo": "https://github.com/aurekai/aurekai-mlflow",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -448,7 +448,7 @@
       "name": "Weights & Biases",
       "repo": "https://github.com/aurekai/aurekai-wandb",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -463,7 +463,7 @@
       "name": "DVC",
       "repo": "https://github.com/aurekai/aurekai-dvc",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -478,7 +478,7 @@
       "name": "DuckDB",
       "repo": "https://github.com/aurekai/aurekai-duckdb",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -493,7 +493,7 @@
       "name": "SQLite",
       "repo": "https://github.com/aurekai/aurekai-sqlite",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
@@ -508,7 +508,7 @@
       "name": "PostgreSQL",
       "repo": "https://github.com/aurekai/aurekai-postgres",
       "type": "data-ml",
-      "status": "planned",
+      "status": "active",
       "templates": [
         "doctor-deep",
         "manifest-verify",
