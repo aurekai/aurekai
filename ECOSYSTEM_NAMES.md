@@ -80,6 +80,10 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
   - `@aurekai/mcp` scaffold published to repo with first tag `v0.8.0-alpha.1`
   - Run `helm package helm/aurekai-runtime && helm repo index .`
 
+- [x] **Kestra integration repo** ✅ COMPLETE
+  - `https://github.com/aurekai/aurekai-kestra`
+  - Contains flow templates, blueprint examples, GitOps sync guidance, and validation scripts
+
 ---
 
 ## Name → handle mapping
@@ -99,4 +103,5 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 | Open VSX       | namespace `aurekai`                  | [ ] |
 | Homebrew tap   | `aurekai/tap`                        | [ ] |
 | Helm chart     | `aurekai-runtime`                    | [ ] |
+| Kestra         | `aurekai/aurekai-kestra`             | [x] |
 | CLI handle     | `akai` (via npm bin)                 | [ ] |

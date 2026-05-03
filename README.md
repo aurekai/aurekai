@@ -89,6 +89,7 @@ bonfyre-sae   -> akai sae
 | Hugging Face   | `aurekai/model-memory`      |
 | Homebrew       | `aurekai/tap`               |
 | Helm           | `aurekai-runtime`           |
+| Kestra Flows   | `aurekai/aurekai-kestra`    |
 | VS Code        | Aurekai Workbench           |
 | CLI            | `akai`                      |
 
@@ -123,6 +124,10 @@ The public platform layer lives in this repository:
 The native runtime lineage is now tracked in:
 
 - https://github.com/aurekai/native-runtime
+
+Kestra orchestration flows and blueprints are tracked in:
+
+- https://github.com/aurekai/aurekai-kestra
 
 Bonfyre remains the compatibility lineage for ABI, command aliases, and legacy
 format support during migration.

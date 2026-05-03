@@ -1,0 +1,19 @@
+{
+  "integrations": [
+    {
+      "name": "Kestra",
+      "repo": "https://github.com/aurekai/aurekai-kestra",
+      "type": "workflow-blueprints",
+      "status": "active",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    }
+  ]
+}

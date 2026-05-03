@@ -1,0 +1,43 @@
+name: integrations-registry
+
+on:
+  pull_request:
+    paths:
+      - registry/integrations.json
+      - integrations/**
+      - .github/workflows/integrations-registry.yml
+  push:
+    branches: [ main ]
+    paths:
+      - registry/integrations.json
+      - integrations/**
+      - .github/workflows/integrations-registry.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate registry schema and required templates
+        run: |
+          jq -e '.integrations and (.integrations | type == "array") and (.integrations | length > 0)' registry/integrations.json >/dev/null
+          jq -e '.integrations[] | .name and .repo and .type and .status and .templates' registry/integrations.json >/dev/null
+          jq -e '.integrations[] | select(.name == "Kestra") | .templates | index("doctor-deep") and index("manifest-verify") and index("model-memory-pack") and index("sae-audit") and index("semantic-cache-bench") and index("proof-bundle-export") and index("release-gate")' registry/integrations.json >/dev/null
+
+      - name: Validate listed repos expose README and LICENSE
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          repos=$(jq -r '.integrations[].repo' registry/integrations.json)
+          for repo_url in $repos; do
+            owner_repo=${repo_url#https://github.com/}
+            echo "checking $owner_repo"
+            curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" "https://api.github.com/repos/$owner_repo/contents/README.md" >/dev/null
+            curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" "https://api.github.com/repos/$owner_repo/contents/LICENSE" >/dev/null
+          done
+
+      - name: Validate local integration pointers
+        run: |
+          test -f integrations/kestra/README.md
+          grep -q 'https://github.com/aurekai/aurekai-kestra' integrations/kestra/README.md
