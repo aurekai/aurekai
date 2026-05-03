@@ -6,7 +6,9 @@
 
 **Aurekai is the operating fabric for intelligent work.**
 
-Aurekai connects runtime validation, model memory, semantic cache, proof bundles, workflow orchestration, LLM provider integrations, and developer tooling into one traceable AI-native platform.
+Aurekai is not a wrapper around LLMs. Aurekai is a native AI operations runtime exposed through MCP, LLM tool calling, workflow engines, agent frameworks, data systems, CI/CD, infrastructure templates, and IDEs — with real commands for media, models, memory, proof, commerce, telephony, network events, reasoning, publishing, and client delivery.
+
+Every run emits proof, lineage, metering, cache, feature, and artifact metadata.
 
 ```bash
 bun add -g @aurekai/runtime
@@ -25,11 +27,17 @@ akai run recipe.json --sae-audit --semantic-cache
 
 ## What Aurekai includes
 
-- **Runtime** — execution, validation, install, dashboard, release gates
-- **Memory** — `.akmodel`, `.aksae`, `.akfpqx`, semantic cache, feature SQL
-- **Proof** — manifests, lineage, SBOM, checksums, proof bundles
-- **Integrations** — LLM providers, agent frameworks, workflow engines, data/ML, infra, IDEs
-- **Compatibility** — legacy Bonfyre operators, manifests, and `.bf*` formats
+- **Runtime** — execution, routing, queue management, workflow dispatch, and release gates
+- **Commerce** — auth, gate issuance, metering, invoicing, ledger, CMS, and client outreach
+- **Intake** — file ingest, media normalization, transcription, segmentation, frame extraction, and speech loop
+- **Memory** — `.akmodel`, `.aksae`, `.akfpqx`, FPQ compression, FPQx alignment, SAE activation, vector search, KV cache
+- **Proof** — Merkle graph, lineage, equivalence indexing, SBOM, checksums, and proof bundle assembly
+- **Reason** — reasoning sessions, branching, diff, physics trajectories, and learning feedback
+- **Wire** — telephony simulation, PCAP ingest, wire probing/reporting, MoQ relay, and network seal/eval
+- **Publish** — brief generation, narration, deliverable packing, clip extraction, and distribution
+- **Substrate** — capability registry, space management, time scheduling, compression, and hardening tests
+
+The capability registry is the source of truth: [`registry/aurekai.capabilities.json`](./registry/aurekai.capabilities.json)
 
 ## Public packages
 
@@ -48,6 +56,8 @@ See the latest [GitHub Release](https://github.com/aurekai/aurekai/releases) for
 ## Ecosystem integrations
 
 Aurekai maintains active integration surfaces across LLM providers, agent frameworks, workflow orchestrators, data/ML tools, infrastructure platforms, IDE/dev environments, MCP, package managers, and model-memory registries.
+
+Each integration is a **host-native adapter over the Akai runtime** — not a wrapper. Every integration declares which capability families it exposes, which native Akai commands it binds, which platform-native primitives it exploits, and which proof/lineage/metering artifacts it emits.
 
 See [`registry/integrations.json`](./registry/integrations.json) and [`ECOSYSTEM_NAMES.md`](./ECOSYSTEM_NAMES.md) for the full matrix.
 
@@ -70,6 +80,32 @@ MLflow · W&B · DVC · DuckDB · SQLite · PostgreSQL
 ### Infrastructure and developer environments
 
 Terraform · Pulumi · Helm · Kubernetes · Nix · VS Code · Open VSX · Dev Containers · Codespaces · Gitpod
+
+## Capability architecture
+
+```
+Akai Native Runtime
+  → Aurekai Capability Registry  (registry/aurekai.capabilities.json)
+  → Generated tool/workflow/schema bindings
+  → Deep integrations for workflow engines, CI/CD, infra, IDEs, data/ML, MCP, agent frameworks, LLM providers
+  → Every run emits proof, lineage, metering, cache, feature, and artifact metadata
+```
+
+Capability families and their primary commands:
+
+| Family       | Key commands                                                        |
+|--------------|---------------------------------------------------------------------|
+| `runtime`    | `runtime.capabilities`, `control.route`, `queue.enqueue`, `tier.route`, `workflow.run` |
+| `commerce`   | `gate.issue`, `meter.record`, `pay.invoice`, `ledger.export`, `outreach.followup` |
+| `intake`     | `ingest.file`, `transcribe.audio`, `segment.speakers`, `frame_extract.video`, `speech_loop.transform` |
+| `memory`     | `model.pull`, `fpq.compress`, `fpqx.align`, `sae.activate`, `vec.search`, `kvcache.chain` |
+| `proof`      | `canon.hash`, `graph.lineage`, `graph.merkle`, `index.equivalence`, `proof.bundle` |
+| `reason`     | `reason.start`, `reason.branch`, `physics.run`, `flow.branch`, `learn.feedback` |
+| `wire`       | `tel.sim_call`, `wire.ingest_pcap`, `wire.report`, `moq.video_relay`, `net.seal` |
+| `publish`    | `brief.generate`, `narrate.brief`, `pack.deliverable`, `clips.extract`, `distribute.bundle` |
+| `substrate`  | `capability.registry`, `space.put`, `time.schedule`, `compress.family`, `violence.coupling_test` |
+
+Validation: `node scripts/validate-capability-bindings.mjs`
 
 ## Formats
 
