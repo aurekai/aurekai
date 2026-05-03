@@ -1,6 +1,6 @@
 {
   "name": "@aurekai/runtime",
-  "version": "0.8.0-alpha.1",
+  "version": "0.8.0-alpha.2",
   "description": "Aurekai is the public platform layer for the Bonfyre native runtime.",
   "type": "module",
   "homepage": "https://aurekai.ai",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/aurekai/aurekai.git"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "aurekai",
     "akai",

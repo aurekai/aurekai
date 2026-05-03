@@ -1,10 +1,10 @@
 {
   "name": "aurekai-workbench",
   "displayName": "Aurekai Workbench",
-  "version": "0.8.0-alpha.1",
+  "version": "0.8.0-alpha.2",
   "publisher": "aurekai",
   "description": "Inspect artifacts, manifests, proof bundles, and model-memory packs.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/aurekai/aurekai",
   "repository": {
     "type": "git",

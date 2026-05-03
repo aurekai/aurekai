@@ -2,12 +2,12 @@ apiVersion: v2
 name: aurekai-runtime
 description: Aurekai Runtime Helm chart scaffold
 type: application
-version: 0.8.0
-appVersion: "0.8.0"
+version: 0.8.1
+appVersion: "0.8.0-alpha.2"
 home: https://aurekai.ai
 annotations:
   artifacthub.io/category: ai-machine-learning
-  artifacthub.io/license: MIT
+  artifacthub.io/license: Apache-2.0
   artifacthub.io/prerelease: "true"
   artifacthub.io/links: |
     - name: GitHub

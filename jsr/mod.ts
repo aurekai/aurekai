@@ -1,4 +1,4 @@
-export const AUREKAI_VERSION = "0.8.0-alpha.1";
+export const AUREKAI_VERSION = "0.8.0-alpha.2";
 
 export type AurekaiManifest = {
   schema_version: string;
