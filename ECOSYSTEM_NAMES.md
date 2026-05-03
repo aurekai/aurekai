@@ -17,10 +17,11 @@ Priority order listed below.
   - Org `aurekai` created, `@aurekai/runtime@0.8.0-alpha.1` published
   - Alpha tag live: `npm install @aurekai/runtime@0.8.0-alpha.1`
 
-- [ ] **PyPI aurekai**
-  - URL: https://pypi.org/account/register/
-  - Reserve: `pip install twine && twine upload` with a stub `aurekai` package
-  - Stub setup: `pyproject.toml` with `name = "aurekai"` and `version = "0.8.0a1"`
+- [~] **PyPI aurekai**
+  - URL: https://pypi.org/project/aurekai/
+  - Thin real package added in `python/` with `python -m aurekai --version|doctor|manifest`
+  - Builds + `twine check` pass locally
+  - Trusted publishing workflow added in `.github/workflows/pypi-publish.yml`
 
 
 Docker/GHCR publishing deferred until after alpha.1 to reduce early cost and maintenance.
@@ -44,24 +45,39 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 
 - [ ] **VS Code publisher aurekai**
   - URL: https://marketplace.visualstudio.com/manage
-  - Create publisher ID `aurekai`
-  - Display name: `Aurekai`
+  - Publisher ID still needs to be created in Marketplace UI
+  - Extension scaffold updated in `extensions/vscode/` and VSIX packaging is validated locally
 
 - [ ] **Open VSX publisher aurekai**
   - URL: https://open-vsx.org/user-settings/namespaces
-  - Namespace: `aurekai`
+  - Namespace still needs to be created in Open VSX UI
+  - Extension scaffold is aligned for `ovsx publish`
 
 ---
 
 ## Priority 3 — Reserve before Homebrew/Helm GA
 
-- [ ] **Homebrew tap aurekai/tap**
-  - Create GitHub repo `aurekai/homebrew-tap`
-  - Add formula `akai.rb` pointing to `akai-hyper-v0.8.0-alpha.1-*` binary
-  - Test: `brew tap aurekai/tap && brew install akai`
+- [x] **Homebrew tap aurekai/homebrew-tap** ✅ COMPLETE
+  - GitHub repo live: `https://github.com/aurekai/homebrew-tap`
+  - Formula `aurekai.rb` installs from published npm tarball `@aurekai/runtime@0.8.0-alpha.1`
+  - Dry-run validated: `brew tap aurekai/homebrew-tap && brew install aurekai`
 
-- [ ] **Helm repo**
-  - Host `https://charts.aurekai.ai` via GitHub Pages from `aurekai/aurekai` `gh-pages` branch
+- [~] **Helm repo / Artifact Hub**
+  - Artifact Hub metadata added in `helm/aurekai-runtime/`
+  - Chart remains preview-only until container distribution is public
+
+- [x] **JSR @aurekai/sdk** ✅ DRY-RUN VALIDATED
+  - Package scaffold added in `jsr/`
+  - `deno publish --dry-run --allow-dirty` passes locally
+
+- [x] **GitHub Actions Marketplace surfaces** ✅ COMPLETE
+  - `https://github.com/aurekai/setup-aurekai`
+  - `https://github.com/aurekai/aurekai-doctor`
+  - Both tagged at `v0.8.0-alpha.1`
+
+- [x] **MCP repo surface** ✅ INITIAL
+  - `https://github.com/aurekai/aurekai-mcp`
+  - `@aurekai/mcp` scaffold published to repo with first tag `v0.8.0-alpha.1`
   - Run `helm package helm/aurekai-runtime && helm repo index .`
 
 ---

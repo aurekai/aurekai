@@ -1,0 +1,16 @@
+{
+  "name": "@aurekai/mcp",
+  "version": "0.8.0-alpha.1",
+  "description": "Aurekai MCP server exposing akai runtime helpers.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "aurekai-mcp": "./server.mjs"
+  },
+  "scripts": {
+    "start": "node ./server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

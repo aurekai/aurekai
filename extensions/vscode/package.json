@@ -1,19 +1,35 @@
 {
   "name": "aurekai-workbench",
   "displayName": "Aurekai Workbench",
-  "version": "0.1.0",
+  "version": "0.8.0-alpha.1",
   "publisher": "aurekai",
   "description": "Inspect artifacts, manifests, proof bundles, and model-memory packs.",
+  "license": "MIT",
+  "homepage": "https://github.com/aurekai/aurekai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aurekai/aurekai.git"
+  },
+  "main": "./extension.js",
   "engines": {
     "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "aurekai",
+    "akai",
+    "manifest",
+    "proof",
+    "semantic-cache",
+    "sae",
+    "fpqx"
+  ],
+  "scripts": {
+    "package": "npx @vscode/vsce package"
+  },
   "activationEvents": [
-    "onCommand:aurekai.doctor",
-    "onCommand:aurekai.run",
-    "onCommand:aurekai.install",
     "onLanguage:json"
   ],
   "contributes": {
