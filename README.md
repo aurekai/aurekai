@@ -116,9 +116,14 @@ bonfyre-sae   -> akai sae
 
 ## Repo split
 
-The `Aurekai/` directory in the Bonfyre monorepo is the canonical source
-for this public layer until the native C symbols are migrated. The Bonfyre
-monorepo remains the implementation source.
+The public platform layer lives in this repository:
 
-Standalone repo target: `github.com/aurekai/aurekai`
+- https://github.com/aurekai/aurekai
+
+The native runtime lineage is now tracked in:
+
+- https://github.com/aurekai/native-runtime
+
+Bonfyre remains the compatibility lineage for ABI, command aliases, and legacy
+format support during migration.
 
