@@ -1,0 +1,84 @@
+<svg width="100%" viewBox="0 0 680 420" role="img" xmlns="http://www.w3.org/2000/svg" style="">
+  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">AureKAI logo — Automated Insight. Accelerated Value.</title>
+  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">SVG recreation of the AureKAI brand mark with octagonal badge, arrow-through-A motif, and animated network background.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+
+    <linearGradient id="brand-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#185FA5"/>
+      <stop offset="100%" stop-color="#1D9E75"/>
+    </linearGradient>
+
+    <linearGradient id="arrow-grad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1D9E75"/>
+      <stop offset="100%" stop-color="#5DCAA5"/>
+    </linearGradient>
+
+    <linearGradient id="text-grad-aure" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0C2744"/>
+      <stop offset="100%" stop-color="#183860"/>
+    </linearGradient>
+
+    
+  <mask id="imagine-text-gaps-hg4a90" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="680" height="420" fill="white"/><rect x="132.56605529785156" y="199.5" width="194.51988220214844" height="73" fill="black" rx="2"/><rect x="369.640625" y="199.5" width="124.71875" height="73" fill="black" rx="2"/><rect x="143.11158752441406" y="284.5" width="393.704833984375" height="18" fill="black" rx="2"/></mask></defs>
+
+  <!-- ── Network background ── -->
+  <g opacity="0.18" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.18;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <!-- edges -->
+    <line x1="40" y1="60" x2="160" y2="130" stroke="#185FA5" stroke-width="0.8" style="fill:rgb(0, 0, 0);stroke:rgb(24, 95, 165);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="160" y1="130" x2="100" y2="240" stroke="#185FA5" stroke-width="0.8" style="animation-delay:-.8s;fill:rgb(0, 0, 0);stroke:rgb(24, 95, 165);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="100" y1="240" x2="40" y2="340" stroke="#185FA5" stroke-width="0.8" style="animation-delay:-1.6s;fill:rgb(0, 0, 0);stroke:rgb(24, 95, 165);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="530" y1="50" x2="620" y2="160" stroke="#1D9E75" stroke-width="0.8" style="fill:rgb(0, 0, 0);stroke:rgb(29, 158, 117);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="620" y1="160" x2="590" y2="290" stroke="#1D9E75" stroke-width="0.8" style="animation-delay:-.5s;fill:rgb(0, 0, 0);stroke:rgb(29, 158, 117);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="590" y1="290" x2="640" y2="380" stroke="#1D9E75" stroke-width="0.8" style="animation-delay:-1.2s;fill:rgb(0, 0, 0);stroke:rgb(29, 158, 117);color:rgb(0, 0, 0);stroke-width:0.8px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="160" y1="130" x2="530" y2="50" stroke="#378ADD" stroke-width="0.6" style="animation-delay:-.3s;fill:rgb(0, 0, 0);stroke:rgb(55, 138, 221);color:rgb(0, 0, 0);stroke-width:0.6px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="100" y1="240" x2="590" y2="290" stroke="#378ADD" stroke-width="0.6" style="animation-delay:-.9s;fill:rgb(0, 0, 0);stroke:rgb(55, 138, 221);color:rgb(0, 0, 0);stroke-width:0.6px;stroke-dasharray:6px, 10px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto" mask="url(#imagine-text-gaps-hg4a90)"/>
+    <!-- nodes -->
+    <circle cx="40" cy="60" r="2.5" fill="#185FA5" style="fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.926305;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="160" cy="130" r="2.5" fill="#185FA5" style="animation-delay:-.5s;fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.665957;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="100" cy="240" r="2.5" fill="#185FA5" style="animation-delay:-1s;fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.504326;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="40" cy="340" r="2.5" fill="#185FA5" style="animation-delay:-1.5s;fill:rgb(24, 95, 165);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.573695;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="530" cy="50" r="2.5" fill="#1D9E75" style="fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.926305;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="620" cy="160" r="2.5" fill="#1D9E75" style="animation-delay:-.7s;fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.573716;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="590" cy="290" r="2.5" fill="#1D9E75" style="animation-delay:-1.4s;fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.540822;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <circle cx="640" cy="380" r="2.5" fill="#1D9E75" style="animation-delay:-.2s;fill:rgb(29, 158, 117);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.834073;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <!-- subtle wave curves -->
+    <path d="M30 180 Q200 140 370 180 Q520 220 650 190" fill="none" stroke="#378ADD" stroke-width="0.6" opacity="0.5" mask="url(#imagine-text-gaps-hg4a90)" style="fill:none;stroke:rgb(55, 138, 221);color:rgb(0, 0, 0);stroke-width:0.6px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.5;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <path d="M30 280 Q220 250 400 280 Q540 310 650 270" fill="none" stroke="#1D9E75" stroke-width="0.6" opacity="0.4" mask="url(#imagine-text-gaps-hg4a90)" style="fill:none;stroke:rgb(29, 158, 117);color:rgb(0, 0, 0);stroke-width:0.6px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.4;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  </g>
+
+  <!-- ── Badge / mark ── -->
+  <!-- Outer octagon -->
+  <polygon points="310,38 370,38 400,68 400,158 370,188 310,188 280,158 280,68" fill="none" stroke="url(#brand-grad)" stroke-width="3.5" stroke-linejoin="round" style="fill:none;color:rgb(0, 0, 0);stroke-width:3.5px;stroke-linecap:butt;stroke-linejoin:round;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- Inner octagon (inset ~12px) -->
+  <polygon points="317,52 363,52 389,78 389,148 363,174 317,174 291,148 291,78" fill="none" stroke="url(#brand-grad)" stroke-width="2" stroke-linejoin="round" opacity="0.55" style="fill:none;color:rgb(0, 0, 0);stroke-width:2px;stroke-linecap:butt;stroke-linejoin:round;opacity:0.55;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- A letterform (two legs + crossbar) -->
+  <!-- Left leg -->
+  <line x1="321" y1="165" x2="340" y2="88" stroke="url(#brand-grad)" stroke-width="3.5" stroke-linecap="round" style="fill:rgb(0, 0, 0);color:rgb(0, 0, 0);stroke-width:3.5px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- Right leg -->
+  <line x1="360" y1="165" x2="341" y2="88" stroke="url(#brand-grad)" stroke-width="3.5" stroke-linecap="round" style="fill:rgb(0, 0, 0);color:rgb(0, 0, 0);stroke-width:3.5px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- Crossbar -->
+  <line x1="328" y1="138" x2="354" y2="138" stroke="url(#brand-grad)" stroke-width="3" stroke-linecap="round" style="fill:rgb(0, 0, 0);color:rgb(0, 0, 0);stroke-width:3px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Arrow piercing through (bottom-left to top-right) -->
+  <!-- Arrow shaft -->
+  <line x1="281" y1="181" x2="388" y2="74" stroke="url(#arrow-grad)" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow)" style="fill:rgb(0, 0, 0);color:rgb(0, 0, 0);stroke-width:3px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <!-- Arrowhead accent line (slightly forward of marker) -->
+  <line x1="378" y1="84" x2="395" y2="66" stroke="#5DCAA5" stroke-width="2" stroke-linecap="round" opacity="0.5" style="fill:rgb(0, 0, 0);stroke:rgb(93, 202, 165);color:rgb(0, 0, 0);stroke-width:2px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.5;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- ── Wordmark ── -->
+  <!-- AURE (dark navy) -->
+  <text x="230" y="258" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="58" font-weight="700" letter-spacing="6" fill="url(#text-grad-aure)" text-anchor="middle" style="stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Helvetica Neue&quot;, Arial, sans-serif;font-size:58px;font-weight:700;text-anchor:middle;dominant-baseline:auto">AURE</text>
+  <!-- KAI (brand teal) -->
+  <text x="432" y="258" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="58" font-weight="700" letter-spacing="6" fill="url(#arrow-grad)" text-anchor="middle" style="stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Helvetica Neue&quot;, Arial, sans-serif;font-size:58px;font-weight:700;text-anchor:middle;dominant-baseline:auto">KAI</text>
+
+  <!-- ── Tagline ── -->
+  <text x="340" y="298" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="12" font-weight="400" letter-spacing="3.5" fill="#5F8AAA" text-anchor="middle" style="fill:rgb(95, 138, 170);stroke:none;color:rgb(0, 0, 0);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Helvetica Neue&quot;, Arial, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">AUTOMATED INSIGHT. ACCELERATED VALUE.</text>
+
+  <!-- Thin rule under tagline -->
+  <line x1="200" y1="314" x2="480" y2="314" stroke="#185FA5" stroke-width="0.5" opacity="0.3" style="fill:rgb(0, 0, 0);stroke:rgb(24, 95, 165);color:rgb(0, 0, 0);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.3;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+</svg>

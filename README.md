@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/aurekai-logo.svg" alt="Aurekai" width="520" />
+</p>
+
 # Aurekai
 
 Aurekai is the public platform layer for the Bonfyre native runtime.
