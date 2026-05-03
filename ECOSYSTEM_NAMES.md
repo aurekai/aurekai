@@ -105,3 +105,56 @@ Primary alpha distribution is GitHub Releases + npm + direct akai CLI.
 | Helm chart     | `aurekai-runtime`                    | [ ] |
 | Kestra         | `aurekai/aurekai-kestra`             | [x] |
 | CLI handle     | `akai` (via npm bin)                 | [ ] |
+
+---
+
+## Integration Repo Matrix
+
+Workflow/orchestration templates:
+
+- `https://github.com/aurekai/aurekai-kestra` (active)
+- `https://github.com/aurekai/aurekai-airflow`
+- `https://github.com/aurekai/aurekai-prefect`
+- `https://github.com/aurekai/aurekai-dagster`
+- `https://github.com/aurekai/aurekai-temporal`
+- `https://github.com/aurekai/aurekai-n8n`
+- `https://github.com/aurekai/aurekai-node-red`
+- `https://github.com/aurekai/aurekai-github-actions`
+- `https://github.com/aurekai/aurekai-gitlab-ci`
+- `https://github.com/aurekai/aurekai-argo-workflows`
+- `https://github.com/aurekai/aurekai-tekton`
+
+Infrastructure templates:
+
+- `https://github.com/aurekai/aurekai-terraform`
+- `https://github.com/aurekai/aurekai-pulumi`
+- `https://github.com/aurekai/aurekai-helm`
+- `https://github.com/aurekai/aurekai-kubernetes`
+- `https://github.com/aurekai/aurekai-nix`
+
+Agent/platform templates:
+
+- `https://github.com/aurekai/aurekai-mcp` (active)
+- `https://github.com/aurekai/aurekai-langchain`
+- `https://github.com/aurekai/aurekai-llamaindex`
+- `https://github.com/aurekai/aurekai-haystack`
+- `https://github.com/aurekai/aurekai-semantic-kernel`
+- `https://github.com/aurekai/aurekai-autogen`
+- `https://github.com/aurekai/aurekai-crewai`
+
+IDE/dev templates:
+
+- `https://github.com/aurekai/aurekai-vscode`
+- `https://github.com/aurekai/aurekai-openvsx`
+- `https://github.com/aurekai/aurekai-devcontainer`
+- `https://github.com/aurekai/aurekai-codespaces`
+- `https://github.com/aurekai/aurekai-gitpod`
+
+Data/ML templates:
+
+- `https://github.com/aurekai/aurekai-mlflow`
+- `https://github.com/aurekai/aurekai-wandb`
+- `https://github.com/aurekai/aurekai-dvc`
+- `https://github.com/aurekai/aurekai-duckdb`
+- `https://github.com/aurekai/aurekai-sqlite`
+- `https://github.com/aurekai/aurekai-postgres`

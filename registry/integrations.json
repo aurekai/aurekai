@@ -14,6 +14,501 @@
         "proof-bundle-export",
         "release-gate"
       ]
+    },
+    {
+      "name": "Airflow",
+      "repo": "https://github.com/aurekai/aurekai-airflow",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Prefect",
+      "repo": "https://github.com/aurekai/aurekai-prefect",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Dagster",
+      "repo": "https://github.com/aurekai/aurekai-dagster",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Temporal",
+      "repo": "https://github.com/aurekai/aurekai-temporal",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "n8n",
+      "repo": "https://github.com/aurekai/aurekai-n8n",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Node-RED",
+      "repo": "https://github.com/aurekai/aurekai-node-red",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "GitHub Actions",
+      "repo": "https://github.com/aurekai/aurekai-github-actions",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "GitLab CI",
+      "repo": "https://github.com/aurekai/aurekai-gitlab-ci",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Argo Workflows",
+      "repo": "https://github.com/aurekai/aurekai-argo-workflows",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Tekton",
+      "repo": "https://github.com/aurekai/aurekai-tekton",
+      "type": "workflow-orchestration",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Terraform",
+      "repo": "https://github.com/aurekai/aurekai-terraform",
+      "type": "infrastructure-templates",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Pulumi",
+      "repo": "https://github.com/aurekai/aurekai-pulumi",
+      "type": "infrastructure-templates",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Helm",
+      "repo": "https://github.com/aurekai/aurekai-helm",
+      "type": "infrastructure-templates",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Kubernetes",
+      "repo": "https://github.com/aurekai/aurekai-kubernetes",
+      "type": "infrastructure-templates",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Nix",
+      "repo": "https://github.com/aurekai/aurekai-nix",
+      "type": "infrastructure-templates",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "MCP",
+      "repo": "https://github.com/aurekai/aurekai-mcp",
+      "type": "agent-platform",
+      "status": "active",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "LangChain",
+      "repo": "https://github.com/aurekai/aurekai-langchain",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "LlamaIndex",
+      "repo": "https://github.com/aurekai/aurekai-llamaindex",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Haystack",
+      "repo": "https://github.com/aurekai/aurekai-haystack",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Semantic Kernel",
+      "repo": "https://github.com/aurekai/aurekai-semantic-kernel",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "AutoGen",
+      "repo": "https://github.com/aurekai/aurekai-autogen",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "CrewAI",
+      "repo": "https://github.com/aurekai/aurekai-crewai",
+      "type": "agent-platform",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "VS Code",
+      "repo": "https://github.com/aurekai/aurekai-vscode",
+      "type": "ide-dev",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Open VSX",
+      "repo": "https://github.com/aurekai/aurekai-openvsx",
+      "type": "ide-dev",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Dev Container",
+      "repo": "https://github.com/aurekai/aurekai-devcontainer",
+      "type": "ide-dev",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Codespaces",
+      "repo": "https://github.com/aurekai/aurekai-codespaces",
+      "type": "ide-dev",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Gitpod",
+      "repo": "https://github.com/aurekai/aurekai-gitpod",
+      "type": "ide-dev",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "MLflow",
+      "repo": "https://github.com/aurekai/aurekai-mlflow",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "Weights & Biases",
+      "repo": "https://github.com/aurekai/aurekai-wandb",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "DVC",
+      "repo": "https://github.com/aurekai/aurekai-dvc",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "DuckDB",
+      "repo": "https://github.com/aurekai/aurekai-duckdb",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "SQLite",
+      "repo": "https://github.com/aurekai/aurekai-sqlite",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
+    },
+    {
+      "name": "PostgreSQL",
+      "repo": "https://github.com/aurekai/aurekai-postgres",
+      "type": "data-ml",
+      "status": "planned",
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ]
     }
   ]
 }

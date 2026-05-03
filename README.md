@@ -129,6 +129,11 @@ Kestra orchestration flows and blueprints are tracked in:
 
 - https://github.com/aurekai/aurekai-kestra
 
+Full ecosystem integration matrix is tracked in:
+
+- `registry/integrations.json`
+- `ECOSYSTEM_NAMES.md`
+
 Bonfyre remains the compatibility lineage for ABI, command aliases, and legacy
 format support during migration.
 
