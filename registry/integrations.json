@@ -82,6 +82,15 @@
         "flows/hardening/netlist-seal-and-eval.yaml",
         "flows/hardening/violence-coupling-test.yaml"
       ],
+      "templates": [
+        "doctor-deep",
+        "manifest-verify",
+        "model-memory-pack",
+        "sae-audit",
+        "semantic-cache-bench",
+        "proof-bundle-export",
+        "release-gate"
+      ],
       "flagship_demo": "AkaiTel call -> Kestra trigger -> AkaiTranscribe -> AkaiBrief -> AkaiProof -> AkaiMeter -> AkaiPay -> AkaiOutreach"
     },
     {
