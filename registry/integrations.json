@@ -518,6 +518,160 @@
         "proof-bundle-export",
         "release-gate"
       ]
+    },
+    {
+      "name": "OpenAI",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/openai",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "function-calling",
+        "remote-mcp",
+        "responses-api",
+        "proof-bundles",
+        "semantic-cache",
+        "model-memory"
+      ]
+    },
+    {
+      "name": "Anthropic",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/anthropic",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "tool-use",
+        "mcp",
+        "code-execution-bridge",
+        "proof-bundles",
+        "semantic-cache",
+        "model-memory"
+      ]
+    },
+    {
+      "name": "Gemini",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/gemini",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "function-calling",
+        "context-caching",
+        "batch",
+        "code-execution",
+        "proof-bundles",
+        "semantic-cache"
+      ]
+    },
+    {
+      "name": "Mistral",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/mistral",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "function-calling",
+        "managed-connectors",
+        "remote-mcp",
+        "batch",
+        "proof-bundles",
+        "semantic-cache"
+      ]
+    },
+    {
+      "name": "Groq",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/groq",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "local-tool-calling",
+        "remote-mcp",
+        "batch",
+        "low-latency",
+        "proof-bundles",
+        "semantic-cache"
+      ]
+    },
+    {
+      "name": "xAI",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/xai",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "function-calling",
+        "json-schema-tools",
+        "long-context",
+        "proof-bundles",
+        "semantic-cache",
+        "model-memory"
+      ]
+    },
+    {
+      "name": "Perplexity",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/perplexity",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "web-grounded-research",
+        "citations",
+        "tool-calling",
+        "proof-bundles",
+        "semantic-cache",
+        "artifact-lineage"
+      ]
+    },
+    {
+      "name": "Cohere",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/cohere",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "rerank",
+        "embeddings",
+        "batch-evals",
+        "proof-bundles",
+        "semantic-cache",
+        "model-memory"
+      ]
+    },
+    {
+      "name": "Local Llama Stacks",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/providers/local",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "local-tool-calling",
+        "mcp",
+        "batch-evals",
+        "proof-bundles",
+        "semantic-cache",
+        "model-memory"
+      ]
+    },
+    {
+      "name": "Aurekai Gateway",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/gateway",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "provider-normalization",
+        "tool-injection",
+        "model-routing",
+        "proof-capture",
+        "semantic-cache",
+        "artifact-lineage"
+      ]
+    },
+    {
+      "name": "Aurekai Evals",
+      "repo": "https://github.com/aurekai/aurekai-llm-integrations/tree/main/evals",
+      "type": "llm-providers",
+      "status": "active",
+      "surfaces": [
+        "cross-provider-benchmark",
+        "batch-processing",
+        "schema-compliance",
+        "proof-completeness",
+        "cost-latency-tracking",
+        "feature-drift"
+      ]
     }
   ]
 }
