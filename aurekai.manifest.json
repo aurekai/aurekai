@@ -2,11 +2,22 @@
   "schema_version": "aurekai.deploy.v1",
   "product": "Aurekai",
   "legacy_codename": "Bonfyre",
-  "release": "0.8.0",
+  "release": "0.8.0-alpha.3",
   "target": "bun-darwin-arm64",
   "hyper": {
     "binary": "akai",
     "legacy_binary": "bonfyre-hyper"
+  },
+  "native_runtime": {
+    "name": "Aurekai Native Runtime",
+    "legacy_codename": "Bonfyre",
+    "repo": "https://github.com/aurekai/native-runtime",
+    "version": "0.8.0-alpha.1",
+    "revision": "git:4a1b7478a4470d805632c86aba21a73a37fbce84",
+    "abi": "bonfyre-abi-v1",
+    "operator_count": 89,
+    "library_count": 88,
+    "schema_count": 31
   },
   "runtime": {
     "operator_count": 53,
