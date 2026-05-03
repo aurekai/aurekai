@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/aurekai/aurekai/main/assets/aurekai-logo.svg" alt="Aurekai" width="520" />
+</p>
+
 # Aurekai Runtime Helm Chart
 
 Preview scaffold for Aurekai Runtime.
