@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.ghost_infer.v1.schema.json",
+  "title": "Aurekai WeightOps — Ghost Inference Result",
+  "description": "Output artifact produced by `akai weights ghost-infer`. Records a zero-tensor-hydration inference run using only .akmemory packs, micro-distill artifacts, and/or the SAE/proof/semantic cache.",
+  "type": "object",
+  "required": [
+    "schema_version", "generated_at", "recipe", "ghost_route",
+    "no_weights_loaded", "full_model_avoided", "proof_hash"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.ghost_infer.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "recipe":         { "type": "string" },
+    "ghost_route": {
+      "type": "string",
+      "enum": ["proof-cache", "semantic-cache", "sae", "memory-pack", "distill"]
+    },
+    "ghost_route_reason":   { "type": "string" },
+    "no_weights_loaded":    { "type": "boolean" },
+    "dry_run":              { "type": "boolean" },
+    "memory_pack":          { "type": ["string", "null"] },
+    "distill_artifact":     { "type": ["string", "null"] },
+    "tasks_from_memory":    { "type": "array", "items": { "type": "string" } },
+    "feature_from_distill": { "type": ["string", "null"] },
+    "ghost_budget_mb":      { "type": "number", "minimum": 0 },
+    "full_model_avoided":   { "type": "boolean" },
+    "bytes_avoided":        { "type": "integer", "minimum": 0 },
+    "first_usable_seconds": { "type": "integer", "minimum": 0 },
+    "capability_ready_at_percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "inference": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "output_tokens":      { "type": "integer" },
+            "latency_ms":         { "type": "integer" },
+            "route_confirmed":    { "type": "string" },
+            "ladder_steps_tried": { "type": "array", "items": { "type": "string" } },
+            "proof_cache_hit":    { "type": "boolean" },
+            "semantic_cache_hit": { "type": "boolean" },
+            "sae_gate_hit":       { "type": "boolean" },
+            "memory_pack_hit":    { "type": "boolean" },
+            "distill_hit":        { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "proof_hash": { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+  },
+  "additionalProperties": false
+}

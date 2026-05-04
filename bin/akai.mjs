@@ -38,6 +38,8 @@ function printHelp() {
   console.log("  akai weights teleport <akweight-uri>");
   console.log("  akai weights synth-quant --from <model.akmodel> --to <q3|q4|q5|q8> [--verify-fidelity]");
   console.log("  akai weights verify-fidelity <model.akmodel> [--baseline <ref>]");
+  console.log("  akai weights distill-feature-micro --from <model.akmodel> --feature <feature-id> [--out <file.akdistill>]");
+  console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights]");
   console.log("");
   console.log("Memory Packs (Phase 6):");
   console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
