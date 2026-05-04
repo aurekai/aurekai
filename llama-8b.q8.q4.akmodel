@@ -1,6 +1,6 @@
 {
   "schema_version": "aurekai.weightops.synth_quant.v1",
-  "generated_at": "2026-05-04T21:56:35.771Z",
+  "generated_at": "2026-05-04T23:05:34.557Z",
   "source_model": "llama-8b.q8.akmodel",
   "source_quant": "q8",
   "target_quant": "q4",

@@ -1,7 +1,7 @@
 {
   "schema_version": "aurekai.weightops.sbom.v1",
   "sbom_format": "aurekai-sbom-v1",
-  "generated_at": "2026-05-04T22:40:00.339Z",
+  "generated_at": "2026-05-04T23:30:06.249Z",
   "model": "mistral-7b.q4.akmodel",
   "model_id": "mistral-7b.q4.akmodel",
   "quant": "q4",

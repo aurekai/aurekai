@@ -24,7 +24,7 @@ echo "[1/6] Single-region CDN plan (us-east-1, default TTL 24h, chunk 64 MB)..."
 $AKAI_CMD weights serve-cdn \
   --model "mistral-7b.q4.akmodel" \
   --region us-east-1 \
-  | jq '{model, serve_uri, summary: {regions_served: .summary.regions_served, total_transfer_gb: .summary.total_transfer_gb, full_push_avoided_gb: .summary.full_push_avoided_gb, avg_latency_ms: .summary.avg_latency_ms, total_cost_usd: .summary.total_cost_usd}}'
+  | jq '{model:.payload.model,serve_uri:.payload.serve_uri,summary:{regions_served:.payload.summary.regions_served,total_transfer_gb:.payload.summary.total_transfer_gb,full_push_avoided_gb:.payload.summary.full_push_avoided_gb,avg_latency_ms:.payload.summary.avg_latency_ms,total_cost_usd:.payload.summary.total_cost_usd}}'
 echo
 
 # ── 2/6  All regions (global plan) ───────────────────────────────────────────
@@ -32,7 +32,7 @@ echo "[2/6] All-regions global CDN plan..."
 $AKAI_CMD weights serve-cdn \
   --model "mistral-7b.q4.akmodel" \
   --region all \
-  | jq '{summary, cdn_plan: [.cdn_plan[] | {region, latency_ms, cache_hit_rate, transfer_gb, cost_usd_estimate}]}'
+  | jq '{summary:.payload.summary,cdn_plan:[.payload.cdn_plan[]|{region,latency_ms,cache_hit_rate,transfer_gb,cost_usd_estimate}]}'
 echo
 
 # ── 3/6  Prefetch + custom TTL + smaller chunks ───────────────────────────────
@@ -43,7 +43,7 @@ $AKAI_CMD weights serve-cdn \
   --ttl 48 \
   --chunk-mb 32 \
   --prefetch \
-  | jq '{model, config: {ttl_hours: .config.ttl_hours, chunk_mb: .config.chunk_mb, chunk_count: .config.chunk_count, prefetch: .config.prefetch}, cdn_plan: [.cdn_plan[] | {region, chunks_needed, transfer_gb}]}'
+  | jq '{model:.payload.model,config:{ttl_hours:.payload.config.ttl_hours,chunk_mb:.payload.config.chunk_mb,chunk_count:.payload.config.chunk_count,prefetch:.payload.config.prefetch},cdn_plan:[.payload.cdn_plan[]|{region,chunks_needed,transfer_gb}]}'
 echo
 
 # ── 4/6  Dry-run mode ────────────────────────────────────────────────────────
@@ -52,13 +52,13 @@ $AKAI_CMD weights serve-cdn \
   --model "mistral-7b.q4.akmodel" \
   --region ap-south-1 \
   --dry-run \
-  | jq '{dry_run, serve_uri, cdn_plan: [.cdn_plan[] | {region, transfer_gb, cost_usd_estimate}], proof_hash}'
+  | jq '{dry_run:.payload.dry_run,serve_uri:.payload.serve_uri,cdn_plan:[.payload.cdn_plan[]|{region,transfer_gb,cost_usd_estimate}],proof_hash:.payload.proof_hash}'
 echo
 
 # ── 5/6  CDN status (registry) ───────────────────────────────────────────────
 echo "[5/6] CDN status (no active plans)..."
 $AKAI_CMD weights cdn status \
-  | jq '{schema_version, active_plans, total_regions, notes}'
+  | jq '{schema_version:.schema_version,active_plans:.payload.active_plans,total_regions:.payload.total_regions,notes:.payload.notes}'
 echo
 
 # ── 6/6  Alias: cdn == serve-cdn ─────────────────────────────────────────────
@@ -67,7 +67,7 @@ $AKAI_CMD weights cdn \
   --model "phi-3-mini.q4.akmodel" \
   --region us-west-2 \
   --dry-run \
-  | jq '{schema_version, model, summary: {avg_latency_ms: .summary.avg_latency_ms, total_cost_usd: .summary.total_cost_usd}}'
+  | jq '{schema_version:.schema_version,command:.command,model:.payload.model,summary:{avg_latency_ms:.payload.summary.avg_latency_ms,total_cost_usd:.payload.summary.total_cost_usd}}'
 echo
 
 echo "================================================================"

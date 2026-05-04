@@ -438,7 +438,7 @@ function cmdPullRegion(args) {
   const downloadGb = Math.min(budgetGb, parseFloat((estimatedHotGb + selectedLazy.length * 0.08).toFixed(2)));
   const fullModelGb = 8.0;
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.pull_plan.v1",
     generated_at: now(),
     trace_source: traceInput,
@@ -463,7 +463,14 @@ function cmdPullRegion(args) {
     output_file: outFile,
   };
 
-  writeJsonArtifact(outFile, result);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("pull-region", payload, {
+    modelRef: trace.model,
+    inputArtifacts: [{ type: "trace", path: traceInput, hash: proofHash(traceInput), size_mb: 0.1 }],
+    outputArtifacts: [{ type: "result", path: outFile, hash: payload.proof_boundary.plan_hash, size_mb: 0.1 }],
+    bytesWritten: Math.round(downloadGb * 1024 * 1024 * 1024),
+    status: "PASS",
+  });
   printJson(result);
   console.error(`\n  → pull plan written: ${outFile}`);
 }
@@ -484,7 +491,7 @@ function cmdDiff(args) {
     "sae.feature-family.24",
   ];
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.delta.v1",
     generated_at: now(),
     base: oldRef,
@@ -509,7 +516,12 @@ function cmdDiff(args) {
     output_file: outFile,
   };
 
-  writeJsonArtifact(outFile, result);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("diff", payload, {
+    outputArtifacts: [{ type: "delta", path: outFile, hash: payload.proofs.delta_root, size_mb: 756 }],
+    bytesWritten: Math.round(0.74 * 1024 * 1024 * 1024),
+    status: "PASS",
+  });
   printJson(result);
   console.error(`\n  → delta artifact written: ${outFile}`);
 }
@@ -525,7 +537,7 @@ function cmdPatch(args) {
     process.exit(1);
   }
 
-  const patched = {
+  const payload = {
     schema_version: "aurekai.weightops.patch_result.v1",
     generated_at: now(),
     base: oldRef,
@@ -544,8 +556,14 @@ function cmdPatch(args) {
     output_file: outFile,
   };
 
-  writeJsonArtifact(outFile, patched);
-  printJson(patched);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("patch", payload, {
+    inputArtifacts: [{ type: "delta", path: deltaFile, hash: proofHash(deltaFile), size_mb: 756 }],
+    outputArtifacts: [{ type: "result", path: outFile, hash: payload.proofs.patched_root, size_mb: 8 * 1024 }],
+    bytesRead: Math.round(0.74 * 1024 * 1024 * 1024),
+    status: "PASS",
+  });
+  printJson(result);
   console.error(`\n  → patched model artifact written: ${outFile}`);
 }
 
@@ -745,7 +763,7 @@ function cmdSynthQuant(args) {
     proof_hash:            proofHash(`fidelity:${fromModel}:${srcQuant}→${toQuant}`),
   };
 
-  const result = {
+  const payload = {
     schema_version:        "aurekai.weightops.synth_quant.v1",
     generated_at:          now(),
     source_model:          fromModel,
@@ -764,7 +782,14 @@ function cmdSynthQuant(args) {
     proof_hash:            proofHash(`synth-quant:${fromModel}:${srcQuant}→${toQuant}`),
   };
 
-  writeJsonArtifact(outFile, result);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("synth-quant", payload, {
+    modelRef: fromModel,
+    outputArtifacts: [{ type: "result", path: outFile, hash: payload.proof_hash, size_mb: tgtGb * 1024 }],
+    bytesWritten: Math.round(tgtGb * 1024 * 1024 * 1024),
+    modelStateDelta: { regions_modified: 0, bytes_delta: -Math.round(avoided * 1024 * 1024 * 1024), operations: [`synth-quant:${srcQuant}→${toQuant}`] },
+    status: "PASS",
+  });
   printJson(result);
   console.error(`\n  → synthesized quant: ${outFile}  (fidelity: ${score})`);
 }
@@ -777,7 +802,7 @@ function cmdVerifyFidelity(args) {
   const srcIdx   = quantIndex(quant);
   const score    = fidelityScore(srcIdx, quantIndex("q8"));
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.fidelity_verify.v1",
     generated_at:   now(),
     model,
@@ -795,6 +820,10 @@ function cmdVerifyFidelity(args) {
     proof_hash: proofHash(`verify-fidelity:${model}:${quant}`),
   };
 
+  const result = wrapResult("verify-fidelity", payload, {
+    modelRef: model,
+    status: payload.benchmark_pass ? "PASS" : "FAIL",
+  });
   printJson(result);
 }
 
@@ -827,7 +856,7 @@ function cmdMemoryPack(args) {
   const sizeMb = parseFloat((totalCentroids * 0.002 + totalSaeFeats * 0.001 + 12.0).toFixed(1));
   const fullModelGb = 8.0;
 
-  const result = {
+  const payload = {
     schema_version:              "aurekai.weightops.memory.v1",
     generated_at:                now(),
     source_model:                fromModel,
@@ -854,7 +883,13 @@ function cmdMemoryPack(args) {
     proof_hash:                  proofHash(`memory-pack:${fromModel}:${tasks.join(",")}`),
   };
 
-  writeJsonArtifact(outFile, result);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("memory-pack", payload, {
+    modelRef: fromModel,
+    outputArtifacts: [{ type: "result", path: outFile, hash: payload.proof_hash, size_mb: sizeMb }],
+    bytesWritten: Math.round(sizeMb * 1024 * 1024),
+    status: "PASS",
+  });
   printJson(result);
   console.error(`\n  → .akmemory artifact written: ${outFile}  (${sizeMb} MB, ${tasks.length} task profile${tasks.length > 1 ? "s" : ""})`);
 }
@@ -872,7 +907,7 @@ function cmdMemoryInspect(args) {
     process.exit(1);
   }
 
-  const report = {
+  const payload = {
     schema_version: "aurekai.weightops.memory_inspect.v1",
     generated_at:   now(),
     file:           memFile,
@@ -892,11 +927,12 @@ function cmdMemoryInspect(args) {
     valid:          !!mem.schema_version?.startsWith("aurekai.weightops.memory"),
   };
 
-  printJson(report);
+  const result = wrapResult("memory-inspect", payload, { status: "PASS" });
+  printJson(result);
 }
 
 function cmdMemoryStatus(args) {
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.memory_status.v1",
     generated_at:   now(),
     loaded_packs:   [],
@@ -906,6 +942,7 @@ function cmdMemoryStatus(args) {
     active_tasks:        [],
     notes: "No .akmemory packs loaded. Use: akai memory pack --from <model.akmodel> --tasks <task,...>",
   };
+  const result = wrapResult("memory-status", payload, { status: "PASS" });
   printJson(result);
 }
 
@@ -933,7 +970,7 @@ function cmdDistillFeatureMicro(args) {
   const sizeMb  = parseFloat((profile.dim * 0.004 + profile.layers.length * 0.8 + 0.6).toFixed(1));
   const fullGb  = 8.0;
 
-  const result = {
+  const payload = {
     schema_version:        "aurekai.weightops.distill_micro.v1",
     generated_at:          now(),
     source_model:          fromModel,
@@ -965,7 +1002,14 @@ function cmdDistillFeatureMicro(args) {
     proof_hash:            proofHash(`distill-micro:${fromModel}:${featureId}`),
   };
 
-  writeJsonArtifact(outFile, result);
+  writeJsonArtifact(outFile, payload);
+  const result = wrapResult("distill-feature-micro", payload, {
+    modelRef: fromModel,
+    outputArtifacts: [{ type: "result", path: outFile, hash: payload.proof_hash, size_mb: sizeMb }],
+    bytesWritten: Math.round(sizeMb * 1024 * 1024),
+    modelStateDelta: { regions_modified: profile.layers.length, bytes_delta: -Math.round((fullGb - sizeMb / 1024) * 1024 * 1024 * 1024), operations: [`distill:${featureId}`] },
+    status: "PASS",
+  });
   printJson(result);
   console.error(`\n  → micro-distill artifact: ${outFile}  (${sizeMb} MB — feature '${featureId}')`);
 }
@@ -1006,7 +1050,7 @@ function cmdGhostInfer(args) {
   const ghostBudgetMb  = memSizeMb + distillSizeMb + 0.3; // +0.3 for SAE probe overhead
   const outputTokens   = dryRun ? 0 : 42;
 
-  const result = {
+  const payload = {
     schema_version:        "aurekai.weightops.ghost_infer.v1",
     generated_at:          now(),
     recipe,
@@ -1037,6 +1081,16 @@ function cmdGhostInfer(args) {
     proof_hash:            proofHash(`ghost-infer:${recipe}:${routeKey}:${memoryFile}:${distillFile}`),
   };
 
+  const inputArtifacts = [
+    ...(memoryFile  ? [{ type: "memory", path: memoryFile, hash: proofHash(memoryFile), size_mb: memSizeMb }] : []),
+    ...(distillFile ? [{ type: "distill", path: distillFile, hash: proofHash(distillFile), size_mb: distillSizeMb }] : []),
+  ];
+
+  const result = wrapResult("ghost-infer", payload, {
+    inputArtifacts,
+    bytesRead: Math.round(ghostBudgetMb * 1024 * 1024),
+    status: "PASS",
+  });
   printJson(result);
   if (!dryRun) {
     console.error(`\n  → ghost inference complete — route: ${routeKey}  (${ghostBudgetMb.toFixed(1)} MB, 0 tensor hydration)`);
@@ -1148,13 +1202,17 @@ function cmdMarketplaceInspect(args) {
     console.error(`  error: model '${modelId}' not found in catalog. Use: akai weights marketplace --list`);
     process.exit(1);
   }
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.marketplace.v1",
     generated_at:   now(),
     ...model,
     ghost_ready:    model.sae_compatible || model.memory_pack_available,
     proof_hash:     proofHash(`marketplace-inspect:${model.id}`),
   };
+  const result = wrapResult("marketplace-inspect", payload, {
+    modelRef: model.id,
+    status: "PASS",
+  });
   printJson(result);
 }
 
@@ -1248,7 +1306,7 @@ function cmdServeCdn(args) {
 
 function cmdCdnStatus(args) {
   const model = args[0] || null;
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.cdn_status.v1",
     generated_at:   now(),
     model:          model || "(all)",
@@ -1257,6 +1315,7 @@ function cmdCdnStatus(args) {
     cache_hit_rate_avg: 0,
     notes: "No CDN plans active. Use: akai weights serve-cdn --model <model.akmodel> [--region <id>]",
   };
+  const result = wrapResult("cdn-status", payload, { status: "PASS" });
   printJson(result);
 }
 
@@ -1814,10 +1873,11 @@ function cmdIntegrityGate(args) {
   const result = wrapResult("integrity-gate", payload, {
     modelRef: modelId,
     inputArtifacts: [
+      { type: "model", path: modelId, hash: proofHash(modelId), size_mb: 3200 },
       ...(proofFile ? [{ type: "proof", path: proofFile, hash: proofHash(proofFile), size_mb: 1.2 }] : []),
       ...(sbomFile ? [{ type: "sbom", path: sbomFile, hash: proofHash(sbomFile), size_mb: 0.1 }] : []),
     ],
-    bytesRead: (proofFile ? 4096 : 0) + (sbomFile ? 512 : 0),
+    bytesRead: 3200 * 1024 * 1024 + (proofFile ? 4096 : 0) + (sbomFile ? 512 : 0),
     status: gateOpen ? "PASS" : "FAIL",
     exitCode: gateOpen ? 0 : 3,
   });

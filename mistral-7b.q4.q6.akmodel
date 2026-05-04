@@ -1,6 +1,6 @@
 {
   "schema_version": "aurekai.weightops.synth_quant.v1",
-  "generated_at": "2026-05-04T21:56:35.712Z",
+  "generated_at": "2026-05-04T23:05:34.499Z",
   "source_model": "mistral-7b.q4.akmodel",
   "source_quant": "q4",
   "target_quant": "q6",

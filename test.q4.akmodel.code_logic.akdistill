@@ -1,20 +1,21 @@
 {
   "schema_version": "aurekai.weightops.distill_micro.v1",
-  "generated_at": "2026-05-04T23:05:35.102Z",
-  "source_model": "mistral-7b.q4.akmodel",
-  "feature_id": "sentiment",
-  "feature_family": "classification",
+  "generated_at": "2026-05-04T23:01:34.511Z",
+  "source_model": "test.q4.akmodel",
+  "feature_id": "code_logic",
+  "feature_family": "general",
   "target_model": "(standalone — any compatible runtime)",
-  "output_file": "mistral-7b.q4.akmodel.sentiment.akdistill",
+  "output_file": "test.q4.akmodel.code_logic.akdistill",
   "distilled_artifact": {
-    "sae_cluster": "sentiment.polarity",
+    "sae_cluster": "general.feature",
     "source_layers": [
-      8
+      12,
+      16
     ],
-    "feature_dim": 32,
+    "feature_dim": 64,
     "vector_format": "fp16",
     "routing_compatible": true,
-    "runtime_footprint_mb": 1.5
+    "runtime_footprint_mb": 2.5
   },
   "deployment": {
     "standalone": true,
@@ -23,11 +24,11 @@
     "min_context_tokens": 32,
     "max_context_tokens": 4096
   },
-  "size_mb": 1.5,
+  "size_mb": 2.5,
   "full_model_avoided": true,
-  "bytes_avoided": 8588361728,
+  "bytes_avoided": 8587313152,
   "first_usable_seconds": 2,
   "capability_ready_at_percent": 100,
-  "fidelity_vs_full": 0.92,
-  "proof_hash": "ak:sha256:ccb7ac9220a94b80fb19a005e116e614"
+  "fidelity_vs_full": 0.93,
+  "proof_hash": "ak:sha256:9f28c2dfb99e0abc7584b3111f85ed05"
 }
