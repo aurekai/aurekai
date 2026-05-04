@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.sbom.v1.schema.json",
+  "title": "Aurekai WeightOps Weight SBOM",
+  "description": "Software Bill of Materials for a weight artifact — tensors, quant method, adapter lineage, and license hashes",
+  "type": "object",
+  "required": ["schema_version", "model", "model_id", "quant", "components", "lineage", "checksums", "proof_hash"],
+  "properties": {
+    "schema_version":   { "type": "string", "const": "aurekai.weightops.sbom.v1" },
+    "sbom_format":      { "type": "string" },
+    "generated_at":     { "type": "string", "format": "date-time" },
+    "model":            { "type": "string" },
+    "model_id":         { "type": "string" },
+    "quant":            { "type": "string" },
+    "size_gb":          { "type": "number" },
+    "dry_run":          { "type": "boolean" },
+    "license":          { "type": "string" },
+    "component_count":  { "type": "integer" },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bom_ref":      { "type": "string" },
+          "type":         { "type": "string" },
+          "name":         { "type": "string" },
+          "version":      { "type": "string" },
+          "size_mb":      { "type": "number" },
+          "content_hash": { "type": "string" },
+          "license":      { "type": "string" },
+          "supplier":     { "type": "string" },
+          "verified":     { "type": "boolean" }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "properties": {
+        "base_model":    { "type": "string" },
+        "quant_method":  { "type": "string" },
+        "sae_version":   { "type": "string" },
+        "adapter_slots": { "type": "array", "items": { "type": "string" } },
+        "distill_chain": { "type": "array" },
+        "proof_policy":  { "type": "string" },
+        "source_uri":    { "type": "string" }
+      }
+    },
+    "checksums": {
+      "type": "object",
+      "properties": {
+        "model_root_hash": { "type": "string" },
+        "sbom_hash":       { "type": "string" }
+      }
+    },
+    "output_file":  { "type": "string" },
+    "proof_hash":   { "type": "string" }
+  },
+  "additionalProperties": false
+}

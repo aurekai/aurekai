@@ -46,6 +46,8 @@ function printHelp() {
   console.log("  akai weights cdn status [<model>]");
   console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--dry-run]");
   console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
+  console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
+  console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
   console.log("");
   console.log("Memory Packs (Phase 6):");
   console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");

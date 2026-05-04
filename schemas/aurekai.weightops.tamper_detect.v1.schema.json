@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.tamper_detect.v1.schema.json",
+  "title": "Aurekai WeightOps Tamper Detection",
+  "description": "Schema for weight artifact tamper detection results — compares live tensor hashes against a proof-root baseline",
+  "type": "object",
+  "required": ["schema_version", "model", "pass", "baseline_root_hash", "current_root_hash", "region_results", "verdict", "proof_hash"],
+  "properties": {
+    "schema_version":      { "type": "string", "const": "aurekai.weightops.tamper_detect.v1" },
+    "generated_at":        { "type": "string", "format": "date-time" },
+    "model":               { "type": "string" },
+    "model_id":            { "type": "string" },
+    "dry_run":             { "type": "boolean" },
+    "baseline_source":     { "type": "string" },
+    "baseline_root_hash":  { "type": "string" },
+    "current_root_hash":   { "type": "string" },
+    "baseline_match":      { "type": "boolean" },
+    "pass":                { "type": "boolean" },
+    "regions_checked":     { "type": "integer" },
+    "regions_ok":          { "type": "integer" },
+    "regions_diverged":    { "type": "integer" },
+    "region_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "region":   { "type": "string" },
+          "expected": { "type": "string" },
+          "actual":   { "type": "string" },
+          "status":   { "type": "string", "enum": ["OK", "DIVERGED", "MISSING"] }
+        }
+      }
+    },
+    "verdict":    { "type": "string" },
+    "proof_hash": { "type": "string" }
+  },
+  "additionalProperties": false
+}

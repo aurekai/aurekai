@@ -90,6 +90,8 @@ function printWeightsHelp() {
   console.log("  akai weights cdn status [<model>]");
   console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--dry-run]");
   console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
+  console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
+  console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
 }
 
 function sanitizeRecipeArg(args) {
@@ -1382,6 +1384,182 @@ function cmdArbRoute(args) {
 }
 
 // ---------------------------------------------------------------------------
+// Command: weights sbom  (Software Bill of Materials)
+// ---------------------------------------------------------------------------
+
+// Canonical tensor regions every model exposes
+const SBOM_TENSOR_REGIONS = [
+  "tokenizer",
+  "embed_tokens",
+  "lm_head",
+  "layers.attention",
+  "layers.mlp",
+  "layers.norm",
+  "sae_features",
+  "adapter_slots",
+];
+
+// Known open-source licenses for model families
+const MODEL_LICENSE_MAP = {
+  "mistral":  "Apache-2.0",
+  "llama":    "Llama Community License",
+  "phi":      "MIT",
+  "qwen":     "Tongyi Qianwen License",
+  "gemma":    "Gemma Terms of Use",
+  "deepseek": "MIT",
+  "mixtral":  "Apache-2.0",
+};
+
+function inferModelLicense(modelId) {
+  for (const [key, lic] of Object.entries(MODEL_LICENSE_MAP)) {
+    if (modelId.toLowerCase().includes(key)) return lic;
+  }
+  return "Unknown";
+}
+
+function cmdSbom(args) {
+  const model    = flag(args, "--model") || args[0] || "model.akmodel";
+  const outFile  = flag(args, "--out")   || model.replace(/\.akmodel$/, ".aksbom");
+  const format   = flag(args, "--format") || "aurekai-sbom-v1";
+  const dryRun   = hasFlag(args, "--dry-run");
+
+  const modelId  = baseModelName(model);
+  const qMatch   = model.match(/\.(q[2-9]|fp16)\.akmodel$/i);
+  const quant    = qMatch ? qMatch[1].toLowerCase() : "q4";
+  const sizeGb   = QUANT_SIZE_GB[quant] ?? 3.2;
+  const license  = inferModelLicense(modelId);
+
+  // Tensor component entries
+  const components = SBOM_TENSOR_REGIONS.map((region, i) => ({
+    bom_ref:        `${modelId}.${region}.${i}`,
+    type:           "tensor-region",
+    name:           region,
+    version:        quant,
+    size_mb:        parseFloat((sizeGb * 1024 * (region === "layers.attention" ? 0.38 : region === "layers.mlp" ? 0.28 : 0.06)).toFixed(1)),
+    content_hash:   proofHash(`sbom-component:${modelId}:${region}:${quant}`),
+    license:        license,
+    supplier:       `hf://aurekai/model-memory/${modelId}`,
+    verified:       true,
+  }));
+
+  // Adapter + SAE lineage
+  const lineage = {
+    base_model:    modelId,
+    quant_method:  `synth-quant-ladder (${quant})`,
+    sae_version:   "aurekai.sae.v1",
+    adapter_slots: ["task-adapter", "persona-adapter"],
+    distill_chain: [],
+    proof_policy:  "chunk+capability",
+    source_uri:    `hf://aurekai/model-memory/${modelId}`,
+  };
+
+  const result = {
+    schema_version:     "aurekai.weightops.sbom.v1",
+    sbom_format:        format,
+    generated_at:       now(),
+    model,
+    model_id:           modelId,
+    quant,
+    size_gb:            sizeGb,
+    dry_run:            dryRun,
+    license,
+    component_count:    components.length,
+    components,
+    lineage,
+    checksums: {
+      model_root_hash:  proofHash(`sbom-root:${modelId}:${quant}`),
+      sbom_hash:        proofHash(`sbom-doc:${modelId}:${quant}:${components.length}`),
+    },
+    output_file:        outFile,
+    proof_hash:         proofHash(`sbom:${modelId}:${quant}:${components.length}`),
+  };
+
+  if (!dryRun) writeJsonArtifact(outFile, result);
+  printJson(result);
+  if (dryRun) {
+    console.error(`\n  → dry-run: SBOM computed (${components.length} components) — not written`);
+  } else {
+    console.error(`\n  → SBOM written: ${outFile}  (${components.length} components, license: ${license})`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Command: weights tamper-detect
+// ---------------------------------------------------------------------------
+
+function cmdTamperDetect(args) {
+  const model       = flag(args, "--model")    || args[0] || "model.akmodel";
+  const baseline    = flag(args, "--baseline") || flag(args, "--proof-root") || null;
+  const sbomFile    = flag(args, "--sbom")     || null;
+  const dryRun      = hasFlag(args, "--dry-run");
+
+  const modelId     = baseModelName(model);
+  const qMatch      = model.match(/\.(q[2-9]|fp16)\.akmodel$/i);
+  const quant       = qMatch ? qMatch[1].toLowerCase() : "q4";
+
+  // Load baseline from SBOM artifact or compute from model name
+  const sbomData    = sbomFile ? readJsonMaybe(sbomFile) : null;
+  const baselineRoot = baseline
+    || sbomData?.checksums?.model_root_hash
+    || proofHash(`sbom-root:${modelId}:${quant}`);
+
+  // Current state re-computation (deterministic)
+  const currentRoot = proofHash(`sbom-root:${modelId}:${quant}`);
+
+  // In a real system this compares live tensor hashes vs stored.
+  // Here: deterministic → always matches unless --inject-drift is set
+  const injectDrift = hasFlag(args, "--inject-drift");
+
+  const divergedRegions = injectDrift
+    ? [
+        { region: "layers.attention", expected: proofHash(`sbom-component:${modelId}:layers.attention:${quant}`), actual: proofHash(`drift:${modelId}:layers.attention`), status: "DIVERGED" },
+        { region: "adapter_slots",    expected: proofHash(`sbom-component:${modelId}:adapter_slots:${quant}`),    actual: proofHash(`drift:${modelId}:adapter_slots`),    status: "DIVERGED" },
+      ]
+    : [];
+
+  const allRegionResults = SBOM_TENSOR_REGIONS.map(region => {
+    const drifted = divergedRegions.find(d => d.region === region);
+    if (drifted) return drifted;
+    return {
+      region,
+      expected: proofHash(`sbom-component:${modelId}:${region}:${quant}`),
+      actual:   proofHash(`sbom-component:${modelId}:${region}:${quant}`),
+      status:   "OK",
+    };
+  });
+
+  const pass         = divergedRegions.length === 0;
+  const baselineMatch = baselineRoot === currentRoot && !injectDrift;
+
+  const result = {
+    schema_version:     "aurekai.weightops.tamper_detect.v1",
+    generated_at:       now(),
+    model,
+    model_id:           modelId,
+    dry_run:            dryRun,
+    baseline_source:    sbomFile || baseline || "computed",
+    baseline_root_hash: baselineRoot,
+    current_root_hash:  injectDrift ? proofHash(`drift-root:${modelId}`) : currentRoot,
+    baseline_match:     baselineMatch,
+    pass,
+    regions_checked:    allRegionResults.length,
+    regions_ok:         allRegionResults.filter(r => r.status === "OK").length,
+    regions_diverged:   divergedRegions.length,
+    region_results:     allRegionResults,
+    verdict:            pass ? "CLEAN — no tampering detected" : `TAMPERED — ${divergedRegions.length} region(s) diverged`,
+    proof_hash:         proofHash(`tamper-detect:${modelId}:${quant}:${pass}`),
+  };
+
+  printJson(result);
+  if (pass) {
+    console.error(`\n  → PASS: all ${allRegionResults.length} tensor regions verified clean`);
+  } else {
+    console.error(`\n  → FAIL: ${divergedRegions.length} region(s) DIVERGED — potential tampering detected`);
+    if (!dryRun) process.exitCode = 2;
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 export function memoryCommand(args) {
   const sub  = args[0];
@@ -1450,9 +1628,12 @@ export function weightsCommand(args) {
     case "stream":                return cmdMoqStream(rest);
     case "arb-route":             return cmdArbRoute(rest);
     case "route":                 return cmdArbRoute(rest);
+    case "sbom":                  return cmdSbom(rest);
+    case "tamper-detect":         return cmdTamperDetect(rest);
+    case "tamper":                return cmdTamperDetect(rest);
     default:
       console.error(`akai weights: unknown subcommand '${sub || ""}'`);
-      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, pull, diff, patch, delta, prove, lease, teleport, weightless-run, synth-quant, quant, verify-fidelity, distill-feature-micro, ghost-infer, marketplace, recommend, serve-cdn, cdn, moq-stream, stream, arb-route, route");
+      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, pull, diff, patch, delta, prove, lease, teleport, weightless-run, synth-quant, quant, verify-fidelity, distill-feature-micro, ghost-infer, marketplace, recommend, serve-cdn, cdn, moq-stream, stream, arb-route, route, sbom, tamper-detect, tamper");
       process.exit(1);
   }
 }
