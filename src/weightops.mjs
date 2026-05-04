@@ -84,6 +84,10 @@ function printWeightsHelp() {
   console.log("  akai weights verify-fidelity <model.akmodel>");
   console.log("  akai weights distill-feature-micro --from <model.akmodel> --feature <feature-id> [--out <file.akdistill>]");
   console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights] [--dry-run]");
+  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--quality <0-1>] [--top <N>] [--list]");
+  console.log("  akai weights marketplace inspect <model-id>");
+  console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--dry-run]");
+  console.log("  akai weights cdn status [<model>]");
 }
 
 function sanitizeRecipeArg(args) {
@@ -1000,6 +1004,218 @@ function cmdGhostInfer(args) {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Command: weights marketplace / weights recommend
+// ---------------------------------------------------------------------------
+
+const MARKETPLACE_CATALOG = [
+  {
+    id: "mistral-7b-q4",    name: "Mistral 7B Q4",   family: "general",      size_gb: 3.2,  cost_credits_per_hr: 0.04, sae_compatible: true,  memory_pack_available: true,  distill_features: ["support-intent","summarize-extract","ner-entity","topic-route","sentiment"] },
+  { id: "llama-8b-q4",     name: "LLaMA 8B Q4",     family: "general",      size_gb: 4.1,  cost_credits_per_hr: 0.05, sae_compatible: true,  memory_pack_available: true,  distill_features: ["support-intent","ner-entity","summarize-extract","code-detect"] },
+  { id: "phi-3-mini-q4",   name: "Phi-3 Mini Q4",   family: "tiny",         size_gb: 1.1,  cost_credits_per_hr: 0.01, sae_compatible: true,  memory_pack_available: true,  distill_features: ["sentiment","topic-route","classify"] },
+  { id: "qwen2-7b-q4",     name: "Qwen2 7B Q4",     family: "multilingual", size_gb: 3.8,  cost_credits_per_hr: 0.04, sae_compatible: false, memory_pack_available: true,  distill_features: ["summarize-extract","ner-entity"] },
+  { id: "gemma2-9b-q4",    name: "Gemma2 9B Q4",    family: "general",      size_gb: 4.8,  cost_credits_per_hr: 0.06, sae_compatible: true,  memory_pack_available: false, distill_features: ["code-detect","summarize-extract"] },
+  { id: "deepseek-7b-q4",  name: "DeepSeek 7B Q4",  family: "code",         size_gb: 4.0,  cost_credits_per_hr: 0.05, sae_compatible: true,  memory_pack_available: true,  distill_features: ["code-detect","topic-route"] },
+  { id: "mixtral-8x7-q3",  name: "Mixtral 8×7B Q3", family: "moe",          size_gb: 14.2, cost_credits_per_hr: 0.18, sae_compatible: false, memory_pack_available: false, distill_features: [] },
+];
+
+function scoreModel(model, tasks, budgetGb, diskGb, qualityMin) {
+  let score = 0;
+  const matchedFeatures = model.distill_features.filter(f => tasks.some(t => f.includes(t) || t.includes(f)));
+  score += matchedFeatures.length * 20;
+  if (model.size_gb <= budgetGb) score += 30;
+  if (model.size_gb <= diskGb)   score += 20;
+  if (model.sae_compatible)      score += 15;
+  if (model.memory_pack_available) score += 10;
+  if (qualityMin >= 0.9 && model.family === "general") score += 5;
+  return score;
+}
+
+function cmdMarketplace(args) {
+  const taskArg    = flag(args, "--tasks") || flag(args, "--for") || "general";
+  const budgetGb   = parseFloat(flag(args, "--budget-gb") || "4");
+  const diskGb     = parseFloat(flag(args, "--disk")      || "8");
+  const qualityMin = parseFloat(flag(args, "--quality")   || "0.85");
+  const limitN     = parseInt(flag(args, "--top")         || "3", 10);
+  const listAll    = hasFlag(args, "--list");
+
+  const tasks = taskArg.split(",").map(t => t.trim());
+
+  if (listAll) {
+    const result = {
+      schema_version: "aurekai.weightops.marketplace.v1",
+      generated_at:   now(),
+      catalog_size:   MARKETPLACE_CATALOG.length,
+      models: MARKETPLACE_CATALOG.map(m => ({
+        id: m.id, name: m.name, family: m.family, size_gb: m.size_gb,
+        cost_credits_per_hr: m.cost_credits_per_hr,
+        sae_compatible: m.sae_compatible,
+        memory_pack_available: m.memory_pack_available,
+        distill_features: m.distill_features,
+      })),
+    };
+    printJson(result);
+    return;
+  }
+
+  const scored = MARKETPLACE_CATALOG
+    .map(m => ({ ...m, score: scoreModel(m, tasks, budgetGb, diskGb, qualityMin) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limitN);
+
+  const recommendations = scored.map((m, i) => ({
+    rank:           i + 1,
+    id:             m.id,
+    name:           m.name,
+    family:         m.family,
+    size_gb:        m.size_gb,
+    cost_credits_per_hr: m.cost_credits_per_hr,
+    sae_compatible: m.sae_compatible,
+    memory_pack_available: m.memory_pack_available,
+    matched_features: m.distill_features.filter(f => tasks.some(t => f.includes(t) || t.includes(f))),
+    recommendation_score: m.score,
+    ghost_ready:    m.sae_compatible || m.memory_pack_available,
+    download_strategy: m.size_gb <= budgetGb ? "full-local" : "partial + remote-fallback",
+    proof_hash:     proofHash(`marketplace:${m.id}:${tasks.join(",")}:${budgetGb}`),
+  }));
+
+  const result = {
+    schema_version:  "aurekai.weightops.marketplace.v1",
+    generated_at:    now(),
+    query: { tasks, budget_gb: budgetGb, disk_gb: diskGb, quality_min: qualityMin, top_n: limitN },
+    recommendations,
+    best_match:      recommendations[0]?.id ?? null,
+    proof_hash:      proofHash(`marketplace-query:${tasks.join(",")}:${budgetGb}:${qualityMin}`),
+  };
+
+  printJson(result);
+  console.error(`\n  → top recommendation: ${recommendations[0]?.name ?? "none"}  (score: ${recommendations[0]?.recommendation_score})`);
+}
+
+function cmdMarketplaceInspect(args) {
+  const modelId = args[0] || null;
+  if (!modelId) {
+    console.error("  error: marketplace inspect requires a model id (e.g. mistral-7b-q4)");
+    process.exit(1);
+  }
+  const model = MARKETPLACE_CATALOG.find(m => m.id === modelId);
+  if (!model) {
+    console.error(`  error: model '${modelId}' not found in catalog. Use: akai weights marketplace --list`);
+    process.exit(1);
+  }
+  const result = {
+    schema_version: "aurekai.weightops.marketplace.v1",
+    generated_at:   now(),
+    ...model,
+    ghost_ready:    model.sae_compatible || model.memory_pack_available,
+    proof_hash:     proofHash(`marketplace-inspect:${model.id}`),
+  };
+  printJson(result);
+}
+
+// ---------------------------------------------------------------------------
+// Command: weights serve-cdn (AI-CDN)
+// ---------------------------------------------------------------------------
+
+const CDN_REGIONS = [
+  { id: "us-east-1",  lat_ms: 18,  cache_hit_rate: 0.82, cost_per_gb: 0.02 },
+  { id: "us-west-2",  lat_ms: 22,  cache_hit_rate: 0.79, cost_per_gb: 0.02 },
+  { id: "eu-west-1",  lat_ms: 31,  cache_hit_rate: 0.74, cost_per_gb: 0.025 },
+  { id: "ap-south-1", lat_ms: 48,  cache_hit_rate: 0.68, cost_per_gb: 0.03 },
+  { id: "sa-east-1",  lat_ms: 62,  cache_hit_rate: 0.61, cost_per_gb: 0.035 },
+];
+
+function cmdServeCdn(args) {
+  const model     = flag(args, "--model") || args[0] || "model.akmodel";
+  const regionArg = flag(args, "--region")|| "all";
+  const ttlH      = parseFloat(flag(args, "--ttl") || "24");
+  const chunkMb   = parseFloat(flag(args, "--chunk-mb") || "64");
+  const prefetch  = hasFlag(args, "--prefetch");
+  const dryRun    = hasFlag(args, "--dry-run");
+
+  const regions = regionArg === "all"
+    ? CDN_REGIONS
+    : CDN_REGIONS.filter(r => r.id === regionArg);
+
+  if (regions.length === 0) {
+    console.error(`  error: unknown region '${regionArg}'. Valid: ${CDN_REGIONS.map(r => r.id).join(", ")}, all`);
+    process.exit(1);
+  }
+
+  const fullModelGb = 8.0;
+  const chunkCount  = Math.ceil((fullModelGb * 1024) / chunkMb);
+
+  const cdnPlan = regions.map(r => {
+    const cachedGb    = parseFloat((fullModelGb * r.cache_hit_rate).toFixed(2));
+    const transferGb  = parseFloat((fullModelGb - cachedGb).toFixed(2));
+    const costUsd     = parseFloat((transferGb * r.cost_per_gb).toFixed(4));
+    return {
+      region:           r.id,
+      latency_ms:       r.lat_ms,
+      cache_hit_rate:   r.cache_hit_rate,
+      cached_gb:        cachedGb,
+      transfer_gb:      transferGb,
+      cost_usd_estimate:costUsd,
+      chunks_needed:    Math.ceil(transferGb * 1024 / chunkMb),
+      ttl_hours:        ttlH,
+      proof_chunk_hash: proofHash(`cdn:${model}:${r.id}:${chunkMb}`),
+    };
+  });
+
+  const totalTransfer = parseFloat(cdnPlan.reduce((s, r) => s + r.transfer_gb, 0).toFixed(2));
+  const totalCost     = parseFloat(cdnPlan.reduce((s, r) => s + r.cost_usd_estimate, 0).toFixed(4));
+  const avgLatency    = Math.round(cdnPlan.reduce((s, r) => s + r.latency_ms, 0) / cdnPlan.length);
+
+  const result = {
+    schema_version:   "aurekai.weightops.cdn.v1",
+    generated_at:     now(),
+    model,
+    dry_run:          dryRun,
+    config: {
+      regions:        regions.map(r => r.id),
+      ttl_hours:      ttlH,
+      chunk_mb:       chunkMb,
+      chunk_count:    chunkCount,
+      prefetch:       prefetch,
+    },
+    cdn_plan:         cdnPlan,
+    summary: {
+      regions_served:       cdnPlan.length,
+      total_model_gb:       fullModelGb,
+      total_transfer_gb:    totalTransfer,
+      full_push_avoided_gb: parseFloat((fullModelGb * cdnPlan.length - totalTransfer).toFixed(2)),
+      total_cost_usd:       totalCost,
+      avg_latency_ms:       avgLatency,
+      proof_policy:         "chunk+capability per region",
+    },
+    serve_uri:        `akcdn://${model.replace(/[^a-z0-9._-]/gi, "-")}`,
+    proof_hash:       proofHash(`serve-cdn:${model}:${regions.map(r=>r.id).join(",")}:${ttlH}`),
+  };
+
+  printJson(result);
+  if (!dryRun) {
+    console.error(`\n  → CDN plan active: ${cdnPlan.length} region(s)  avg latency ${avgLatency}ms  ~$${totalCost}/push`);
+  } else {
+    console.error(`\n  → dry-run: CDN plan computed for ${cdnPlan.length} region(s), not activated`);
+  }
+}
+
+function cmdCdnStatus(args) {
+  const model = args[0] || null;
+  const result = {
+    schema_version: "aurekai.weightops.cdn_status.v1",
+    generated_at:   now(),
+    model:          model || "(all)",
+    active_plans:   [],
+    total_regions:  0,
+    cache_hit_rate_avg: 0,
+    notes: "No CDN plans active. Use: akai weights serve-cdn --model <model.akmodel> [--region <id>]",
+  };
+  printJson(result);
+}
+
+// ---------------------------------------------------------------------------
+
 export function memoryCommand(args) {
   const sub  = args[0];
   const rest = args.slice(1);
@@ -1059,9 +1275,13 @@ export function weightsCommand(args) {
     case "distill-micro":         return cmdDistillFeatureMicro(rest);
     case "ghost-infer":           return cmdGhostInfer(rest);
     case "ghost":                 return cmdGhostInfer(rest);
+    case "marketplace":           return rest[0] === "inspect" ? cmdMarketplaceInspect(rest.slice(1)) : cmdMarketplace(rest);
+    case "recommend":             return cmdMarketplace(rest);
+    case "serve-cdn":             return cmdServeCdn(rest);
+    case "cdn":                   return rest[0] === "status" ? cmdCdnStatus(rest.slice(1)) : cmdServeCdn(rest);
     default:
       console.error(`akai weights: unknown subcommand '${sub || ""}'`);
-      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, pull, diff, patch, delta, prove, lease, teleport, weightless-run, synth-quant, quant, verify-fidelity, distill-feature-micro, ghost-infer");
+      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, pull, diff, patch, delta, prove, lease, teleport, weightless-run, synth-quant, quant, verify-fidelity, distill-feature-micro, ghost-infer, marketplace, recommend, serve-cdn, cdn");
       process.exit(1);
   }
 }

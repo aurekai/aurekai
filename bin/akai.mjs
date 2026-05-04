@@ -40,6 +40,10 @@ function printHelp() {
   console.log("  akai weights verify-fidelity <model.akmodel> [--baseline <ref>]");
   console.log("  akai weights distill-feature-micro --from <model.akmodel> --feature <feature-id> [--out <file.akdistill>]");
   console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights]");
+  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--top <N>] [--list]");
+  console.log("  akai weights marketplace inspect <model-id>");
+  console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--dry-run]");
+  console.log("  akai weights cdn status [<model>]");
   console.log("");
   console.log("Memory Packs (Phase 6):");
   console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
