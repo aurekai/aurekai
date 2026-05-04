@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.memory.v1.schema.json",
+  "title": "Aurekai WeightOps — Memory Pack Artifact",
+  "description": "Output artifact produced by `akai memory pack`. Encodes task-specific feature centroids, SAE dictionaries, routing profiles, and semantic cache metadata extracted from a model — allowing task execution without loading the full model.",
+  "type": "object",
+  "required": [
+    "schema_version", "generated_at", "source_model", "tasks", "output_file",
+    "contents", "size_mb", "full_model_avoided", "proof_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "aurekai.weightops.memory.v1"
+    },
+    "generated_at":  { "type": "string", "format": "date-time" },
+    "source_model":  { "type": "string" },
+    "tasks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "output_file":   { "type": "string" },
+    "contents": {
+      "type": "object",
+      "required": ["feature_centroids", "sae_dictionaries", "routing_profiles", "semantic_cache", "proof_exemplars", "task_eval_summaries", "adapter_hints", "layer_signatures"],
+      "properties": {
+        "feature_centroids": {
+          "type": "object",
+          "properties": {
+            "count":         { "type": "integer", "minimum": 0 },
+            "task_profiles": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "sae_dictionaries": {
+          "type": "object",
+          "properties": {
+            "feature_count": { "type": "integer", "minimum": 0 },
+            "layers":        { "type": "array", "items": { "type": "integer" } }
+          }
+        },
+        "routing_profiles": {
+          "type": "object",
+          "properties": {
+            "tasks":         { "type": "array", "items": { "type": "string" } },
+            "layer_routing": { "type": "array", "items": { "type": "integer" } }
+          }
+        },
+        "semantic_cache": {
+          "type": "object",
+          "properties": {
+            "slots":    { "type": "integer", "minimum": 0 },
+            "strategy": { "type": "string" }
+          }
+        },
+        "proof_exemplars": {
+          "type": "object",
+          "properties": {
+            "count":    { "type": "integer", "minimum": 0 },
+            "verified": { "type": "boolean" }
+          }
+        },
+        "task_eval_summaries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "task":  { "type": "string" },
+              "pass":  { "type": "boolean" },
+              "score": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "adapter_hints": {
+          "type": "object",
+          "properties": {
+            "slots":        { "type": "integer", "minimum": 0 },
+            "hot_adapters": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "layer_signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "layer":          { "type": "integer" },
+              "signature_hash": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "size_mb":               { "type": "number",  "minimum": 0 },
+    "full_model_avoided":    { "type": "boolean" },
+    "model_memory_avoided_download_gb": { "type": "number", "minimum": 0 },
+    "first_usable_seconds":  { "type": "integer", "minimum": 0 },
+    "capability_ready_at_percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "proof_hash": { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+  },
+  "additionalProperties": false
+}

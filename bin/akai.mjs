@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.mjs";
-import { weightsCommand } from "../src/weightops.mjs";
+import { weightsCommand, memoryCommand } from "../src/weightops.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -36,6 +36,13 @@ function printHelp() {
   console.log("  akai weights prove    <model>           [--tasks <recipe>]");
   console.log("  akai weights lease    <model>           --duration <Nh> [--task <recipe>]");
   console.log("  akai weights teleport <akweight-uri>");
+  console.log("  akai weights synth-quant --from <model.akmodel> --to <q3|q4|q5|q8> [--verify-fidelity]");
+  console.log("  akai weights verify-fidelity <model.akmodel> [--baseline <ref>]");
+  console.log("");
+  console.log("Memory Packs (Phase 6):");
+  console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
+  console.log("  akai memory inspect <file.akmemory>");
+  console.log("  akai memory status");
   console.log("");
   console.log("Grouped compatibility commands:");
   console.log("  akai sae activate ...   -> akai sae:activate ...");
@@ -134,6 +141,12 @@ if (command === "run" && rest.includes("--weightless-first")) {
 // WeightOps — handled natively without legacy binary
 if (command === "weights" || command === "weightops") {
   weightsCommand(rest);
+  process.exit(0);
+}
+
+// Memory Packs — handled natively
+if (command === "memory") {
+  memoryCommand(rest);
   process.exit(0);
 }
 
