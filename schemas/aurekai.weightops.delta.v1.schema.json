@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.delta.v1.schema.json",
+  "title": "Aurekai WeightOps Delta Artifact",
+  "description": "Output of `akai weights diff`. Encodes patchable model-state deltas between two revisions.",
+  "type": "object",
+  "required": ["schema_version", "base", "target", "delta_levels", "changed_regions", "summary", "proofs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.delta.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "base": { "type": "string" },
+    "target": { "type": "string" },
+    "delta_levels": { "type": "array", "items": { "type": "string" } },
+    "changed_regions": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "changed_tensor_count": { "type": "number" },
+        "unchanged_tensor_pct": { "type": "number" },
+        "full_download_gb": { "type": "number" },
+        "delta_download_gb": { "type": "number" },
+        "bytes_avoided": { "type": "number" },
+        "full_download_avoided": { "type": "boolean" },
+        "first_usable_seconds": { "type": "number" },
+        "capability_ready_at_percent": { "type": "number" }
+      }
+    },
+    "proofs": {
+      "type": "object",
+      "required": ["base_root", "target_root", "delta_root"],
+      "properties": {
+        "base_root": { "type": "string" },
+        "target_root": { "type": "string" },
+        "delta_root": { "type": "string" }
+      }
+    },
+    "output_file": { "type": "string" }
+  }
+}

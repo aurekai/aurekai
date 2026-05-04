@@ -30,6 +30,9 @@ function printHelp() {
   console.log("  akai weights status   [<model>]");
   console.log("  akai weights skeleton <model>           [--out <file.akskel>]");
   console.log("  akai weights trace    --recipe <recipe> --model <model>");
+  console.log("  akai weights pull-region --trace <trace.akweighttrace> [--budget-gb <N>] [--out <file.akhydrate>]");
+  console.log("  akai weights diff     <model@old> <model@new> [--out <file.akdelta>]");
+  console.log("  akai weights patch    <model@old> <file.akdelta> [--out <model@new>]");
   console.log("  akai weights prove    <model>           [--tasks <recipe>]");
   console.log("  akai weights lease    <model>           --duration <Nh> [--task <recipe>]");
   console.log("  akai weights teleport <akweight-uri>");
