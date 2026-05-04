@@ -1085,7 +1085,7 @@ function cmdMarketplace(args) {
   const tasks = taskArg.split(",").map(t => t.trim());
 
   if (listAll) {
-    const result = {
+    const payload = {
       schema_version: "aurekai.weightops.marketplace.v1",
       generated_at:   now(),
       catalog_size:   MARKETPLACE_CATALOG.length,
@@ -1097,6 +1097,7 @@ function cmdMarketplace(args) {
         distill_features: m.distill_features,
       })),
     };
+    const result = wrapResult("marketplace", payload, { status: "PASS" });
     printJson(result);
     return;
   }
@@ -1122,7 +1123,7 @@ function cmdMarketplace(args) {
     proof_hash:     proofHash(`marketplace:${m.id}:${tasks.join(",")}:${budgetGb}`),
   }));
 
-  const result = {
+  const payload = {
     schema_version:  "aurekai.weightops.marketplace.v1",
     generated_at:    now(),
     query: { tasks, budget_gb: budgetGb, disk_gb: diskGb, quality_min: qualityMin, top_n: limitN },
@@ -1131,6 +1132,7 @@ function cmdMarketplace(args) {
     proof_hash:      proofHash(`marketplace-query:${tasks.join(",")}:${budgetGb}:${qualityMin}`),
   };
 
+  const result = wrapResult("marketplace", payload, { status: "PASS" });
   printJson(result);
   console.error(`\n  → top recommendation: ${recommendations[0]?.name ?? "none"}  (score: ${recommendations[0]?.recommendation_score})`);
 }
@@ -1209,7 +1211,7 @@ function cmdServeCdn(args) {
   const totalCost     = parseFloat(cdnPlan.reduce((s, r) => s + r.cost_usd_estimate, 0).toFixed(4));
   const avgLatency    = Math.round(cdnPlan.reduce((s, r) => s + r.latency_ms, 0) / cdnPlan.length);
 
-  const result = {
+  const payload = {
     schema_version:   "aurekai.weightops.cdn.v1",
     generated_at:     now(),
     model,
@@ -1235,6 +1237,7 @@ function cmdServeCdn(args) {
     proof_hash:       proofHash(`serve-cdn:${model}:${regions.map(r=>r.id).join(",")}:${ttlH}`),
   };
 
+  const result = wrapResult("serve-cdn", payload, { modelRef: model, status: dryRun ? "SKIP" : "PASS" });
   printJson(result);
   if (!dryRun) {
     console.error(`\n  → CDN plan active: ${cdnPlan.length} region(s)  avg latency ${avgLatency}ms  ~$${totalCost}/push`);
@@ -1296,7 +1299,7 @@ function cmdMoqStream(args) {
     proof_hash:  proofHash(`moq-chunk:${model}:${track}:${i}`),
   }));
 
-  const result = {
+  const payload = {
     schema_version:          "aurekai.weightops.moq_stream.v1",
     generated_at:            now(),
     model,
@@ -1328,6 +1331,11 @@ function cmdMoqStream(args) {
     proof_hash:              proofHash(`moq-stream:${model}:${relay}:${track}`),
   };
 
+  const result = wrapResult("moq-stream", payload, {
+    modelRef: model,
+    bytesWritten: dryRun ? 0 : bytesStreamed,
+    status: dryRun ? "SKIP" : "PASS",
+  });
   printJson(result);
   if (dryRun) {
     console.error(`\n  → dry-run: MoQ stream plan ready — ${chunkCount} chunks × ${chunkMs}ms on ${relay}`);
@@ -1395,7 +1403,7 @@ function cmdArbRoute(args) {
     budget_ok:       p.base_cost_credits <= budgetCredits,
   }));
 
-  const result = {
+  const payload = {
     schema_version:          "aurekai.weightops.arb_route.v1",
     generated_at:            now(),
     recipe,
@@ -1418,6 +1426,7 @@ function cmdArbRoute(args) {
     proof_hash:              proofHash(`arb-route:${recipe}:${selected.id}:${slaLatencyMs}:${slaQuality}`),
   };
 
+  const result = wrapResult("arb-route", payload, { status: "PASS" });
   printJson(result);
   console.error(`\n  → selected: ${selected.label}  cost: ${selected.base_cost_credits} credits  latency: ${selected.latency_ms}ms  quality: ${selected.quality_score}  saved: ${arbitrageSaved} credits`);
 }
