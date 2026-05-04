@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.proof_chain.v1.schema.json",
+  "title": "Aurekai WeightOps Proof Chain",
+  "description": "Immutable proof lineage chain connecting model artifacts, transformations, and attestations across the entire weight supply chain",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "proof_root", "chain_links"],
+  "properties": {
+    "schema_version":   { "type": "string", "const": "aurekai.weightops.proof_chain.v1" },
+    "generated_at":     { "type": "string", "format": "date-time" },
+    "model_ref":        { "type": "string", "description": "Model identifier" },
+    "proof_root":       { "type": "string", "description": "Root hash of the proof chain" },
+    "chain_name":       { "type": "string", "description": "Human-readable chain identifier" },
+    "chain_links": {
+      "type": "array",
+      "description": "Immutable proof chain links",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sequence":    { "type": "integer", "description": "Order in chain (0 = origin)" },
+          "link_type":   { "type": "string", "enum": ["origin", "transformation", "attestation", "verification"] },
+          "artifact":    { "type": "string", "description": "Artifact reference (model, SBOM, delta, etc.)" },
+          "operation":   { "type": "string", "description": "Operation applied (synth-quant, patch, distill, etc.)" },
+          "parent_hash": { "type": "string", "description": "Hash of previous link (null for origin)" },
+          "current_hash":{ "type": "string", "description": "Hash of this link (ak:sha256:...)" },
+          "timestamp":   { "type": "string", "format": "date-time" },
+          "agent":       { "type": "string", "description": "Agent/user who performed operation" },
+          "metadata":    { "type": "object" }
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "description": "Supply chain lineage summary",
+      "properties": {
+        "base_model":          { "type": "string" },
+        "transformations":     { "type": "array", "items": { "type": "string" } },
+        "attestations_count":  { "type": "integer" },
+        "verification_count":  { "type": "integer" }
+      }
+    },
+    "audit_trail": {
+      "type": "array",
+      "description": "Key events in the proof chain",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp":   { "type": "string", "format": "date-time" },
+          "event":       { "type": "string" },
+          "hash":        { "type": "string" }
+        }
+      }
+    },
+    "integrity_status": { "type": "string", "enum": ["valid", "invalid", "unverified"], "description": "Overall chain integrity" },
+    "verified_count":   { "type": "integer", "description": "Number of verified links" },
+    "total_links":      { "type": "integer", "description": "Total links in chain" },
+    "output_file":      { "type": "string", "description": "Optional: file where chain was written" }
+  },
+  "additionalProperties": false
+}
