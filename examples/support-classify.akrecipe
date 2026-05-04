@@ -1,0 +1,49 @@
+{
+  "schema_version": "aurekai.recipe.v1",
+  "name": "support-classify",
+  "description": "Classify an inbound support request into tier and category using the SAE feature routing layer only — no full weight hydration required.",
+  "weightless_first": true,
+  "model_hint": "qwen3-8b",
+  "task": "classify",
+  "preferred_execution": "sae",
+  "fallback_policy": "tiny-local",
+  "steps": [
+    {
+      "id": "ingest",
+      "op": "audio_or_text_in",
+      "input": "{{input_message}}",
+      "output": "raw_transcript"
+    },
+    {
+      "id": "normalize",
+      "op": "normalize_text",
+      "input": "raw_transcript",
+      "output": "clean_text"
+    },
+    {
+      "id": "sae_route",
+      "op": "sae_classify",
+      "model": "{{model_hint}}",
+      "input": "clean_text",
+      "output": "route_result",
+      "params": {
+        "features": ["support_tier", "category", "urgency"],
+        "weightless_first": true,
+        "use_skeleton": true
+      }
+    },
+    {
+      "id": "emit",
+      "op": "output_json",
+      "input": "route_result",
+      "schema": "aurekai.classify.result.v1"
+    }
+  ],
+  "metadata": {
+    "phase": 6,
+    "exec_ladder_target": "sae",
+    "expected_first_usable_seconds": 8,
+    "expected_full_download_avoided": true,
+    "tags": ["support", "classify", "weightless-first", "phase6"]
+  }
+}

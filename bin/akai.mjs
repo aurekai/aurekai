@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.mjs";
+import { weightsCommand } from "../src/weightops.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -15,12 +16,23 @@ function printHelp() {
   console.log("Usage:");
   console.log("  akai doctor --deep");
   console.log("  akai dashboard");
-  console.log("  akai run <recipe> [--input FILE] [--sae-audit] [--semantic-cache]");
+  console.log("  akai run <recipe> [--input FILE] [--sae-audit] [--semantic-cache] [--weightless-first]");
   console.log("  akai install --user|--system [--service]");
   console.log("  akai uninstall --user|--system [--service]");
   console.log("  akai sae:activate ...");
   console.log("  akai model:inspect ...");
   console.log("  akai fpqx:align-sae ...");
+  console.log("");
+  console.log("WeightOps (Phase 6):");
+  console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
+  console.log("  akai weights hydrate <model>            [--progressive] [--emit-readiness]");
+  console.log("  akai weights compile  <recipe>          [--out <file.akweights>]");
+  console.log("  akai weights status   [<model>]");
+  console.log("  akai weights skeleton <model>           [--out <file.akskel>]");
+  console.log("  akai weights trace    --recipe <recipe> --model <model>");
+  console.log("  akai weights prove    <model>           [--tasks <recipe>]");
+  console.log("  akai weights lease    <model>           --duration <Nh> [--task <recipe>]");
+  console.log("  akai weights teleport <akweight-uri>");
   console.log("");
   console.log("Grouped compatibility commands:");
   console.log("  akai sae activate ...   -> akai sae:activate ...");
@@ -109,6 +121,13 @@ if (rawArgs[0] === "manifest:print") {
 const args = normalizeArgs(rawArgs);
 const command = args[0];
 const rest = args.slice(1);
+
+// WeightOps — handled natively without legacy binary
+if (command === "weights" || command === "weightops") {
+  weightsCommand(rest);
+  process.exit(0);
+}
+
 const target = resolveLegacyBinary(command);
 const proc = spawnSync(target.bin, [...target.args, ...rest], {
   stdio: "inherit",

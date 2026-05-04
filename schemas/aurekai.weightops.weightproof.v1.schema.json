@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.weightproof.v1.schema.json",
+  "title": "Aurekai WeightOps Weight Proof Bundle",
+  "description": "Output of `akai weights prove`. A portable proof bundle that verifies model provenance, compression fidelity, capability coverage, and runtime compatibility — without requiring the full weight tensors.",
+  "type": "object",
+  "required": ["schema_version", "model", "proof_bundle"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.proof.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "model":          { "type": "string" },
+    "recipe":         { "type": "string" },
+    "proof_bundle": {
+      "type": "object",
+      "required": ["source_proof", "chunk_proof", "capability_proof"],
+      "additionalProperties": false,
+      "properties": {
+        "source_proof":         { "type": "string", "description": "Verifiable hash of original weight source commit / release." },
+        "chunk_proof":          { "type": "string", "description": "Merkle root of all weight chunks." },
+        "license_proof":        { "type": "string", "description": "Hash of model license attestation." },
+        "eval_proof":           { "type": "string", "description": "Hash of benchmark eval results at reference checkpoint." },
+        "capability_proof":     { "type": "string", "description": "Verifiable hash of capability coverage for the given recipe." },
+        "compression_proof":    { "type": "string", "description": "Proof of lossless or quantization-bounded compression." },
+        "security_proof":       { "type": "string", "description": "Proof of no-harmful-output alignment scan." },
+        "runtime_compat_proof": { "type": "string", "description": "Proof of Aurekai runtime ABI compatibility." }
+      }
+    },
+    "verified_chunks_pct":  { "type": "number", "minimum": 0, "maximum": 100 },
+    "compatible_recipes":   { "type": "array", "items": { "type": "string" } },
+    "output_file":          { "type": "string" }
+  }
+}
