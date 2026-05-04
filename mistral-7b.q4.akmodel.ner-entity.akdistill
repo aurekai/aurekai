@@ -1,0 +1,34 @@
+{
+  "schema_version": "aurekai.weightops.distill_micro.v1",
+  "generated_at": "2026-05-04T22:05:57.073Z",
+  "source_model": "mistral-7b.q4.akmodel",
+  "feature_id": "ner-entity",
+  "feature_family": "extraction",
+  "target_model": "pipeline-v2.akmodel",
+  "output_file": "mistral-7b.q4.akmodel.ner-entity.akdistill",
+  "distilled_artifact": {
+    "sae_cluster": "ner.entity",
+    "source_layers": [
+      12,
+      16
+    ],
+    "feature_dim": 96,
+    "vector_format": "fp16",
+    "routing_compatible": true,
+    "runtime_footprint_mb": 2.6
+  },
+  "deployment": {
+    "standalone": true,
+    "embed_in_pipeline": true,
+    "supports_streaming": false,
+    "min_context_tokens": 32,
+    "max_context_tokens": 4096
+  },
+  "size_mb": 2.6,
+  "full_model_avoided": true,
+  "bytes_avoided": 8587208294,
+  "first_usable_seconds": 2,
+  "capability_ready_at_percent": 100,
+  "fidelity_vs_full": 0.93,
+  "proof_hash": "ak:sha256:29ff82eecb820d62f2d19d520259c129"
+}

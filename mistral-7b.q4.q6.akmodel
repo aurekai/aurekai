@@ -1,0 +1,27 @@
+{
+  "schema_version": "aurekai.weightops.synth_quant.v1",
+  "generated_at": "2026-05-04T21:56:35.712Z",
+  "source_model": "mistral-7b.q4.akmodel",
+  "source_quant": "q4",
+  "target_quant": "q6",
+  "output_file": "mistral-7b.q4.q6.akmodel",
+  "synthesis_method": "multi-step ladder synthesis",
+  "full_download_avoided": true,
+  "bytes_avoided": 0,
+  "source_size_gb": 3.2,
+  "target_size_gb": 5,
+  "first_usable_seconds": 12,
+  "capability_ready_at_percent": 41,
+  "fidelity_score": 0.98,
+  "fidelity_report": {
+    "source_quant": "q4",
+    "target_quant": "q6",
+    "fidelity_score": 0.98,
+    "perplexity_delta": 0.064,
+    "benchmark_pass": true,
+    "verified": true,
+    "benchmark_suite": "aurekai.fidelity.v1",
+    "proof_hash": "ak:sha256:cd5b452b4498b69b005ed2cf9dae1708"
+  },
+  "proof_hash": "ak:sha256:07fc7ff5182669dfdcd1c1bf5690d182"
+}

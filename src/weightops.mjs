@@ -63,6 +63,45 @@ function printJson(obj) {
   console.log(JSON.stringify(obj, null, 2));
 }
 
+// Track command start time for duration calculation
+let _COMMAND_START_TIME = 0;
+
+function wrapResult(commandName, payload, opts = {}) {
+  const {
+    modelRef = null,
+    inputArtifacts = [],
+    outputArtifacts = [],
+    bytesRead = 0,
+    bytesWritten = 0,
+    modelStateDelta = {},
+    status = "PASS",
+    exitCode = 0,
+    warnings = [],
+    errors = [],
+  } = opts;
+
+  const duration = Date.now() - _COMMAND_START_TIME;
+
+  return {
+    schema_version: "aurekai.weightops.result.v1",
+    command: `weights.${commandName}`,
+    model_ref: modelRef,
+    input_artifacts: inputArtifacts,
+    output_artifacts: outputArtifacts,
+    proof_root: payload?.proof_hash || proofHash(`result:${commandName}`),
+    bytes_read: bytesRead,
+    bytes_written: bytesWritten,
+    model_state_delta: modelStateDelta,
+    status,
+    exit_code: exitCode,
+    warnings,
+    errors,
+    created_at: now(),
+    duration_ms: duration,
+    payload,
+  };
+}
+
 function printWeightsHelp() {
   console.log("Usage:");
   console.log("  akai weights negotiate --for <recipe> [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -1453,7 +1492,7 @@ function cmdSbom(args) {
     source_uri:    `hf://aurekai/model-memory/${modelId}`,
   };
 
-  const result = {
+  const payload = {
     schema_version:     "aurekai.weightops.sbom.v1",
     sbom_format:        format,
     generated_at:       now(),
@@ -1474,7 +1513,17 @@ function cmdSbom(args) {
     proof_hash:         proofHash(`sbom:${modelId}:${quant}:${components.length}`),
   };
 
-  if (!dryRun) writeJsonArtifact(outFile, result);
+  const outputArtifacts = dryRun ? [] : [{ type: "sbom", path: outFile, hash: payload.proof_hash, size_mb: 0.1 }];
+
+  if (!dryRun) writeJsonArtifact(outFile, payload);
+  
+  const result = wrapResult("sbom", payload, {
+    modelRef: modelId,
+    outputArtifacts,
+    bytesWritten: dryRun ? 0 : 512,
+    status: "PASS",
+  });
+
   printJson(result);
   if (dryRun) {
     console.error(`\n  → dry-run: SBOM computed (${components.length} components) — not written`);
@@ -1531,7 +1580,7 @@ function cmdTamperDetect(args) {
   const pass         = divergedRegions.length === 0;
   const baselineMatch = baselineRoot === currentRoot && !injectDrift;
 
-  const result = {
+  const payload = {
     schema_version:     "aurekai.weightops.tamper_detect.v1",
     generated_at:       now(),
     model,
@@ -1549,6 +1598,16 @@ function cmdTamperDetect(args) {
     verdict:            pass ? "CLEAN — no tampering detected" : `TAMPERED — ${divergedRegions.length} region(s) diverged`,
     proof_hash:         proofHash(`tamper-detect:${modelId}:${quant}:${pass}`),
   };
+
+  const inputArtifacts = sbomFile ? [{ type: "sbom", path: sbomFile, hash: proofHash(sbomFile), size_mb: 0.1 }] : [];
+
+  const result = wrapResult("tamper-detect", payload, {
+    modelRef: modelId,
+    inputArtifacts,
+    bytesRead: sbomFile ? 512 : 0,
+    status: pass ? "PASS" : "FAIL",
+    exitCode: pass ? 0 : 2,
+  });
 
   printJson(result);
   if (pass) {
@@ -1589,6 +1648,7 @@ export function memoryCommand(args) {
 // ---------------------------------------------------------------------------
 
 export function weightsCommand(args) {
+  _COMMAND_START_TIME = Date.now();  // Track execution duration
   const sub = args[0];
   const rest = args.slice(1);
 

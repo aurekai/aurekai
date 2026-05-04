@@ -1,0 +1,120 @@
+{
+  "schema_version": "aurekai.weightops.sbom.v1",
+  "sbom_format": "aurekai-sbom-v1",
+  "generated_at": "2026-05-04T22:40:00.403Z",
+  "model": "llama-8b.q4.akmodel",
+  "model_id": "llama-8b.q4.akmodel",
+  "quant": "q4",
+  "size_gb": 3.2,
+  "dry_run": false,
+  "license": "Llama Community License",
+  "component_count": 8,
+  "components": [
+    {
+      "bom_ref": "llama-8b.q4.akmodel.tokenizer.0",
+      "type": "tensor-region",
+      "name": "tokenizer",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:4c618b4e9f1573e7d67b2f4d2d751351",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.embed_tokens.1",
+      "type": "tensor-region",
+      "name": "embed_tokens",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:6224f6f9501ba41e01c6c8973511f5ac",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.lm_head.2",
+      "type": "tensor-region",
+      "name": "lm_head",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:39973db1cc369da2719918218423388b",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.layers.attention.3",
+      "type": "tensor-region",
+      "name": "layers.attention",
+      "version": "q4",
+      "size_mb": 1245.2,
+      "content_hash": "ak:sha256:bfe5d85228172f7179b2e89b59eaba6e",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.layers.mlp.4",
+      "type": "tensor-region",
+      "name": "layers.mlp",
+      "version": "q4",
+      "size_mb": 917.5,
+      "content_hash": "ak:sha256:d45ae0e92ebf92fdcd28cc687a0e6819",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.layers.norm.5",
+      "type": "tensor-region",
+      "name": "layers.norm",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:cf285edc792d3566be0256f753d90c7b",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.sae_features.6",
+      "type": "tensor-region",
+      "name": "sae_features",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:eeff652f1e3e7017ed0349073e38a11e",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "llama-8b.q4.akmodel.adapter_slots.7",
+      "type": "tensor-region",
+      "name": "adapter_slots",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:a8ed38e12a1021c12cdcd7786dc150ee",
+      "license": "Llama Community License",
+      "supplier": "hf://aurekai/model-memory/llama-8b.q4.akmodel",
+      "verified": true
+    }
+  ],
+  "lineage": {
+    "base_model": "llama-8b.q4.akmodel",
+    "quant_method": "synth-quant-ladder (q4)",
+    "sae_version": "aurekai.sae.v1",
+    "adapter_slots": [
+      "task-adapter",
+      "persona-adapter"
+    ],
+    "distill_chain": [],
+    "proof_policy": "chunk+capability",
+    "source_uri": "hf://aurekai/model-memory/llama-8b.q4.akmodel"
+  },
+  "checksums": {
+    "model_root_hash": "ak:sha256:70723c390c5ebae7290bf1be7106c762",
+    "sbom_hash": "ak:sha256:243359b4670e189e285206bb3ceceaae"
+  },
+  "output_file": "llama-8b.q4.aksbom",
+  "proof_hash": "ak:sha256:769b1108fb228114f914335e68ee3ffb"
+}

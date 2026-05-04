@@ -4,9 +4,9 @@
 
 # Aurekai
 
-**Aurekai is the operating fabric for intelligent work.**
+**Aurekai is the operating fabric for intelligent work, built on the Akai native runtime with compatibility for the Bonfyre runtime lineage.**
 
-Aurekai is not a wrapper around LLMs. Aurekai is a native AI operations runtime exposed through MCP, LLM tool calling, workflow engines, agent frameworks, data systems, CI/CD, infrastructure templates, and IDEs — with real commands for media, models, memory, proof, commerce, telephony, network events, reasoning, publishing, and client delivery.
+Aurekai is not a wrapper around LLMs. It is a native AI operations runtime exposed through MCP, LLM tool calling, workflow engines, agent frameworks, data systems, CI/CD, infrastructure templates, and IDEs, with real commands for media, models, memory, proof, commerce, telephony, network events, reasoning, publishing, and client delivery.
 
 Every run emits proof, lineage, metering, cache, feature, and artifact metadata.
 
@@ -60,6 +60,14 @@ Aurekai maintains active integration surfaces across LLM providers, agent framew
 Each integration is a **host-native adapter over the Akai runtime** — not a wrapper. Every integration declares which capability families it exposes, which native Akai commands it binds, which platform-native primitives it exploits, and which proof/lineage/metering artifacts it emits.
 
 See [`registry/integrations.json`](./registry/integrations.json) and [`ECOSYSTEM_NAMES.md`](./ECOSYSTEM_NAMES.md) for the full matrix.
+
+## Deep integrations
+
+Aurekai integrations are capability-native adapters over the Akai runtime, not thin shell wrappers.
+
+See:
+- [`registry/integrations.json`](./registry/integrations.json)
+- [`registry/aurekai.capabilities.json`](./registry/aurekai.capabilities.json)
 
 ### LLM providers
 

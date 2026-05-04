@@ -1,0 +1,120 @@
+{
+  "schema_version": "aurekai.weightops.sbom.v1",
+  "sbom_format": "aurekai-sbom-v1",
+  "generated_at": "2026-05-04T22:40:00.472Z",
+  "model": "phi-3-mini.q4.akmodel",
+  "model_id": "phi-3-mini.q4.akmodel",
+  "quant": "q4",
+  "size_gb": 3.2,
+  "dry_run": false,
+  "license": "MIT",
+  "component_count": 8,
+  "components": [
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.tokenizer.0",
+      "type": "tensor-region",
+      "name": "tokenizer",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:1178a7d2669ee7df76c10f1dad4a11f7",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.embed_tokens.1",
+      "type": "tensor-region",
+      "name": "embed_tokens",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:7497b5f3ec41595478e4fbeddf1d92f1",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.lm_head.2",
+      "type": "tensor-region",
+      "name": "lm_head",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:de76deddfeb9bc9d805bb5216fd11405",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.layers.attention.3",
+      "type": "tensor-region",
+      "name": "layers.attention",
+      "version": "q4",
+      "size_mb": 1245.2,
+      "content_hash": "ak:sha256:827339233e2c621534b221f2aed1e810",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.layers.mlp.4",
+      "type": "tensor-region",
+      "name": "layers.mlp",
+      "version": "q4",
+      "size_mb": 917.5,
+      "content_hash": "ak:sha256:a0fd5938a1023b4798e9288181a307bd",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.layers.norm.5",
+      "type": "tensor-region",
+      "name": "layers.norm",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:2da7a5dedc1859f9f88ad659347d0189",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.sae_features.6",
+      "type": "tensor-region",
+      "name": "sae_features",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:9777720647d01f70f792be9b531028d6",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "phi-3-mini.q4.akmodel.adapter_slots.7",
+      "type": "tensor-region",
+      "name": "adapter_slots",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:20e52ba6e762d609af486c9e8bb8ee5e",
+      "license": "MIT",
+      "supplier": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel",
+      "verified": true
+    }
+  ],
+  "lineage": {
+    "base_model": "phi-3-mini.q4.akmodel",
+    "quant_method": "synth-quant-ladder (q4)",
+    "sae_version": "aurekai.sae.v1",
+    "adapter_slots": [
+      "task-adapter",
+      "persona-adapter"
+    ],
+    "distill_chain": [],
+    "proof_policy": "chunk+capability",
+    "source_uri": "hf://aurekai/model-memory/phi-3-mini.q4.akmodel"
+  },
+  "checksums": {
+    "model_root_hash": "ak:sha256:ad45c834f5d2862a36b2cde3bb5a5783",
+    "sbom_hash": "ak:sha256:81758ed61c21b2302c00c526e9bd4ef6"
+  },
+  "output_file": "phi-3-mini.q4.aksbom",
+  "proof_hash": "ak:sha256:26644327551c544abed5c0680462f53d"
+}

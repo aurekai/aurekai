@@ -1,0 +1,27 @@
+{
+  "schema_version": "aurekai.weightops.synth_quant.v1",
+  "generated_at": "2026-05-04T21:56:35.771Z",
+  "source_model": "llama-8b.q8.akmodel",
+  "source_quant": "q8",
+  "target_quant": "q4",
+  "output_file": "llama-8b.q8.q4.akmodel",
+  "synthesis_method": "quantize-down (tensor truncation + rounding)",
+  "full_download_avoided": true,
+  "bytes_avoided": 3435973837,
+  "source_size_gb": 6.4,
+  "target_size_gb": 3.2,
+  "first_usable_seconds": 12,
+  "capability_ready_at_percent": 41,
+  "fidelity_score": 0.8,
+  "fidelity_report": {
+    "source_quant": "q8",
+    "target_quant": "q4",
+    "fidelity_score": 0.8,
+    "perplexity_delta": 0.64,
+    "benchmark_pass": false,
+    "verified": false,
+    "benchmark_suite": "aurekai.fidelity.v1",
+    "proof_hash": "ak:sha256:70ddc4113813428df41ed19475c17f87"
+  },
+  "proof_hash": "ak:sha256:0182349f4d2419286b21e9ade714da66"
+}
