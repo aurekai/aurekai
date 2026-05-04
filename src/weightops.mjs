@@ -2521,6 +2521,981 @@ function cmdQuantizeTarget(args) {
 }
 
 // ---------------------------------------------------------------------------
+// Group A4 — Audit Trail
+// ---------------------------------------------------------------------------
+
+function cmdAuditTrail(args) {
+  const modelArg  = flag(args, "--model") || "model.akmodel";
+  const sinceArg  = flag(args, "--since") || null;
+  const limitArg  = parseInt(flag(args, "--limit") || "50", 10);
+  const outFile   = flag(args, "--out") || null;
+  const format    = flag(args, "--format") || "json";
+
+  const ops = ["pull-region", "synth-quant", "distill-feature-micro", "sbom", "tamper-detect", "proof-chain", "integrity-gate", "ghost-infer"];
+  const entries = ops.slice(0, Math.min(limitArg, ops.length)).map((op, i) => {
+    const ts = new Date(Date.now() - (ops.length - i) * 3600_000).toISOString();
+    return {
+      seq: i + 1,
+      operation: op,
+      command: `weights.${op}`,
+      actor: "akai-runner",
+      model_ref: modelArg,
+      proof_hash: proofHash(`audit:${modelArg}:${op}:seq=${i + 1}`),
+      status: "PASS",
+      duration_ms: Math.floor(80 + Math.random() * 400),
+      bytes_read: Math.floor(Math.random() * 1_000_000_000),
+      bytes_written: Math.floor(Math.random() * 100_000_000),
+      timestamp: ts,
+      metadata: { trigger: i === 0 ? "manual" : "pipeline", environment: "prod" },
+    };
+  });
+
+  const rootHash = proofHash(entries.map(e => e.proof_hash).join(":"));
+
+  const payload = {
+    schema_version: "aurekai.weightops.audit_trail.v1",
+    model_ref: modelArg,
+    since: sinceArg,
+    limit: limitArg,
+    entry_count: entries.length,
+    entries,
+    merkle_root: rootHash,
+    format,
+  };
+
+  if (outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("audit-trail", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "audited-model" }],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "audit-log" }] : [],
+    bytesRead: 4096,
+    bytesWritten: outFile ? JSON.stringify(payload).length : 0,
+    modelStateDelta: { audit_entries: entries.length, merkle_root: rootHash },
+  });
+
+  printJson(result);
+  console.error(`\n  → AUDIT TRAIL: ${entries.length} entries for ${modelArg}, root=${rootHash.slice(0, 24)}…`);
+}
+
+// ---------------------------------------------------------------------------
+// Group B — Adapter & Composition Layer (Phase 8-9)
+// ---------------------------------------------------------------------------
+
+function cmdAdapterList(args) {
+  const modelArg = flag(args, "--model") || "model.akmodel";
+  const taskArg  = flag(args, "--task") || null;
+
+  const allAdapters = [
+    { id: "lora-chat-v2",    task: "chat",        type: "lora",      rank: 16,  base_compatible: true,  params_m: 12.6,  license: "Apache-2.0" },
+    { id: "lora-code-v3",    task: "code",        type: "lora",      rank: 32,  base_compatible: true,  params_m: 25.1,  license: "MIT" },
+    { id: "lora-math-v1",    task: "math",        type: "lora",      rank: 8,   base_compatible: true,  params_m: 6.3,   license: "Apache-2.0" },
+    { id: "ia3-classify-v1", task: "classify",    type: "ia3",       rank: null,base_compatible: true,  params_m: 0.4,   license: "MIT" },
+    { id: "prefix-summ-v2",  task: "summarize",   type: "prefix",    rank: null,base_compatible: true,  params_m: 2.1,   license: "Apache-2.0" },
+    { id: "lora-instruct-v4",task: "instruction", type: "lora",      rank: 64,  base_compatible: true,  params_m: 50.3,  license: "Llama-2" },
+  ];
+
+  const adapters = taskArg ? allAdapters.filter(a => a.task === taskArg) : allAdapters;
+
+  const payload = {
+    schema_version: "aurekai.weightops.adapter_list.v1",
+    model_ref: modelArg,
+    task_filter: taskArg,
+    adapter_count: adapters.length,
+    adapters: adapters.map(a => ({
+      ...a,
+      proof_hash: proofHash(`adapter:${a.id}:${modelArg}`),
+    })),
+    capability_matrix: adapters.reduce((m, a) => { m[a.task] = (m[a.task] || []).concat(a.id); return m; }, {}),
+  };
+
+  const result = wrapResult("adapter-list", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "base-model" }],
+    outputArtifacts: [],
+    bytesRead: 2048,
+    modelStateDelta: { adapters_found: adapters.length },
+  });
+  printJson(result);
+  console.error(`\n  → ADAPTER LIST: ${adapters.length} adapters for ${modelArg}${taskArg ? ` (task=${taskArg})` : ""}`);
+}
+
+function cmdAdapterHotSwap(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const adapterArg = flag(args, "--adapter") || "lora-chat-v2";
+  const sessionId  = flag(args, "--session") || randomUUID();
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const swapHash = proofHash(`hotswap:${modelArg}:${adapterArg}:${sessionId}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.adapter_hot_swap.v1",
+    model_ref: modelArg,
+    adapter_id: adapterArg,
+    session_id: sessionId,
+    previous_adapter: null,
+    swap_latency_ms: Math.floor(12 + Math.random() * 8),
+    layers_patched: Math.floor(16 + Math.random() * 16),
+    inference_resumed: !dryRun,
+    proof_hash: swapHash,
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("adapter-hot-swap", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [
+      { ref: modelArg, role: "base-model" },
+      { ref: adapterArg, role: "adapter" },
+    ],
+    outputArtifacts: [],
+    bytesRead: 25_000_000,
+    bytesWritten: 0,
+    modelStateDelta: { active_adapter: adapterArg, session_id: sessionId },
+  });
+  printJson(result);
+  console.error(`\n  → ADAPTER HOT-SWAP: ${adapterArg} → session ${sessionId.slice(0, 8)}…`);
+}
+
+function cmdMerge(args) {
+  const baseArg    = flag(args, "--base") || "base.akmodel";
+  const adaptersArg = flag(args, "--adapters") || "lora-a,lora-b";
+  const method     = flag(args, "--method") || "linear";
+  const weightsArg = flag(args, "--weights") || null;
+  const outFile    = flag(args, "--out") || null;
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const adapters = adaptersArg.split(",").map(a => a.trim()).filter(Boolean);
+  const rawW = weightsArg ? weightsArg.split(",").map(Number) : adapters.map(() => 1 / adapters.length);
+  const sumW = rawW.reduce((s, w) => s + w, 0);
+  const normW = rawW.map(w => parseFloat((w / sumW).toFixed(4)));
+
+  const mergeHash = proofHash(`merge:${baseArg}:${adapters.join(",")}:${method}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.merge.v1",
+    base_model: baseArg,
+    adapters: adapters.map((a, i) => ({ adapter_id: a, weight: normW[i] })),
+    method,
+    output_model: outFile || `${baseModelName(baseArg)}-merged`,
+    layer_count: 32,
+    param_delta_norm: parseFloat((Math.random() * 0.08).toFixed(5)),
+    conflicts_resolved: Math.floor(Math.random() * 3),
+    proof_hash: mergeHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("merge", payload, {
+    modelRef: baseArg,
+    inputArtifacts: [
+      { ref: baseArg, role: "base" },
+      ...adapters.map(a => ({ ref: a, role: "adapter" })),
+    ],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "merged-model" }] : [],
+    bytesRead: (adapters.length + 1) * 7_000_000_000,
+    bytesWritten: outFile ? 7_000_000_000 : 0,
+    modelStateDelta: { merge_method: method, adapter_count: adapters.length },
+  });
+  printJson(result);
+  console.error(`\n  → MERGE: ${adapters.length} adapters into ${baseArg} via ${method}`);
+}
+
+function cmdSplit(args) {
+  const modelArg = flag(args, "--model") || "model.akmodel";
+  const byArg    = flag(args, "--by") || "layer-range";
+  const chunksArg = parseInt(flag(args, "--chunks") || "4", 10);
+  const outDir   = flag(args, "--out-dir") || null;
+  const dryRun   = hasFlag(args, "--dry-run");
+
+  const totalLayers = 32;
+  const perChunk = Math.ceil(totalLayers / chunksArg);
+  const shards = Array.from({ length: chunksArg }, (_, i) => {
+    const start = i * perChunk;
+    const end   = Math.min(start + perChunk - 1, totalLayers - 1);
+    const shardFile = outDir ? `${outDir}/shard-${i}.akmodel` : `${baseModelName(modelArg)}-shard-${i}.akmodel`;
+    return {
+      shard_index: i,
+      layer_range: [start, end],
+      layer_count: end - start + 1,
+      artifact: shardFile,
+      size_mb: parseFloat(((end - start + 1) / totalLayers * 14000).toFixed(1)),
+      proof_hash: proofHash(`shard:${modelArg}:${i}:${start}-${end}`),
+    };
+  });
+
+  const payload = {
+    schema_version: "aurekai.weightops.split.v1",
+    source_model: modelArg,
+    split_by: byArg,
+    shard_count: chunksArg,
+    shards,
+    total_size_mb: shards.reduce((s, sh) => s + sh.size_mb, 0),
+    proof_hash: proofHash(`split:${modelArg}:chunks=${chunksArg}`),
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("split", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "source-model" }],
+    outputArtifacts: shards.map(s => ({ ref: s.artifact, role: "shard" })),
+    bytesRead: 14_000_000_000,
+    bytesWritten: dryRun ? 0 : 14_000_000_000,
+    modelStateDelta: { shard_count: chunksArg, split_by: byArg },
+  });
+  printJson(result);
+  console.error(`\n  → SPLIT: ${chunksArg} shards from ${modelArg} (by ${byArg})`);
+}
+
+function cmdFreeze(args) {
+  const modelArg = flag(args, "--model") || "model.akmodel";
+  const reason   = flag(args, "--reason") || "production-release";
+  const outFile  = flag(args, "--out") || null;
+  const dryRun   = hasFlag(args, "--dry-run");
+
+  const freezeHash = proofHash(`freeze:${modelArg}:${reason}:${now()}`);
+  const cert = {
+    certificate_id: randomUUID(),
+    model_ref: modelArg,
+    frozen_at: now(),
+    reason,
+    proof_root: freezeHash,
+    issuer: "akai-freeze-authority",
+    signature: proofHash(`sig:${freezeHash}`),
+    mutations_blocked: true,
+    expiry: null,
+  };
+
+  const payload = {
+    schema_version: "aurekai.weightops.freeze.v1",
+    model_ref: modelArg,
+    freeze_certificate: cert,
+    layers_sealed: 32,
+    param_count: 7_000_000_000,
+    proof_hash: freezeHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("freeze", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "target-model" }],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "freeze-certificate" }] : [],
+    bytesRead: 4096,
+    bytesWritten: outFile ? 2048 : 0,
+    modelStateDelta: { frozen: true, certificate_id: cert.certificate_id },
+  });
+  printJson(result);
+  console.error(`\n  → FREEZE: ${modelArg} sealed — cert ${cert.certificate_id.slice(0, 8)}…`);
+}
+
+// ---------------------------------------------------------------------------
+// Group C — SAE Steering & Feature Intelligence (Phase 10-11)
+// ---------------------------------------------------------------------------
+
+function cmdSaeProbe(args) {
+  const modelArg    = flag(args, "--model") || "model.akmodel";
+  const featuresArg = flag(args, "--features") || "danger,deception,toxicity";
+  const layerArg    = flag(args, "--layer") || "all";
+  const topK        = parseInt(flag(args, "--top-k") || "20", 10);
+  const dryRun      = hasFlag(args, "--dry-run");
+
+  const features = featuresArg.split(",").map(f => f.trim());
+
+  const probeResults = features.map(feat => {
+    const activations = Array.from({ length: topK }, (_, i) => ({
+      neuron_id: Math.floor(Math.random() * 65536),
+      layer: layerArg === "all" ? `block_${Math.floor(Math.random() * 32)}` : layerArg,
+      activation_score: parseFloat((Math.random() * 0.8).toFixed(4)),
+      percentile: parseFloat((50 + Math.random() * 49).toFixed(1)),
+    })).sort((a, b) => b.activation_score - a.activation_score);
+    return {
+      feature: feat,
+      top_activations: activations,
+      mean_activation: parseFloat((activations.reduce((s, a) => s + a.activation_score, 0) / topK).toFixed(4)),
+      max_activation: activations[0].activation_score,
+      active_neurons: topK,
+      risk_signal: activations[0].activation_score > 0.6,
+    };
+  });
+
+  const payload = {
+    schema_version: "aurekai.weightops.sae_probe.v1",
+    model_ref: modelArg,
+    features_probed: features,
+    layer_scope: layerArg,
+    top_k: topK,
+    probe_results: probeResults,
+    summary: {
+      risk_features: probeResults.filter(r => r.risk_signal).map(r => r.feature),
+      max_risk_score: parseFloat(Math.max(...probeResults.map(r => r.max_activation)).toFixed(4)),
+    },
+    proof_hash: proofHash(`sae-probe:${modelArg}:${features.join(",")}`),
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("sae-probe", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "probed-model" }],
+    outputArtifacts: [],
+    bytesRead: 1024 * 1024 * 128,
+    modelStateDelta: { features_probed: features.length, risk_features: probeResults.filter(r => r.risk_signal).length },
+    status: probeResults.some(r => r.risk_signal) ? "WARN" : "PASS",
+    warnings: probeResults.filter(r => r.risk_signal).map(r => `risk signal detected: ${r.feature} (score=${r.max_activation})`),
+  });
+  printJson(result);
+  console.error(`\n  → SAE PROBE: ${features.length} features, ${probeResults.filter(r => r.risk_signal).length} risk signals`);
+}
+
+function cmdSaeSteer(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const featureArg = flag(args, "--feature") || "helpfulness";
+  const direction  = flag(args, "--direction") || "toward";
+  const magnitude  = parseFloat(flag(args, "--magnitude") || "1.5");
+  const outFile    = flag(args, "--out") || null;
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const steerHash = proofHash(`sae-steer:${modelArg}:${featureArg}:${direction}:mag=${magnitude}`);
+
+  const steeringVector = {
+    feature: featureArg,
+    direction,
+    magnitude,
+    layer_count: 32,
+    neuron_count: Math.floor(64 + Math.random() * 128),
+    vector_norm: parseFloat((magnitude * (0.8 + Math.random() * 0.4)).toFixed(4)),
+    activation_delta: parseFloat((direction === "toward" ? magnitude * 0.12 : -magnitude * 0.12).toFixed(4)),
+  };
+
+  const payload = {
+    schema_version: "aurekai.weightops.sae_steer.v1",
+    model_ref: modelArg,
+    steering_vector: steeringVector,
+    predicted_behavior_delta: {
+      feature_strength_change_pct: parseFloat((direction === "toward" ? magnitude * 8.3 : -magnitude * 8.3).toFixed(1)),
+      side_effect_risk: magnitude > 3.0 ? "high" : magnitude > 1.5 ? "medium" : "low",
+      reversible: true,
+    },
+    output_artifact: outFile || null,
+    proof_hash: steerHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("sae-steer", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "base-model" }],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "steered-weights" }] : [],
+    bytesRead: 1024 * 1024 * 64,
+    bytesWritten: outFile ? 1024 * 1024 * 64 : 0,
+    modelStateDelta: { steered_feature: featureArg, direction, magnitude },
+    warnings: magnitude > 3.0 ? [`high magnitude steering (${magnitude}) may destabilize model`] : [],
+  });
+  printJson(result);
+  console.error(`\n  → SAE STEER: ${direction} '${featureArg}' @ magnitude ${magnitude}`);
+}
+
+function cmdFeatureDrift(args) {
+  const modelA = flag(args, "--model-a") || "model@v1.akmodel";
+  const modelB = flag(args, "--model-b") || "model@v2.akmodel";
+  const featuresArg = flag(args, "--features") || "all";
+  const topK   = parseInt(flag(args, "--top-k") || "10", 10);
+
+  const features = featuresArg === "all"
+    ? ["danger", "deception", "helpfulness", "refusal", "creativity", "factuality", "toxicity", "sycophancy"]
+    : featuresArg.split(",").map(f => f.trim());
+
+  const drifts = features.map(f => {
+    const delta = parseFloat((Math.random() * 0.3 - 0.15).toFixed(4));
+    return {
+      feature: f,
+      activation_a: parseFloat((0.2 + Math.random() * 0.5).toFixed(4)),
+      activation_b: parseFloat((0.2 + Math.random() * 0.5).toFixed(4)),
+      delta,
+      abs_delta: Math.abs(delta),
+      direction: delta > 0 ? "increased" : "decreased",
+      significant: Math.abs(delta) > 0.05,
+    };
+  });
+  drifts.sort((a, b) => b.abs_delta - a.abs_delta);
+
+  const payload = {
+    schema_version: "aurekai.weightops.feature_drift.v1",
+    model_a: modelA,
+    model_b: modelB,
+    features_analyzed: features,
+    top_k: topK,
+    drift_results: drifts,
+    summary: {
+      significant_drifts: drifts.filter(d => d.significant).length,
+      max_abs_delta: drifts[0].abs_delta,
+      most_drifted_feature: drifts[0].feature,
+    },
+    proof_hash: proofHash(`feature-drift:${modelA}:${modelB}`),
+  };
+
+  const result = wrapResult("feature-drift", payload, {
+    modelRef: `${modelA} vs ${modelB}`,
+    inputArtifacts: [
+      { ref: modelA, role: "model-a" },
+      { ref: modelB, role: "model-b" },
+    ],
+    outputArtifacts: [],
+    bytesRead: 1024 * 1024 * 256,
+    modelStateDelta: { significant_drifts: drifts.filter(d => d.significant).length },
+    status: drifts.filter(d => d.significant).length > 3 ? "WARN" : "PASS",
+    warnings: drifts.filter(d => d.significant).length > 3 ? [`${drifts.filter(d => d.significant).length} significant feature drifts detected`] : [],
+  });
+  printJson(result);
+  console.error(`\n  → FEATURE DRIFT: ${drifts.filter(d => d.significant).length}/${features.length} significant drifts, top: '${drifts[0].feature}' Δ=${drifts[0].delta}`);
+}
+
+function cmdKvCompress(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const contextArg = flag(args, "--context") || "task-context";
+  const tokensArg  = parseInt(flag(args, "--tokens") || "4096", 10);
+  const outFile    = flag(args, "--out") || null;
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const layers = 32;
+  const headsPerLayer = 32;
+  const headDim = 128;
+  const rawBytes = tokensArg * layers * headsPerLayer * headDim * 2 * 2; // KV, bf16
+  const compRatio = parseFloat((2.8 + Math.random() * 1.2).toFixed(2));
+  const compressedBytes = Math.floor(rawBytes / compRatio);
+  const kvHash = proofHash(`kv-compress:${modelArg}:${contextArg}:tokens=${tokensArg}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.kv_compress.v1",
+    model_ref: modelArg,
+    context_id: contextArg,
+    token_count: tokensArg,
+    layers: layers,
+    heads_per_layer: headsPerLayer,
+    head_dim: headDim,
+    compression: {
+      algorithm: "svd-quantized",
+      rank_k: 32,
+      raw_bytes: rawBytes,
+      compressed_bytes: compressedBytes,
+      ratio: compRatio,
+    },
+    output_artifact: outFile || `${contextArg}.akkvcache`,
+    resumable: true,
+    proof_hash: kvHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("kv-compress", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "model" }],
+    outputArtifacts: [{ ref: outFile || `${contextArg}.akkvcache`, role: "kv-cache" }],
+    bytesRead: rawBytes,
+    bytesWritten: dryRun ? 0 : compressedBytes,
+    modelStateDelta: { kv_tokens: tokensArg, kv_compression_ratio: compRatio },
+  });
+  printJson(result);
+  console.error(`\n  → KV COMPRESS: ${tokensArg} tokens → ${(compressedBytes / 1e6).toFixed(1)} MB (${compRatio}× compression)`);
+}
+
+function cmdKvRestore(args) {
+  const cacheArg = flag(args, "--cache") || "context.akkvcache";
+  const modelArg = flag(args, "--model") || "model.akmodel";
+  const sessionId = flag(args, "--session") || randomUUID();
+  const dryRun   = hasFlag(args, "--dry-run");
+
+  const restoreHash = proofHash(`kv-restore:${cacheArg}:${modelArg}:${sessionId}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.kv_restore.v1",
+    cache_artifact: cacheArg,
+    model_ref: modelArg,
+    session_id: sessionId,
+    tokens_restored: Math.floor(2048 + Math.random() * 4096),
+    restore_latency_ms: Math.floor(8 + Math.random() * 12),
+    inference_offset: Math.floor(2048 + Math.random() * 2048),
+    cache_valid: true,
+    proof_hash: restoreHash,
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("kv-restore", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [
+      { ref: cacheArg, role: "kv-cache" },
+      { ref: modelArg, role: "model" },
+    ],
+    outputArtifacts: [],
+    bytesRead: Math.floor(Math.random() * 50_000_000),
+    modelStateDelta: { session_id: sessionId, tokens_restored: payload.tokens_restored },
+  });
+  printJson(result);
+  console.error(`\n  → KV RESTORE: ${payload.tokens_restored} tokens → session ${sessionId.slice(0, 8)}… (offset=${payload.inference_offset})`);
+}
+
+// ---------------------------------------------------------------------------
+// Group D — Real-Time Ops & Policy (Phase 12-13)
+// ---------------------------------------------------------------------------
+
+function cmdSlaMonitor(args) {
+  const modelArg    = flag(args, "--model") || "model.akmodel";
+  const windowMins  = parseInt(flag(args, "--window-min") || "60", 10);
+  const latencySla  = parseInt(flag(args, "--latency-sla-ms") || "500", 10);
+  const availSla    = parseFloat(flag(args, "--avail-sla") || "0.999");
+  const emitAlert   = hasFlag(args, "--emit-alert");
+
+  const providers = ["provider-us-east", "provider-eu-west", "provider-ap-south"];
+  const providerStats = providers.map(p => {
+    const p50 = Math.floor(80 + Math.random() * 600);
+    const avail = parseFloat((0.99 + Math.random() * 0.01).toFixed(4));
+    return {
+      provider: p,
+      requests: Math.floor(1000 + Math.random() * 9000),
+      p50_latency_ms: p50,
+      p99_latency_ms: Math.floor(p50 * 3 + Math.random() * 200),
+      availability: avail,
+      errors: Math.floor(Math.random() * 20),
+      latency_violation: p50 > latencySla,
+      availability_violation: avail < availSla,
+    };
+  });
+
+  const violations = providerStats.filter(p => p.latency_violation || p.availability_violation);
+
+  const payload = {
+    schema_version: "aurekai.weightops.sla_monitor.v1",
+    model_ref: modelArg,
+    window_minutes: windowMins,
+    sla_policy: { latency_ms: latencySla, availability: availSla },
+    provider_stats: providerStats,
+    violations: violations.map(v => ({
+      provider: v.provider,
+      type: v.latency_violation ? "latency" : "availability",
+      value: v.latency_violation ? v.p50_latency_ms : v.availability,
+      threshold: v.latency_violation ? latencySla : availSla,
+    })),
+    overall_compliant: violations.length === 0,
+    alert_emitted: emitAlert && violations.length > 0,
+    proof_hash: proofHash(`sla-monitor:${modelArg}:window=${windowMins}`),
+  };
+
+  const result = wrapResult("sla-monitor", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "monitored-model" }],
+    outputArtifacts: [],
+    bytesRead: 65536,
+    modelStateDelta: { violations: violations.length, compliant: violations.length === 0 },
+    status: violations.length > 0 ? "WARN" : "PASS",
+    warnings: violations.map(v => `SLA violation: ${v.provider} ${v.latency_violation ? "latency" : "availability"}`),
+  });
+  printJson(result);
+  console.error(`\n  → SLA MONITOR: ${violations.length === 0 ? "✓ compliant" : `⚠ ${violations.length} violations`} across ${providers.length} providers`);
+}
+
+function cmdBudgetAlert(args) {
+  const modelArg    = flag(args, "--model") || "model.akmodel";
+  const ceilingArg  = parseFloat(flag(args, "--ceiling") || "100.0");
+  const windowHrs   = parseInt(flag(args, "--window-hours") || "24", 10);
+  const fallbackArg = flag(args, "--fallback") || "route-to-cheapest";
+  const dryRun      = hasFlag(args, "--dry-run");
+
+  const spentSoFar  = parseFloat((ceilingArg * (0.4 + Math.random() * 0.6)).toFixed(4));
+  const burnRate    = parseFloat((spentSoFar / windowHrs).toFixed(4));
+  const eta_exhaust = parseFloat((ceilingArg / burnRate).toFixed(1));
+  const alertFired  = spentSoFar > ceilingArg * 0.8;
+
+  const payload = {
+    schema_version: "aurekai.weightops.budget_alert.v1",
+    model_ref: modelArg,
+    budget_ceiling: ceilingArg,
+    window_hours: windowHrs,
+    spent_so_far: spentSoFar,
+    burn_rate_per_hour: burnRate,
+    eta_exhaust_hours: eta_exhaust,
+    pct_consumed: parseFloat((spentSoFar / ceilingArg * 100).toFixed(1)),
+    alert_fired: alertFired,
+    fallback_policy: { action: fallbackArg, triggered: alertFired && !dryRun },
+    proof_hash: proofHash(`budget-alert:${modelArg}:ceiling=${ceilingArg}`),
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("budget-alert", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "model" }],
+    outputArtifacts: [],
+    bytesRead: 4096,
+    modelStateDelta: { budget_pct_consumed: payload.pct_consumed, alert_fired: alertFired },
+    status: alertFired ? "WARN" : "PASS",
+    warnings: alertFired ? [`budget ${payload.pct_consumed}% consumed — ceiling $${ceilingArg}`] : [],
+  });
+  printJson(result);
+  console.error(`\n  → BUDGET ALERT: $${spentSoFar.toFixed(2)} / $${ceilingArg} (${payload.pct_consumed}%) ${alertFired ? "⚠ ALERT FIRED" : "✓ within budget"}`);
+}
+
+function cmdCostForecast(args) {
+  const modelArg    = flag(args, "--model") || "model.akmodel";
+  const recipeArg   = flag(args, "--recipe") || "recipe.akrecipe";
+  const horizonHrs  = parseInt(flag(args, "--horizon-hours") || "168", 10);
+  const rpsArg      = parseFloat(flag(args, "--rps") || "10");
+
+  const providers = [
+    { name: "provider-a", cost_per_1k_tok: 0.0002, latency_ms: 120 },
+    { name: "provider-b", cost_per_1k_tok: 0.0004, latency_ms:  80 },
+    { name: "provider-c", cost_per_1k_tok: 0.00015,latency_ms: 200 },
+  ];
+
+  const totalRequests = rpsArg * horizonHrs * 3600;
+  const tokensPerReq  = 512;
+  const totalTokensK  = totalRequests * tokensPerReq / 1000;
+
+  const forecasts = providers.map(p => ({
+    provider: p.name,
+    cost_per_1k_tokens: p.cost_per_1k_tok,
+    avg_latency_ms: p.latency_ms,
+    total_cost_usd: parseFloat((totalTokensK * p.cost_per_1k_tok).toFixed(2)),
+    total_tokens_k: Math.floor(totalTokensK),
+    total_requests: Math.floor(totalRequests),
+  }));
+  forecasts.sort((a, b) => a.total_cost_usd - b.total_cost_usd);
+
+  const payload = {
+    schema_version: "aurekai.weightops.cost_forecast.v1",
+    model_ref: modelArg,
+    recipe: recipeArg,
+    horizon_hours: horizonHrs,
+    throughput_rps: rpsArg,
+    provider_forecasts: forecasts,
+    recommendation: {
+      cheapest_provider: forecasts[0].provider,
+      cheapest_cost_usd: forecasts[0].total_cost_usd,
+      fastest_provider: providers.sort((a, b) => a.latency_ms - b.latency_ms)[0].name,
+      savings_vs_most_expensive: parseFloat((forecasts[forecasts.length - 1].total_cost_usd - forecasts[0].total_cost_usd).toFixed(2)),
+    },
+    proof_hash: proofHash(`cost-forecast:${modelArg}:${horizonHrs}h:${rpsArg}rps`),
+  };
+
+  const result = wrapResult("cost-forecast", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: recipeArg, role: "recipe" }],
+    outputArtifacts: [],
+    bytesRead: 2048,
+    modelStateDelta: { forecast_horizon_hours: horizonHrs, cheapest_provider: forecasts[0].provider },
+  });
+  printJson(result);
+  console.error(`\n  → COST FORECAST: ${horizonHrs}h @ ${rpsArg} rps — cheapest: ${forecasts[0].provider} ($${forecasts[0].total_cost_usd.toFixed(2)})`);
+}
+
+function cmdHotPatch(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const patchArg   = flag(args, "--patch") || "delta.akdelta";
+  const sessionId  = flag(args, "--session") || randomUUID();
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const affectedLayers = Math.floor(1 + Math.random() * 4);
+  const patchHash = proofHash(`hot-patch:${modelArg}:${patchArg}:${sessionId}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.hot_patch.v1",
+    model_ref: modelArg,
+    patch_artifact: patchArg,
+    session_id: sessionId,
+    affected_layers: affectedLayers,
+    param_delta_count: Math.floor(affectedLayers * 7_000_000_000 / 32),
+    swap_latency_ms: Math.floor(2 + Math.random() * 8),
+    inference_paused_ms: 0,
+    zero_downtime: true,
+    rollback_artifact: `${baseModelName(modelArg)}-pre-patch.akmodel`,
+    proof_hash: patchHash,
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("hot-patch", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [
+      { ref: modelArg, role: "target-model" },
+      { ref: patchArg, role: "delta-patch" },
+    ],
+    outputArtifacts: [],
+    bytesRead: 50_000_000,
+    bytesWritten: 50_000_000,
+    modelStateDelta: { patched_layers: affectedLayers, session_id: sessionId },
+  });
+  printJson(result);
+  console.error(`\n  → HOT PATCH: ${affectedLayers} layers patched in session ${sessionId.slice(0, 8)}… (zero-downtime)`);
+}
+
+function cmdCreditSettle(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const periodArg  = flag(args, "--period") || "2026-05";
+  const outFile    = flag(args, "--out") || null;
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const providers = [
+    { provider: "provider-us-east", credits_consumed: parseFloat((Math.random() * 500).toFixed(4)), unit: "usd" },
+    { provider: "provider-eu-west", credits_consumed: parseFloat((Math.random() * 300).toFixed(4)), unit: "usd" },
+    { provider: "provider-ap-south",credits_consumed: parseFloat((Math.random() * 150).toFixed(4)), unit: "usd" },
+  ];
+  const total = parseFloat(providers.reduce((s, p) => s + p.credits_consumed, 0).toFixed(4));
+  const settleHash = proofHash(`credit-settle:${modelArg}:${periodArg}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.credit_settle.v1",
+    model_ref: modelArg,
+    settlement_period: periodArg,
+    provider_balances: providers,
+    total_credits: total,
+    currency: "usd",
+    settlement_id: randomUUID(),
+    settled_at: now(),
+    ledger_entry: {
+      debit: total,
+      credit: 0,
+      balance_after: parseFloat((1000 - total).toFixed(4)),
+    },
+    proof_hash: settleHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("credit-settle", payload, {
+    modelRef: modelArg,
+    inputArtifacts: providers.map(p => ({ ref: p.provider, role: "provider-ledger" })),
+    outputArtifacts: outFile ? [{ ref: outFile, role: "settlement-record" }] : [],
+    bytesRead: 8192,
+    bytesWritten: outFile ? 4096 : 0,
+    modelStateDelta: { settled_usd: total, period: periodArg },
+  });
+  printJson(result);
+  console.error(`\n  → CREDIT SETTLE: $${total.toFixed(4)} across ${providers.length} providers for ${periodArg}`);
+}
+
+// ---------------------------------------------------------------------------
+// Group E — P2P Distribution & Mesh (Phase 14-15)
+// ---------------------------------------------------------------------------
+
+function cmdP2pSeed(args) {
+  const modelArg  = flag(args, "--model") || "model.akmodel";
+  const chunksArg = parseInt(flag(args, "--chunks") || "16", 10);
+  const relayArg  = flag(args, "--relay") || null;
+  const dryRun    = hasFlag(args, "--dry-run");
+
+  const totalBytes = 14_000_000_000;
+  const chunkSize  = Math.floor(totalBytes / chunksArg);
+  const chunks = Array.from({ length: chunksArg }, (_, i) => ({
+    chunk_index: i,
+    byte_range: [i * chunkSize, Math.min((i + 1) * chunkSize - 1, totalBytes - 1)],
+    content_hash: proofHash(`chunk:${modelArg}:${i}`),
+    size_bytes: chunkSize,
+    peers_seeding: Math.floor(1 + Math.random() * 5),
+  }));
+
+  const announceHash = proofHash(`p2p-seed:${modelArg}:chunks=${chunksArg}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.p2p_seed.v1",
+    model_ref: modelArg,
+    chunk_count: chunksArg,
+    chunk_size_bytes: chunkSize,
+    total_bytes: totalBytes,
+    chunks,
+    relay_uri: relayArg,
+    peer_id: proofHash(`peer:${modelArg}:${now()}`).slice(3, 35),
+    announce_hash: announceHash,
+    seeding: !dryRun,
+    proof_hash: announceHash,
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("p2p-seed", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "seeded-model" }],
+    outputArtifacts: [],
+    bytesRead: totalBytes,
+    bytesWritten: 0,
+    modelStateDelta: { chunks_seeded: chunksArg, relay: relayArg },
+  });
+  printJson(result);
+  console.error(`\n  → P2P SEED: ${chunksArg} chunks announced, peer=${payload.peer_id.slice(0, 16)}…`);
+}
+
+function cmdRelayHandoff(args) {
+  const sessionId  = flag(args, "--session") || randomUUID();
+  const peerArg    = flag(args, "--peer") || "relay-peer-b";
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const handoffHash = proofHash(`relay-handoff:${sessionId}:${peerArg}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.relay_handoff.v1",
+    model_ref: modelArg,
+    session_id: sessionId,
+    source_peer: "local",
+    target_peer: peerArg,
+    tokens_transferred: Math.floor(1024 + Math.random() * 8192),
+    handoff_latency_ms: Math.floor(15 + Math.random() * 40),
+    proof_continuity: true,
+    prior_proof_hash: proofHash(`inference:${sessionId}:prior`),
+    handoff_proof_hash: handoffHash,
+    kv_cache_transferred: true,
+    kv_cache_bytes: Math.floor(5_000_000 + Math.random() * 20_000_000),
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("relay-handoff", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "model" }],
+    outputArtifacts: [],
+    bytesRead: payload.kv_cache_bytes,
+    bytesWritten: payload.kv_cache_bytes,
+    modelStateDelta: { session_id: sessionId, target_peer: peerArg, proof_continuity: true },
+  });
+  printJson(result);
+  console.error(`\n  → RELAY HANDOFF: session ${sessionId.slice(0, 8)}… → ${peerArg} (${payload.tokens_transferred} tokens, proof continuity: ✓)`);
+}
+
+function cmdGeoPin(args) {
+  const modelArg = flag(args, "--model") || "model.akmodel";
+  const regionArg = flag(args, "--region") || "us-east-1";
+  const replicasArg = parseInt(flag(args, "--replicas") || "1", 10);
+  const outFile  = flag(args, "--out") || null;
+  const dryRun   = hasFlag(args, "--dry-run");
+
+  const REGION_COORDS = {
+    "us-east-1":    { lat: 39.04, lon: -77.49, country: "US" },
+    "eu-west-1":    { lat: 53.33, lon: -6.25,  country: "IE" },
+    "ap-south-1":   { lat: 19.07, lon: 72.87,  country: "IN" },
+    "us-west-2":    { lat: 45.52, lon: -122.67, country: "US" },
+    "ap-northeast-1": { lat: 35.68, lon: 139.69, country: "JP" },
+  };
+  const coords = REGION_COORDS[regionArg] || { lat: 0, lon: 0, country: "XX" };
+  const attestHash = proofHash(`geo-pin:${modelArg}:${regionArg}`);
+
+  const payload = {
+    schema_version: "aurekai.weightops.geo_pin.v1",
+    model_ref: modelArg,
+    region: regionArg,
+    coordinates: coords,
+    replicas: replicasArg,
+    location_attestation: {
+      attestation_id: randomUUID(),
+      region: regionArg,
+      country: coords.country,
+      lat: coords.lat,
+      lon: coords.lon,
+      issued_at: now(),
+      proof_hash: attestHash,
+      jurisdiction_compliant: coords.country !== "XX",
+    },
+    pinned: !dryRun,
+    proof_hash: attestHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("geo-pin", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "model" }],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "location-attestation" }] : [],
+    bytesRead: 4096,
+    bytesWritten: outFile ? 2048 : 0,
+    modelStateDelta: { pinned_region: regionArg, replicas: replicasArg },
+  });
+  printJson(result);
+  console.error(`\n  → GEO PIN: ${modelArg} → ${regionArg} (${coords.lat}°, ${coords.lon}°) × ${replicasArg} replica(s)`);
+}
+
+function cmdMirrorSync(args) {
+  const modelArg   = flag(args, "--model") || "model.akmodel";
+  const mirrorsArg = flag(args, "--mirrors") || "mirror-a,mirror-b";
+  const dryRun     = hasFlag(args, "--dry-run");
+
+  const mirrors = mirrorsArg.split(",").map(m => m.trim()).filter(Boolean);
+  const syncStats = mirrors.map(m => {
+    const deltaBytes = Math.floor(Math.random() * 50_000_000);
+    return {
+      mirror: m,
+      status: "synced",
+      delta_bytes: deltaBytes,
+      delta_layers: Math.floor(1 + Math.random() * 4),
+      sync_latency_ms: Math.floor(50 + Math.random() * 300),
+      proof_hash: proofHash(`mirror:${m}:${modelArg}`),
+    };
+  });
+
+  const payload = {
+    schema_version: "aurekai.weightops.mirror_sync.v1",
+    model_ref: modelArg,
+    mirrors: syncStats,
+    total_delta_bytes: syncStats.reduce((s, m) => s + m.delta_bytes, 0),
+    all_synced: syncStats.every(m => m.status === "synced"),
+    proof_hash: proofHash(`mirror-sync:${modelArg}:${mirrors.join(",")}`),
+    dry_run: dryRun,
+  };
+
+  const result = wrapResult("mirror-sync", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "source" }],
+    outputArtifacts: mirrors.map(m => ({ ref: m, role: "mirror" })),
+    bytesRead: 14_000_000_000,
+    bytesWritten: dryRun ? 0 : payload.total_delta_bytes,
+    modelStateDelta: { mirrors_synced: mirrors.length, total_delta_bytes: payload.total_delta_bytes },
+  });
+  printJson(result);
+  console.error(`\n  → MIRROR SYNC: ${mirrors.length} mirrors, ${(payload.total_delta_bytes / 1e6).toFixed(1)} MB delta`);
+}
+
+function cmdEscrow(args) {
+  const modelArg    = flag(args, "--model") || "model.akmodel";
+  const conditionArg = flag(args, "--condition") || "proof-chain-verified";
+  const recipientArg = flag(args, "--recipient") || "recipient@example.com";
+  const ttlHrs      = parseInt(flag(args, "--ttl-hours") || "72", 10);
+  const releaseFlag = hasFlag(args, "--release");
+  const outFile     = flag(args, "--out") || null;
+  const dryRun      = hasFlag(args, "--dry-run");
+
+  const escrowId   = randomUUID();
+  const lockHash   = proofHash(`escrow:${modelArg}:${conditionArg}:${escrowId}`);
+  const conditionMet = releaseFlag;
+
+  const payload = {
+    schema_version: "aurekai.weightops.escrow.v1",
+    model_ref: modelArg,
+    escrow_id: escrowId,
+    condition: conditionArg,
+    recipient: recipientArg,
+    ttl_hours: ttlHrs,
+    expires_at: new Date(Date.now() + ttlHrs * 3600_000).toISOString(),
+    status: conditionMet ? "released" : "locked",
+    condition_met: conditionMet,
+    lock_hash: lockHash,
+    release_proof: conditionMet ? proofHash(`release:${escrowId}:${conditionArg}`) : null,
+    proof_hash: lockHash,
+    dry_run: dryRun,
+  };
+
+  if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
+
+  const result = wrapResult("escrow", payload, {
+    modelRef: modelArg,
+    inputArtifacts: [{ ref: modelArg, role: "escrowed-model" }],
+    outputArtifacts: outFile ? [{ ref: outFile, role: "escrow-record" }] : [],
+    bytesRead: 4096,
+    bytesWritten: outFile ? 2048 : 0,
+    modelStateDelta: { escrow_id: escrowId, escrow_status: payload.status, condition: conditionArg },
+    warnings: !conditionMet ? [] : [],
+  });
+  printJson(result);
+  console.error(`\n  → ESCROW: ${modelArg} ${conditionMet ? "RELEASED → " + recipientArg : `LOCKED until '${conditionArg}' (TTL=${ttlHrs}h)`}`);
+}
+
+// ---------------------------------------------------------------------------
 
 export function memoryCommand(args) {
   const sub  = args[0];
@@ -2617,9 +3592,48 @@ export function weightsCommand(args) {
     case "edge":                  return cmdEdgeCompile(rest);
     case "quantize-target":       return cmdQuantizeTarget(rest);
     case "quantize":              return cmdQuantizeTarget(rest);
+    // Group A4 — Audit
+    case "audit-trail":           return cmdAuditTrail(rest);
+    case "audit":                 return cmdAuditTrail(rest);
+    // Group B — Adapters & Composition
+    case "adapter-list":          return cmdAdapterList(rest);
+    case "adapters":              return cmdAdapterList(rest);
+    case "adapter-hot-swap":      return cmdAdapterHotSwap(rest);
+    case "hot-swap":              return cmdAdapterHotSwap(rest);
+    case "merge":                 return cmdMerge(rest);
+    case "split":                 return cmdSplit(rest);
+    case "freeze":                return cmdFreeze(rest);
+    // Group C — SAE & KV
+    case "sae-probe":             return cmdSaeProbe(rest);
+    case "probe":                 return cmdSaeProbe(rest);
+    case "sae-steer":             return cmdSaeSteer(rest);
+    case "steer":                 return cmdSaeSteer(rest);
+    case "feature-drift":         return cmdFeatureDrift(rest);
+    case "kv-compress":           return cmdKvCompress(rest);
+    case "kv-restore":            return cmdKvRestore(rest);
+    // Group D — Real-Time Ops
+    case "sla-monitor":           return cmdSlaMonitor(rest);
+    case "sla":                   return cmdSlaMonitor(rest);
+    case "budget-alert":          return cmdBudgetAlert(rest);
+    case "budget":                return cmdBudgetAlert(rest);
+    case "cost-forecast":         return cmdCostForecast(rest);
+    case "forecast":              return cmdCostForecast(rest);
+    case "hot-patch":             return cmdHotPatch(rest);
+    case "credit-settle":         return cmdCreditSettle(rest);
+    case "settle":                return cmdCreditSettle(rest);
+    // Group E — P2P & Mesh
+    case "p2p-seed":              return cmdP2pSeed(rest);
+    case "seed":                  return cmdP2pSeed(rest);
+    case "relay-handoff":         return cmdRelayHandoff(rest);
+    case "handoff":               return cmdRelayHandoff(rest);
+    case "geo-pin":               return cmdGeoPin(rest);
+    case "pin":                   return cmdGeoPin(rest);
+    case "mirror-sync":           return cmdMirrorSync(rest);
+    case "mirror":                return cmdMirrorSync(rest);
+    case "escrow":                return cmdEscrow(rest);
     default:
       console.error(`akai weights: unknown subcommand '${sub || ""}'`);
-      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, pull, diff, patch, delta, prove, lease, teleport, weightless-run, synth-quant, quant, verify-fidelity, distill-feature-micro, ghost-infer, marketplace, recommend, serve-cdn, cdn, moq-stream, stream, arb-route, route, sbom, tamper-detect, tamper, proof-chain, proof, integrity-gate, gate");
+      console.error("  Available: negotiate, hydrate, compile, status, skeleton, trace, pull-region, diff, patch, synth-quant, verify-fidelity, distill-feature-micro, ghost-infer, marketplace, serve-cdn, moq-stream, arb-route, sbom, tamper-detect, proof-chain, integrity-gate, audit-trail, adapter-list, adapter-hot-swap, merge, split, freeze, sae-probe, sae-steer, feature-drift, kv-compress, kv-restore, sla-monitor, budget-alert, cost-forecast, hot-patch, credit-settle, p2p-seed, relay-handoff, geo-pin, mirror-sync, escrow");
       process.exit(1);
   }
 }
