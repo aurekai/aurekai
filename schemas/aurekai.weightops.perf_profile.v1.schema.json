@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.perf_profile.v1",
+  "title": "Aurekai WeightOps — Performance Profile Payload v1",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "hardware", "benchmark_runs", "task_profiles", "summary", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.perf_profile.v1" },
+    "model_ref": { "type": "string" },
+    "hardware": {
+      "type": "object",
+      "required": ["resolved"],
+      "properties": {
+        "resolved": { "type": "string" },
+        "cores": { "type": "integer" },
+        "memory_gb": { "type": "number" },
+        "metal_available": { "type": "boolean" },
+        "ane_available": { "type": "boolean" },
+        "cuda_available": { "type": "boolean" }
+      }
+    },
+    "warmup_runs": { "type": "integer" },
+    "benchmark_runs": { "type": "integer" },
+    "task_profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task", "throughput_tok_per_s", "latency_ms"],
+        "properties": {
+          "task": { "type": "string" },
+          "throughput_tok_per_s": { "type": "number" },
+          "latency_ms": {
+            "type": "object",
+            "properties": {
+              "p50": { "type": "number" },
+              "p90": { "type": "number" },
+              "p99": { "type": "number" },
+              "mean": { "type": "number" }
+            }
+          },
+          "memory_peak_mb": { "type": "integer" },
+          "batch_size": { "type": "integer" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["best_task", "avg_p50_latency_ms"],
+      "properties": {
+        "best_task": { "type": "string" },
+        "avg_p50_latency_ms": { "type": "number" },
+        "total_params_profiled": { "type": "integer" },
+        "profile_duration_s": { "type": "number" }
+      }
+    },
+    "proof_hash": { "type": "string" }
+  }
+}

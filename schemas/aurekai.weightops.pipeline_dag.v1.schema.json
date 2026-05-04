@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.pipeline_dag.v1",
+  "title": "Aurekai WeightOps — Pipeline DAG Payload v1",
+  "type": "object",
+  "required": ["schema_version", "plan_name", "step_count", "steps", "execution_order", "validation", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.pipeline_dag.v1" },
+    "plan_name": { "type": "string" },
+    "plan_version": { "type": "string" },
+    "step_count": { "type": "integer", "minimum": 1 },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "command", "depends_on"],
+        "properties": {
+          "id": { "type": "string" },
+          "command": { "type": "string" },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string", "enum": ["pending", "planned", "running", "complete", "failed"] }
+        }
+      }
+    },
+    "execution_order": { "type": "array", "items": { "type": "string" } },
+    "validation": {
+      "type": "object",
+      "required": ["valid"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "estimated_duration_ms": { "type": "integer" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

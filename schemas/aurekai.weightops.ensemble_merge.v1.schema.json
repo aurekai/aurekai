@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.ensemble_merge.v1",
+  "title": "Aurekai WeightOps — Ensemble Merge Payload v1",
+  "type": "object",
+  "required": ["schema_version", "method", "source_models", "output_model", "quality_estimate", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.ensemble_merge.v1" },
+    "method": { "type": "string", "enum": ["linear", "slerp", "task-vector"] },
+    "source_models": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["model_ref", "weight"],
+        "properties": {
+          "model_ref": { "type": "string" },
+          "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "output_model": { "type": "string" },
+    "layer_merge_stats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "layer": { "type": "string" },
+          "method": { "type": "string" },
+          "interpolation_error": { "type": "number" },
+          "cosine_alignment": { "type": "number" }
+        }
+      }
+    },
+    "quality_estimate": {
+      "type": "object",
+      "properties": {
+        "expected_improvement_pct": { "type": "number" },
+        "diversity_score": { "type": "number" },
+        "alignment_score": { "type": "number" }
+      }
+    },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}
