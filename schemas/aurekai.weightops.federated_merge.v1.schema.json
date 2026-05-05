@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.federated_merge.v1",
+  "title": "Aurekai WeightOps — Federated Merge Payload v1",
+  "type": "object",
+  "required": ["schema_version", "algorithm", "rounds_completed", "node_count", "node_metrics", "global_model", "privacy_accounting", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.federated_merge.v1" },
+    "algorithm": { "type": "string", "enum": ["fedavg", "fedprox", "scaffold"] },
+    "rounds_completed": { "type": "integer", "minimum": 1 },
+    "node_count": { "type": "integer", "minimum": 2 },
+    "node_metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id", "model_ref", "local_samples", "weight", "round_loss"],
+        "properties": {
+          "node_id": { "type": "string" },
+          "model_ref": { "type": "string" },
+          "local_samples": { "type": "integer" },
+          "weight": { "type": "number" },
+          "round_loss": { "type": "number" },
+          "staleness_rounds": { "type": "integer" }
+        }
+      }
+    },
+    "global_model": {
+      "type": "object",
+      "required": ["model_ref", "layer_count", "param_count", "merge_hash", "convergence"],
+      "properties": {
+        "model_ref": { "type": "string" },
+        "layer_count": { "type": "integer" },
+        "param_count": { "type": "integer" },
+        "merge_hash": { "type": "string" },
+        "convergence": {
+          "type": "object",
+          "properties": {
+            "global_loss": { "type": "number" },
+            "loss_delta_per_round": { "type": "number" },
+            "converged": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "privacy_accounting": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "epsilon": { "type": "number" },
+        "delta": { "type": "number" },
+        "mechanism": { "type": "string" },
+        "noise_multiplier": { "type": "number" },
+        "rdp_order": { "type": "integer" }
+      }
+    },
+    "aggregation_stats": { "type": "object" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

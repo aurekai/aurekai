@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.distill_micro.v1.schema.json",
+  "title": "Aurekai WeightOps — Micro-Distill Feature Artifact",
+  "description": "Output artifact produced by `akai weights distill-feature-micro`. Encodes a single capability slice (SAE cluster + layer activations) extracted from a larger model into a tiny deployable .akdistill artifact.",
+  "type": "object",
+  "required": [
+    "schema_version", "generated_at", "source_model", "feature_id",
+    "feature_family", "output_file", "distilled_artifact",
+    "size_mb", "full_model_avoided", "proof_hash"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.distill_micro.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "source_model":   { "type": "string" },
+    "feature_id":     { "type": "string" },
+    "feature_family": {
+      "type": "string",
+      "enum": ["classification", "extraction", "routing", "generation", "general"]
+    },
+    "target_model":   { "type": "string" },
+    "output_file":    { "type": "string" },
+    "distilled_artifact": {
+      "type": "object",
+      "required": ["sae_cluster", "source_layers", "feature_dim", "vector_format", "routing_compatible", "runtime_footprint_mb"],
+      "properties": {
+        "sae_cluster":          { "type": "string" },
+        "source_layers":        { "type": "array", "items": { "type": "integer" } },
+        "feature_dim":          { "type": "integer", "minimum": 1 },
+        "vector_format":        { "type": "string" },
+        "routing_compatible":   { "type": "boolean" },
+        "runtime_footprint_mb": { "type": "number", "minimum": 0 }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "standalone":          { "type": "boolean" },
+        "embed_in_pipeline":   { "type": "boolean" },
+        "supports_streaming":  { "type": "boolean" },
+        "min_context_tokens":  { "type": "integer" },
+        "max_context_tokens":  { "type": "integer" }
+      }
+    },
+    "size_mb":                        { "type": "number",  "minimum": 0 },
+    "full_model_avoided":             { "type": "boolean" },
+    "bytes_avoided":                  { "type": "integer", "minimum": 0 },
+    "first_usable_seconds":           { "type": "integer", "minimum": 0 },
+    "capability_ready_at_percent":    { "type": "integer", "minimum": 0, "maximum": 100 },
+    "fidelity_vs_full":               { "type": "number",  "minimum": 0, "maximum": 1 },
+    "proof_hash": { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+  },
+  "additionalProperties": false
+}

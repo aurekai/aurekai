@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.cdn.v1.schema.json",
+  "title": "Aurekai WeightOps — AI-CDN Serve Plan",
+  "description": "Output of `akai weights serve-cdn`. Produces a multi-region chunk-aware CDN serving plan for a model artifact, including cache hit estimates, transfer costs, and per-region proof hashes.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "model", "config", "cdn_plan", "summary", "serve_uri", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.cdn.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "model":          { "type": "string" },
+    "dry_run":        { "type": "boolean" },
+    "config": {
+      "type": "object",
+      "required": ["regions", "ttl_hours", "chunk_mb", "chunk_count"],
+      "properties": {
+        "regions":     { "type": "array",   "items": { "type": "string" } },
+        "ttl_hours":   { "type": "number" },
+        "chunk_mb":    { "type": "number" },
+        "chunk_count": { "type": "integer" },
+        "prefetch":    { "type": "boolean" }
+      }
+    },
+    "cdn_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["region", "latency_ms", "cache_hit_rate", "transfer_gb", "proof_chunk_hash"],
+        "properties": {
+          "region":            { "type": "string" },
+          "latency_ms":        { "type": "integer" },
+          "cache_hit_rate":    { "type": "number",  "minimum": 0, "maximum": 1 },
+          "cached_gb":         { "type": "number" },
+          "transfer_gb":       { "type": "number" },
+          "cost_usd_estimate": { "type": "number" },
+          "chunks_needed":     { "type": "integer" },
+          "ttl_hours":         { "type": "number" },
+          "proof_chunk_hash":  { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "regions_served":         { "type": "integer" },
+        "total_model_gb":         { "type": "number" },
+        "total_transfer_gb":      { "type": "number" },
+        "full_push_avoided_gb":   { "type": "number" },
+        "total_cost_usd":         { "type": "number" },
+        "avg_latency_ms":         { "type": "integer" },
+        "proof_policy":           { "type": "string" }
+      }
+    },
+    "serve_uri": { "type": "string", "pattern": "^akcdn://" },
+    "proof_hash": { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+  },
+  "additionalProperties": false
+}

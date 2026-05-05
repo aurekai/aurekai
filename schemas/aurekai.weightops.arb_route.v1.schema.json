@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.arb_route.v1.schema.json",
+  "title": "Aurekai WeightOps Economic Arbitrage Router",
+  "description": "Schema for provider arbitrage routing decisions from akai weights arb-route",
+  "type": "object",
+  "required": ["schema_version", "recipe", "selected_provider", "cost_credits", "latency_ms", "quality_score", "arbitrage_saved_credits", "provider_scores", "proof_hash"],
+  "properties": {
+    "schema_version":          { "type": "string", "const": "aurekai.weightops.arb_route.v1" },
+    "generated_at":            { "type": "string", "format": "date-time" },
+    "recipe":                  { "type": "string" },
+    "dry_run":                 { "type": "boolean" },
+    "sla": {
+      "type": "object",
+      "properties": {
+        "latency_ms":          { "type": "integer" },
+        "quality":             { "type": "number", "minimum": 0, "maximum": 1 },
+        "budget_credits":      { "type": "number" }
+      }
+    },
+    "selected_provider":       { "type": "string" },
+    "selected_label":          { "type": "string" },
+    "cost_credits":            { "type": "number" },
+    "latency_ms":              { "type": "integer" },
+    "quality_score":           { "type": "number" },
+    "arbitrage_score":         { "type": "number" },
+    "arbitrage_saved_credits": { "type": "number" },
+    "full_local_avoided":      { "type": "boolean" },
+    "eligible_count":          { "type": "integer" },
+    "provider_scores": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "provider":          { "type": "string" },
+          "label":             { "type": "string" },
+          "eligible":          { "type": "boolean" },
+          "arbitrage_score":   { "type": "number" },
+          "cost_credits":      { "type": "number" },
+          "latency_ms":        { "type": "integer" },
+          "quality_score":     { "type": "number" },
+          "sla_latency_ok":    { "type": "boolean" },
+          "sla_quality_ok":    { "type": "boolean" },
+          "budget_ok":         { "type": "boolean" }
+        }
+      }
+    },
+    "proof_hash":              { "type": "string" }
+  },
+  "additionalProperties": false
+}

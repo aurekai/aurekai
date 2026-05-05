@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.quantize_target.v1",
+  "title": "Aurekai WeightOps — Quantize Target Payload v1",
+  "type": "object",
+  "required": ["schema_version", "source_model", "target", "bits", "layer_schemes", "statistics", "hardware_fit", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.quantize_target.v1" },
+    "source_model": { "type": "string" },
+    "target": { "type": "string" },
+    "hardware_profile": { "type": "object" },
+    "bits": { "type": "integer", "enum": [4, 8, 16] },
+    "calibrated": { "type": "boolean" },
+    "calibration_file": { "type": ["string", "null"] },
+    "layer_schemes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layer", "bits", "scheme"],
+        "properties": {
+          "layer": { "type": "string" },
+          "bits": { "type": "integer" },
+          "scheme": { "type": "string" },
+          "scale_factor": { "type": "number" },
+          "zero_point": { "type": "integer" },
+          "perplexity_delta": { "type": "number" }
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "required": ["avg_bits_per_weight", "compressed_mb", "baseline_mb", "compression_ratio"],
+      "properties": {
+        "avg_bits_per_weight": { "type": "number" },
+        "compressed_mb": { "type": "number" },
+        "baseline_mb": { "type": "number" },
+        "compression_ratio": { "type": "number" },
+        "estimated_perplexity_delta": { "type": "number" }
+      }
+    },
+    "hardware_fit": {
+      "type": "object",
+      "required": ["fits_memory", "simd_accelerated"],
+      "properties": {
+        "fits_memory": { "type": "boolean" },
+        "memory_headroom_mb": { "type": "number" },
+        "simd_accelerated": { "type": "boolean" }
+      }
+    },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

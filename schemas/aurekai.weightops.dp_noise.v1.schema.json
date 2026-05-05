@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.dp_noise.v1",
+  "title": "Aurekai WeightOps — Differential Privacy Noise Payload v1",
+  "type": "object",
+  "required": ["schema_version", "source_model", "output_model", "privacy_guarantee", "noise_application", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.dp_noise.v1" },
+    "source_model": { "type": "string" },
+    "output_model": { "type": "string" },
+    "privacy_guarantee": {
+      "type": "object",
+      "required": ["epsilon", "delta", "mechanism", "noise_multiplier", "sensitivity"],
+      "properties": {
+        "epsilon": { "type": "number", "exclusiveMinimum": 0 },
+        "delta": { "type": "number", "minimum": 0 },
+        "mechanism": { "type": "string", "enum": ["gaussian", "laplace"] },
+        "noise_multiplier": { "type": "number" },
+        "sensitivity": { "type": "number" },
+        "composition": { "type": "string" },
+        "zcdp_rho": { "type": "number" }
+      }
+    },
+    "noise_application": {
+      "type": "object",
+      "required": ["layer_count", "params_noised"],
+      "properties": {
+        "layer_count": { "type": "integer" },
+        "params_noised": { "type": "integer" },
+        "params_clipped": { "type": "integer" },
+        "clip_norm": { "type": "number" }
+      }
+    },
+    "layer_stats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "layer": { "type": "string" },
+          "sigma_before": { "type": "number" },
+          "noise_added": { "type": "number" },
+          "sigma_after": { "type": "number" },
+          "clipped": { "type": "integer" }
+        }
+      }
+    },
+    "quality_impact": {
+      "type": "object",
+      "properties": {
+        "estimated_loss_delta": { "type": "number" },
+        "fidelity_retained": { "type": "number" }
+      }
+    },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.synth_quant.v1.schema.json",
+  "title": "Aurekai WeightOps — Synth Quant Result",
+  "description": "Output artifact produced by `akai weights synth-quant`. Records cross-quantisation synthesis and fidelity proof.",
+  "type": "object",
+  "required": [
+    "schema_version", "generated_at", "source_model", "source_quant", "target_quant",
+    "output_file", "synthesis_method", "full_download_avoided", "fidelity_score",
+    "fidelity_report", "proof_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "aurekai.weightops.synth_quant.v1"
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source_model":  { "type": "string" },
+    "source_quant": {
+      "type": "string",
+      "enum": ["q2", "q3", "q4", "q5", "q6", "q8", "fp16"]
+    },
+    "target_quant": {
+      "type": "string",
+      "enum": ["q2", "q3", "q4", "q5", "q6", "q8", "fp16"]
+    },
+    "output_file":           { "type": "string" },
+    "synthesis_method":      { "type": "string" },
+    "full_download_avoided": { "type": "boolean" },
+    "bytes_avoided":         { "type": "integer", "minimum": 0 },
+    "source_size_gb":        { "type": "number",  "minimum": 0 },
+    "target_size_gb":        { "type": "number",  "minimum": 0 },
+    "first_usable_seconds":  { "type": "integer", "minimum": 0 },
+    "capability_ready_at_percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "fidelity_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "fidelity_report": {
+      "type": "object",
+      "required": ["source_quant", "target_quant", "fidelity_score", "benchmark_pass", "proof_hash"],
+      "properties": {
+        "source_quant":    { "type": "string" },
+        "target_quant":    { "type": "string" },
+        "fidelity_score":  { "type": "number", "minimum": 0, "maximum": 1 },
+        "perplexity_delta":{ "type": "number" },
+        "benchmark_pass":  { "type": "boolean" },
+        "verified":        { "type": "boolean" },
+        "benchmark_suite": { "type": "string" },
+        "proof_hash":      { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+      }
+    },
+    "proof_hash": { "type": "string", "pattern": "^ak:sha256:[0-9a-f]{32}$" }
+  },
+  "additionalProperties": false
+}

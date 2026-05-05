@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.integrity_gate.v1.schema.json",
+  "title": "Aurekai WeightOps Integrity Gate",
+  "description": "Multi-signature tamper gate with oracle integration for supply chain security and attestation verification",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "gate_status", "signatures"],
+  "properties": {
+    "schema_version":      { "type": "string", "const": "aurekai.weightops.integrity_gate.v1" },
+    "generated_at":        { "type": "string", "format": "date-time" },
+    "model_ref":           { "type": "string", "description": "Model identifier" },
+    "gate_status":         { "type": "string", "enum": ["PASS", "FAIL", "WARN", "UNVERIFIED"], "description": "Overall gate status" },
+    "gate_open":           { "type": "boolean", "description": "true = model safe to use, false = blocked" },
+    "signatures": {
+      "type": "array",
+      "description": "Multi-signature attestations",
+      "items": {
+        "type": "object",
+        "properties": {
+          "signer_id":       { "type": "string", "description": "Identity of signer (key ID or principal)" },
+          "signature":       { "type": "string", "description": "Cryptographic signature" },
+          "timestamp":       { "type": "string", "format": "date-time" },
+          "attestation_type":{ "type": "string", "enum": ["origin", "transformation", "quality", "compliance", "oracle"] },
+          "status":          { "type": "string", "enum": ["valid", "invalid", "expired"] }
+        }
+      }
+    },
+    "threshold": {
+      "type": "object",
+      "description": "Multi-sig threshold configuration",
+      "properties": {
+        "required_signatures": { "type": "integer" },
+        "total_signers":       { "type": "integer" },
+        "threshold_met":       { "type": "boolean" }
+      }
+    },
+    "tamper_checks": {
+      "type": "array",
+      "description": "Tamper detection results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "check_type":      { "type": "string", "enum": ["hash_verification", "lineage_check", "sbom_validation", "proof_verification"] },
+          "result":          { "type": "string", "enum": ["pass", "fail", "warning"] },
+          "detail":          { "type": "string" }
+        }
+      }
+    },
+    "oracle_attestations": {
+      "type": "array",
+      "description": "External oracle verifications",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oracle_id":       { "type": "string", "description": "Oracle service identifier" },
+          "attestation":     { "type": "string" },
+          "verified_at":     { "type": "string", "format": "date-time" },
+          "confidence":      { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "description": "Compliance verification results",
+      "properties": {
+        "license_verified":    { "type": "boolean" },
+        "attribution_valid":   { "type": "boolean" },
+        "code_of_conduct_ok":  { "type": "boolean" },
+        "safety_policy_ok":    { "type": "boolean" }
+      }
+    },
+    "risk_assessment": {
+      "type": "object",
+      "description": "Security risk scoring",
+      "properties": {
+        "tamper_risk":         { "type": "number", "minimum": 0, "maximum": 1 },
+        "compliance_risk":     { "type": "number", "minimum": 0, "maximum": 1 },
+        "overall_risk":        { "type": "number", "minimum": 0, "maximum": 1 },
+        "recommendation":      { "type": "string" }
+      }
+    },
+    "verified_at":         { "type": "string", "format": "date-time", "description": "Time when gate was verified" },
+    "expiry":              { "type": "string", "format": "date-time", "description": "When verification expires" },
+    "audit_log":           { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.drift_monitor.v1",
+  "title": "Aurekai WeightOps — Drift Monitor Payload v1",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "baseline_ref", "threshold", "layer_drifts", "summary", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.drift_monitor.v1" },
+    "model_ref": { "type": "string" },
+    "baseline_ref": { "type": "string" },
+    "window_hours": { "type": "number" },
+    "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "layer_drifts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["layer", "jsd", "drifted"],
+        "properties": {
+          "layer": { "type": "string" },
+          "jsd": { "type": "number", "minimum": 0 },
+          "wasserstein2": { "type": "number", "minimum": 0 },
+          "l2_delta": { "type": "number" },
+          "drifted": { "type": "boolean" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["overall_jsd", "drifted_layers", "total_layers", "drift_detected", "severity"],
+      "properties": {
+        "overall_jsd": { "type": "number" },
+        "drifted_layers": { "type": "integer" },
+        "total_layers": { "type": "integer" },
+        "drift_detected": { "type": "boolean" },
+        "severity": { "type": "string", "enum": ["none", "warning", "critical"] }
+      }
+    },
+    "alert_emitted": { "type": "boolean" },
+    "recommendations": { "type": "array", "items": { "type": "string" } },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

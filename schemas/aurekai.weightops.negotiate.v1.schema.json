@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.negotiate.v1.schema.json",
+  "title": "Aurekai WeightOps Negotiation Plan",
+  "description": "Output of `akai weights negotiate`. Describes the smallest verified model-state plan that satisfies a recipe's capability requirements under given constraints.",
+  "type": "object",
+  "required": ["schema_version", "recipe", "plan", "download_gb", "proof_uri"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.negotiate.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "recipe":         { "type": "string" },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "disk_budget_gb":  { "type": "number" },
+        "hardware":        { "type": "string" },
+        "quality_target":  { "type": "number", "minimum": 0, "maximum": 1 },
+        "privacy":         { "type": "string" }
+      }
+    },
+    "plan":                   { "type": "string" },
+    "download_gb":            { "type": "number" },
+    "bytes_avoided_gb":       { "type": "number" },
+    "full_download_avoided":  { "type": "boolean" },
+    "first_usable_seconds":   { "type": "number" },
+    "full_local_minutes":     { "type": "number" },
+    "remote_fallback":        { "type": "boolean" },
+    "proof_policy":           { "type": "string" },
+    "execution_ladder":       { "type": "array", "items": { "type": "string" } },
+    "sources":                { "type": "array", "items": { "type": "string" } },
+    "proof_uri":              { "type": "string" }
+  }
+}

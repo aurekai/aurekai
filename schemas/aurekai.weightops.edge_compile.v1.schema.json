@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.edge_compile.v1",
+  "title": "Aurekai WeightOps — Edge Compile Payload v1",
+  "type": "object",
+  "required": ["schema_version", "source_model", "target", "hardware_profile", "optimize_for", "compilation_steps", "output", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.edge_compile.v1" },
+    "source_model": { "type": "string" },
+    "target": { "type": "string", "enum": ["rpi4", "jetson", "coral", "wasm", "x86-avx2", "arm-neon"] },
+    "hardware_profile": {
+      "type": "object",
+      "required": ["arch", "bits", "simd", "memory_mb", "compute_gflops"],
+      "properties": {
+        "arch": { "type": "string" },
+        "bits": { "type": "integer" },
+        "simd": { "type": "string" },
+        "memory_mb": { "type": "integer" },
+        "compute_gflops": { "type": "number" }
+      }
+    },
+    "optimize_for": { "type": "string", "enum": ["speed", "size", "balanced"] },
+    "compilation_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "status"],
+        "properties": {
+          "step": { "type": "string" },
+          "status": { "type": "string", "enum": ["ok", "warn", "skip", "error"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["artifact", "size_mb", "compression_ratio"],
+      "properties": {
+        "artifact": { "type": "string" },
+        "size_mb": { "type": "number" },
+        "compression_ratio": { "type": "number" },
+        "runtime_deps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "performance_estimate": {
+      "type": "object",
+      "properties": {
+        "latency_ms_p50": { "type": "number" },
+        "throughput_tok_per_s": { "type": "number" },
+        "memory_peak_mb": { "type": "number" }
+      }
+    },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  }
+}

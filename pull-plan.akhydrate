@@ -1,0 +1,39 @@
+{
+  "schema_version": "aurekai.weightops.pull_plan.v1",
+  "generated_at": "2026-05-04T23:01:50.418Z",
+  "trace_source": "{\"model\":\"test.q4.akmodel\",\"recipe\":\"test.akrecipe\",\"hot_tensors\":[\"attn.0\",\"mlp.1\"],\"lazy_regions\":[\"ff.2\",\"attn.3\"]}",
+  "model": "test.q4.akmodel",
+  "recipe": "test.akrecipe",
+  "plan": {
+    "phase_1_hot_tensors": [
+      "attn.0",
+      "mlp.1"
+    ],
+    "phase_2_lazy_regions": [
+      "ff.2",
+      "attn.3"
+    ],
+    "skipped_cold_tensors": [],
+    "hydration_order": [
+      "hot",
+      "lazy",
+      "cold-on-demand"
+    ],
+    "checkpoint_targets": [
+      12,
+      22,
+      41,
+      68
+    ]
+  },
+  "estimated_download_gb": 0.56,
+  "bytes_avoided": 7988639171,
+  "full_download_avoided": true,
+  "first_usable_seconds": 9,
+  "capability_ready_at_percent": 22,
+  "proof_boundary": {
+    "trace_hash": "ak:sha256:d6160edfbef93e56234bf03c699222cd",
+    "plan_hash": "ak:sha256:06448294005068b13be221608f1e612c"
+  },
+  "output_file": "pull-plan.akhydrate"
+}

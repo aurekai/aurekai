@@ -1,0 +1,77 @@
+{
+  "schema_version": "aurekai.recipe.v1",
+  "name": "audio-to-deliverable-phase6",
+  "description": "Phase 6 reference pipeline: audio → transcript → structured deliverable, using progressive hydration. Model becomes usable at 22% hydration for transcript clean-up, fully capable at 68% for final deliverable formatting.",
+  "weightless_first": false,
+  "model_hint": "qwen3-8b",
+  "task": "audio-to-deliverable",
+  "preferred_execution": "progressive-local",
+  "fallback_policy": "remote-then-local",
+  "hydration_policy": {
+    "progressive": true,
+    "emit_readiness": true,
+    "start_at_pct": 22,
+    "quality_target_pct": 68
+  },
+  "steps": [
+    {
+      "id": "ingest",
+      "op": "audio_in",
+      "input": "{{audio_file}}",
+      "output": "raw_audio",
+      "params": { "codec": "auto", "normalize": true }
+    },
+    {
+      "id": "transcribe",
+      "op": "transcribe_audio",
+      "input": "raw_audio",
+      "output": "raw_transcript",
+      "params": { "language": "auto", "diarize": true, "timestamps": true }
+    },
+    {
+      "id": "clean",
+      "op": "clean_transcript",
+      "model": "{{model_hint}}",
+      "input": "raw_transcript",
+      "output": "clean_transcript",
+      "hydration_required_pct": 22,
+      "params": { "remove_filler": true, "fix_names": true }
+    },
+    {
+      "id": "structure",
+      "op": "structure_deliverable",
+      "model": "{{model_hint}}",
+      "input": "clean_transcript",
+      "output": "structured_deliverable",
+      "hydration_required_pct": 41,
+      "params": {
+        "schema": "aurekai.deliverable.v1",
+        "format": "markdown",
+        "sections": ["summary", "action_items", "decisions", "next_steps"]
+      }
+    },
+    {
+      "id": "format",
+      "op": "format_output",
+      "model": "{{model_hint}}",
+      "input": "structured_deliverable",
+      "output": "final_deliverable",
+      "hydration_required_pct": 68,
+      "params": { "format": "pdf", "template": "standard-brief" }
+    },
+    {
+      "id": "emit",
+      "op": "output_artifact",
+      "input": "final_deliverable",
+      "schema": "aurekai.deliverable.v1"
+    }
+  ],
+  "metadata": {
+    "phase": 6,
+    "exec_ladder_target": "progressive-local",
+    "expected_first_usable_seconds": 18,
+    "expected_quality_at_pct": 68,
+    "expected_full_download_avoided": true,
+    "tags": ["audio", "transcribe", "deliverable", "progressive-hydration", "phase6"]
+  }
+}

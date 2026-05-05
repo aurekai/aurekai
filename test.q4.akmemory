@@ -1,0 +1,70 @@
+{
+  "schema_version": "aurekai.weightops.memory.v1",
+  "generated_at": "2026-05-04T23:02:32.758Z",
+  "source_model": "test.q4.akmodel",
+  "tasks": [
+    "code"
+  ],
+  "output_file": "test.q4.akmemory",
+  "contents": {
+    "feature_centroids": {
+      "count": 256,
+      "task_profiles": [
+        "code"
+      ]
+    },
+    "sae_dictionaries": {
+      "feature_count": 1024,
+      "layers": [
+        12,
+        22
+      ]
+    },
+    "routing_profiles": {
+      "tasks": [
+        "code"
+      ],
+      "layer_routing": [
+        12,
+        22
+      ]
+    },
+    "semantic_cache": {
+      "slots": 64,
+      "strategy": "cosine-lru"
+    },
+    "proof_exemplars": {
+      "count": 8,
+      "verified": true
+    },
+    "task_eval_summaries": [
+      {
+        "task": "code",
+        "pass": true,
+        "score": 0.91
+      }
+    ],
+    "adapter_hints": {
+      "slots": 2,
+      "hot_adapters": [
+        "code"
+      ]
+    },
+    "layer_signatures": [
+      {
+        "layer": 12,
+        "signature_hash": "ak:sha256:18afca86e32770d2c1c853fe87eb9fe6"
+      },
+      {
+        "layer": 22,
+        "signature_hash": "ak:sha256:f0e337157cfdbec8ace04df6527ccf87"
+      }
+    ]
+  },
+  "size_mb": 13.5,
+  "full_model_avoided": true,
+  "model_memory_avoided_download_gb": 7.99,
+  "first_usable_seconds": 4,
+  "capability_ready_at_percent": 12,
+  "proof_hash": "ak:sha256:29e3a88b782388087a5bf9ce0c831c9c"
+}

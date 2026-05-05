@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.moq_stream.v1.schema.json",
+  "title": "Aurekai WeightOps MoQ Tensor Stream",
+  "description": "Schema for MoQ-inspired multi-track tensor streaming results from akai weights moq-stream",
+  "type": "object",
+  "required": ["schema_version", "model", "relay_uri", "track_name", "chunks_published", "bytes_streamed", "first_chunk_latency_ms", "subscriber_ready_at_pct", "proof_per_chunk"],
+  "properties": {
+    "schema_version":          { "type": "string", "const": "aurekai.weightops.moq_stream.v1" },
+    "generated_at":            { "type": "string", "format": "date-time" },
+    "model":                   { "type": "string" },
+    "dry_run":                 { "type": "boolean" },
+    "relay_uri":               { "type": "string" },
+    "track_name":              { "type": "string" },
+    "transport":               { "type": "string" },
+    "quant":                   { "type": "string" },
+    "total_size_gb":           { "type": "number" },
+    "config": {
+      "type": "object",
+      "properties": {
+        "chunk_ms":            { "type": "integer" },
+        "chunk_bytes":         { "type": "integer" },
+        "chunk_count":         { "type": "integer" },
+        "target_bitrate_mbps": { "type": "number" }
+      }
+    },
+    "stream_plan": {
+      "type": "object",
+      "properties": {
+        "phase_1_hot_tensors": { "type": "string" },
+        "phase_2_routing":     { "type": "string" },
+        "phase_3_remaining":   { "type": "string" }
+      }
+    },
+    "chunks_published":        { "type": "integer" },
+    "bytes_streamed":          { "type": "integer" },
+    "first_chunk_latency_ms":  { "type": "integer" },
+    "subscriber_ready_at_pct": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "subscriber_ready_chunk":  { "type": "integer" },
+    "proof_per_chunk": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chunk_index": { "type": "integer" },
+          "proof_hash":  { "type": "string" }
+        }
+      }
+    },
+    "full_local_avoided":      { "type": "boolean" },
+    "bytes_avoided":           { "type": "integer" },
+    "proof_hash":              { "type": "string" }
+  },
+  "additionalProperties": false
+}

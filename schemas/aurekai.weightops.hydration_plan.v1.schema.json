@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.hydration_plan.v1.schema.json",
+  "title": "Aurekai WeightOps Hydration Plan",
+  "description": "Output of `akai weights compile`. Maps recipe steps to the minimal set of weight regions required at each capability checkpoint.",
+  "type": "object",
+  "required": ["schema_version", "source_recipe", "required_weight_regions", "proof_hash"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.compiled.v1" },
+    "generated_at":   { "type": "string", "format": "date-time" },
+    "source_recipe":  { "type": "string" },
+    "output_file":    { "type": "string" },
+    "required_weight_regions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Weight regions that must be hydrated for the recipe to run."
+    },
+    "optional_weight_regions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Regions that improve quality but are not strictly required."
+    },
+    "avoid": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Regions explicitly excluded (e.g. vision when recipe is text-only)."
+    },
+    "hydration_order": { "type": "array", "items": { "type": "string" } },
+    "cache_fallback":  { "type": "boolean" },
+    "remote_fallback": { "type": "string" },
+    "proof_hash":      { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "estimated_download_gb":   { "type": "number" },
+        "full_model_avoided_gb":   { "type": "number" },
+        "first_usable_seconds":    { "type": "number" }
+      }
+    }
+  }
+}

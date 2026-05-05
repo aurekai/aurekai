@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.weighttrace.v1.schema.json",
+  "title": "Aurekai WeightOps Weight Trace",
+  "description": "Output of `akai weights trace`. Identifies hot (always-needed) vs cold (never-accessed) tensor regions for a given recipe+model pairing.",
+  "type": "object",
+  "required": ["schema_version", "recipe", "model", "hot_tensors", "cold_tensors", "proof_hash"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version":       { "type": "string", "const": "aurekai.weightops.trace.v1" },
+    "generated_at":         { "type": "string", "format": "date-time" },
+    "recipe":               { "type": "string" },
+    "model":                { "type": "string" },
+    "hot_tensors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tensor paths accessed on every inference for this recipe."
+    },
+    "cold_tensors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tensor paths never accessed — safe to skip."
+    },
+    "lazy_regions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capability regions that can be loaded on-demand after first usable checkpoint."
+    },
+    "hot_fraction":          { "type": "number", "minimum": 0, "maximum": 1 },
+    "download_savings_pct":  { "type": "number", "minimum": 0, "maximum": 100 },
+    "proof_hash":            { "type": "string" }
+  }
+}

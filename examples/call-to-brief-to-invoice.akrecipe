@@ -1,0 +1,69 @@
+{
+  "schema_version": "aurekai.recipe.v1",
+  "name": "call-to-brief-to-invoice",
+  "description": "Full business pipeline: transcribe a call recording, write a brief, extract deliverables, generate an invoice draft. Uses capability negotiation to determine the minimum weight regions needed.",
+  "weightless_first": false,
+  "model_hint": "qwen3-8b",
+  "task": "multi-step-business-pipeline",
+  "preferred_execution": "partial-local",
+  "fallback_policy": "remote-then-local",
+  "steps": [
+    {
+      "id": "transcribe",
+      "op": "transcribe_audio",
+      "input": "{{call_recording}}",
+      "output": "raw_transcript",
+      "params": { "language": "auto", "diarize": true }
+    },
+    {
+      "id": "brief",
+      "op": "generate_brief",
+      "model": "{{model_hint}}",
+      "input": "raw_transcript",
+      "output": "meeting_brief",
+      "params": {
+        "format": "executive-bullet",
+        "max_tokens": 600,
+        "required_capabilities": ["summarize", "structure"]
+      }
+    },
+    {
+      "id": "deliverables",
+      "op": "extract_deliverables",
+      "model": "{{model_hint}}",
+      "input": "meeting_brief",
+      "output": "deliverable_list",
+      "params": { "schema": "aurekai.deliverable.v1" }
+    },
+    {
+      "id": "invoice",
+      "op": "generate_invoice",
+      "model": "{{model_hint}}",
+      "input": ["meeting_brief", "deliverable_list"],
+      "output": "invoice_draft",
+      "params": {
+        "format": "pdf",
+        "required_capabilities": ["reason-draft", "extract", "format"]
+      }
+    },
+    {
+      "id": "emit",
+      "op": "output_bundle",
+      "input": ["meeting_brief", "deliverable_list", "invoice_draft"],
+      "format": "zip"
+    }
+  ],
+  "negotiate_hint": {
+    "quality_target": 0.95,
+    "disk_budget_gb": 5,
+    "hardware": "auto",
+    "first_usable_priority": "high"
+  },
+  "metadata": {
+    "phase": 6,
+    "exec_ladder_target": "partial-local",
+    "expected_first_usable_seconds": 18,
+    "expected_full_download_avoided": true,
+    "tags": ["call", "brief", "invoice", "business-pipeline", "negotiate", "phase6"]
+  }
+}

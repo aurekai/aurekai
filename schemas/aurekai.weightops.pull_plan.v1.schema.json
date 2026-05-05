@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "aurekai.weightops.pull_plan.v1.schema.json",
+  "title": "Aurekai WeightOps Pull Region Plan",
+  "description": "Output of `akai weights pull-region` / `akai weights pull`. Describes trace-driven tensor-region hydration plan.",
+  "type": "object",
+  "required": ["schema_version", "trace_source", "plan", "estimated_download_gb", "full_download_avoided"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.pull_plan.v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "trace_source": { "type": "string" },
+    "model": { "type": "string" },
+    "recipe": { "type": "string" },
+    "plan": {
+      "type": "object",
+      "required": ["phase_1_hot_tensors", "phase_2_lazy_regions", "skipped_cold_tensors"],
+      "properties": {
+        "phase_1_hot_tensors": { "type": "array", "items": { "type": "string" } },
+        "phase_2_lazy_regions": { "type": "array", "items": { "type": "string" } },
+        "skipped_cold_tensors": { "type": "array", "items": { "type": "string" } },
+        "hydration_order": { "type": "array", "items": { "type": "string" } },
+        "checkpoint_targets": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "estimated_download_gb": { "type": "number" },
+    "bytes_avoided": { "type": "number" },
+    "full_download_avoided": { "type": "boolean" },
+    "first_usable_seconds": { "type": "number" },
+    "capability_ready_at_percent": { "type": "number" },
+    "proof_boundary": {
+      "type": "object",
+      "properties": {
+        "trace_hash": { "type": "string" },
+        "plan_hash": { "type": "string" }
+      }
+    },
+    "output_file": { "type": "string" }
+  }
+}

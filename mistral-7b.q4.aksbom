@@ -1,0 +1,120 @@
+{
+  "schema_version": "aurekai.weightops.sbom.v1",
+  "sbom_format": "aurekai-sbom-v1",
+  "generated_at": "2026-05-04T23:30:06.249Z",
+  "model": "mistral-7b.q4.akmodel",
+  "model_id": "mistral-7b.q4.akmodel",
+  "quant": "q4",
+  "size_gb": 3.2,
+  "dry_run": false,
+  "license": "Apache-2.0",
+  "component_count": 8,
+  "components": [
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.tokenizer.0",
+      "type": "tensor-region",
+      "name": "tokenizer",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:998d23589adb42de336f6f46d8222f0c",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.embed_tokens.1",
+      "type": "tensor-region",
+      "name": "embed_tokens",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:44f187a3083d706c3a14d40aebb81c6f",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.lm_head.2",
+      "type": "tensor-region",
+      "name": "lm_head",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:a4d830ac201a0244d2556cc99adb5b70",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.layers.attention.3",
+      "type": "tensor-region",
+      "name": "layers.attention",
+      "version": "q4",
+      "size_mb": 1245.2,
+      "content_hash": "ak:sha256:3fe96c0d67b533e17dc41fed7838fda0",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.layers.mlp.4",
+      "type": "tensor-region",
+      "name": "layers.mlp",
+      "version": "q4",
+      "size_mb": 917.5,
+      "content_hash": "ak:sha256:da418e8fb3166c3cd6ff38fedefdf6ab",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.layers.norm.5",
+      "type": "tensor-region",
+      "name": "layers.norm",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:29eb10139ef4a131924e843f37506373",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.sae_features.6",
+      "type": "tensor-region",
+      "name": "sae_features",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:78cd9f7d5a95f278b2f33398b36529f8",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    },
+    {
+      "bom_ref": "mistral-7b.q4.akmodel.adapter_slots.7",
+      "type": "tensor-region",
+      "name": "adapter_slots",
+      "version": "q4",
+      "size_mb": 196.6,
+      "content_hash": "ak:sha256:7cab5ab59fdb733860e1a318ccdfa7c1",
+      "license": "Apache-2.0",
+      "supplier": "hf://aurekai/model-memory/mistral-7b.q4.akmodel",
+      "verified": true
+    }
+  ],
+  "lineage": {
+    "base_model": "mistral-7b.q4.akmodel",
+    "quant_method": "synth-quant-ladder (q4)",
+    "sae_version": "aurekai.sae.v1",
+    "adapter_slots": [
+      "task-adapter",
+      "persona-adapter"
+    ],
+    "distill_chain": [],
+    "proof_policy": "chunk+capability",
+    "source_uri": "hf://aurekai/model-memory/mistral-7b.q4.akmodel"
+  },
+  "checksums": {
+    "model_root_hash": "ak:sha256:dd45b580fb506b5b334191b166d66ed7",
+    "sbom_hash": "ak:sha256:6d6732de18eef3f36efcfae13689e895"
+  },
+  "output_file": "mistral-7b.q4.aksbom",
+  "proof_hash": "ak:sha256:a8b5630688c5a045a9203c613c7ee494"
+}
