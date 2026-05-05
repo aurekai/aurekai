@@ -10,6 +10,8 @@ Aurekai is not a wrapper around LLMs. Aurekai is a native AI operations runtime 
 
 Every run emits proof, lineage, metering, cache, feature, and artifact metadata.
 
+> **v0.8.0** — WeightOps 20x: 25 commands across Groups A–E (supply chain, adapters, SAE steering, real-time ops, P2P mesh). All emit `aurekai.weightops.result.v1`. See [docs/releases.md](./docs/releases.md).
+
 ```bash
 bun add -g @aurekai/runtime
 akai doctor --deep
@@ -36,6 +38,7 @@ akai run recipe.json --sae-audit --semantic-cache
 - **Wire** — telephony simulation, PCAP ingest, wire probing/reporting, MoQ relay, and network seal/eval
 - **Publish** — brief generation, narration, deliverable packing, clip extraction, and distribution
 - **Substrate** — capability registry, space management, time scheduling, compression, and hardening tests
+- **WeightOps** — 25 commands across supply chain integrity, adapter composition, SAE steering, real-time ops, and P2P mesh distribution
 
 The capability registry is the source of truth: [`registry/aurekai.capabilities.json`](./registry/aurekai.capabilities.json)
 
@@ -112,6 +115,7 @@ Capability families and their primary commands:
 | `wire`       | `tel.sim_call`, `wire.ingest_pcap`, `wire.report`, `moq.video_relay`, `net.seal` |
 | `publish`    | `brief.generate`, `narrate.brief`, `pack.deliverable`, `clips.extract`, `distribute.bundle` |
 | `substrate`  | `capability.registry`, `space.put`, `time.schedule`, `compress.family`, `violence.coupling_test` |
+| `weightops`  | `sbom`, `tamper-detect`, `proof-chain`, `audit-trail`, `integrity-gate`, `merge`, `split`, `freeze`, `adapter-list`, `adapter-hot-swap`, `sae-probe`, `sae-steer`, `feature-drift`, `kv-compress`, `kv-restore`, `sla-monitor`, `budget-alert`, `cost-forecast`, `hot-patch`, `credit-settle`, `p2p-seed`, `relay-handoff`, `geo-pin`, `mirror-sync`, `escrow` |
 
 Validation: `node scripts/validate-capability-bindings.mjs`
 
@@ -156,6 +160,55 @@ akai model:inspect qwen3-8b.akmodel
 akai fpqx:align-sae --from qwen3-8b.l24.aksae --to llama3-8b.l26.aksae --out qwen3-to-llama3.akfpqx
 akai query:features "feature:6159 > 0.7"
 ```
+
+### WeightOps (`akai weights <cmd>`)
+
+**Group A — Supply Chain Integrity**
+```bash
+akai weights sbom --model llama3.akmodel
+akai weights tamper-detect --model llama3.akmodel
+akai weights proof-chain --model llama3.akmodel
+akai weights audit-trail --model llama3.akmodel
+akai weights integrity-gate --model llama3.akmodel
+```
+
+**Group B — Adapter & Composition**
+```bash
+akai weights adapter-list --model llama3.akmodel
+akai weights adapter-hot-swap --model llama3.akmodel --adapter lora-chat-v2
+akai weights merge --base llama3.akmodel --adapters lora-a,lora-b --method linear
+akai weights split --model llama3.akmodel --chunks 4
+akai weights freeze --model llama3.akmodel --reason production-release
+```
+
+**Group C — SAE Steering & KV Cache**
+```bash
+akai weights sae-probe --model llama3.akmodel --features danger,deception
+akai weights sae-steer --model llama3.akmodel --feature helpfulness --direction toward
+akai weights feature-drift --model-a v1.akmodel --model-b v2.akmodel
+akai weights kv-compress --model llama3.akmodel --tokens 4096 --out ctx.akkvcache
+akai weights kv-restore --cache ctx.akkvcache --model llama3.akmodel
+```
+
+**Group D — Real-Time Ops & Policy**
+```bash
+akai weights sla-monitor --model llama3.akmodel --latency-sla-ms 500
+akai weights budget-alert --model llama3.akmodel --ceiling 100 --fallback route-to-cheapest
+akai weights cost-forecast --model llama3.akmodel --horizon-hours 168 --rps 10
+akai weights hot-patch --model llama3.akmodel --patch delta.akdelta
+akai weights credit-settle --model llama3.akmodel --period 2026-05
+```
+
+**Group E — P2P Distribution & Mesh**
+```bash
+akai weights p2p-seed --model llama3.akmodel --chunks 16
+akai weights relay-handoff --model llama3.akmodel --peer relay-peer-b
+akai weights geo-pin --model llama3.akmodel --region us-east-1
+akai weights mirror-sync --model llama3.akmodel --mirrors mirror-a,mirror-b
+akai weights escrow --model llama3.akmodel --condition proof-chain-verified --recipient ops@example.com
+```
+
+All commands emit `aurekai.weightops.result.v1` JSON to stdout.
 
 Compatibility aliases remain during migration:
 

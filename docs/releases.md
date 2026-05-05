@@ -19,15 +19,29 @@ Each release ships:
 
 ## Versioning
 
-Aurekai follows semver. Current pre-release track: `0.8.0-alpha.x`
+Aurekai follows semver. Current stable release: `0.8.0`
 
 Integration scaffold repos pin against:
 ```
-AUREKAI_VERSION=0.8.0-alpha.4
-AKAI_PACKAGE_VERSION=0.8.0-alpha.4
+AUREKAI_VERSION=0.8.0
+AKAI_PACKAGE_VERSION=0.8.0
 AUREKAI_MANIFEST_SCHEMA=aurekai.deploy.v1
 HELM_CHART_VERSION=0.8.1
 ```
+
+## v0.8.0 — WeightOps 20x (2026-05-04)
+
+**25 WeightOps commands** across 5 groups, all emitting `aurekai.weightops.result.v1`:
+
+| Group | Commands |
+|-------|----------|
+| A — Supply Chain | `sbom`, `tamper-detect`, `proof-chain`, `audit-trail`, `integrity-gate` |
+| B — Adapters | `adapter-list`, `adapter-hot-swap`, `merge`, `split`, `freeze` |
+| C — SAE & KV | `sae-probe`, `sae-steer`, `feature-drift`, `kv-compress`, `kv-restore` |
+| D — Real-Time Ops | `sla-monitor`, `budget-alert`, `cost-forecast`, `hot-patch`, `credit-settle` |
+| E — P2P Mesh | `p2p-seed`, `relay-handoff`, `geo-pin`, `mirror-sync`, `escrow` |
+
+Published: [`@aurekai/runtime@0.8.0`](https://www.npmjs.com/package/@aurekai/runtime) · [`@aurekai/sdk@0.8.0`](https://jsr.io/@aurekai/sdk@0.8.0) · tag [`v0.8.0`](https://github.com/aurekai/aurekai/releases/tag/v0.8.0)
 
 ## Platforms
 
