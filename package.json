@@ -1,7 +1,7 @@
 {
   "name": "@aurekai/runtime",
-  "version": "0.8.0-alpha.2",
-  "description": "Aurekai \u2014 the operating fabric for intelligent work.",
+  "version": "0.8.0",
+  "description": "Aurekai — the operating fabric for intelligent work.",
   "type": "module",
   "homepage": "https://aurekai.ai",
   "repository": {
