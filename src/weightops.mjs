@@ -11,6 +11,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { executeHydrationEngine } from "./hydrate-engine.mjs";
+import { resolveHydrateState } from "./hydrate-state.mjs";
 
 // ---------------------------------------------------------------------------
 // Execution ladder (weightless-first policy, V1 static heuristics)
@@ -126,9 +127,9 @@ function printWeightsHelp() {
   console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights] [--dry-run]");
   console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--quality <0-1>] [--top <N>] [--list]");
   console.log("  akai weights marketplace inspect <model-id>");
-  console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--dry-run]");
+  console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--hydrate-state <file>] [--dry-run]");
   console.log("  akai weights cdn status [<model>]");
-  console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--dry-run]");
+  console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--hydrate-state <file>] [--dry-run]");
   console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
@@ -1386,7 +1387,9 @@ function cmdServeCdn(args) {
   const ttlH      = parseFloat(flag(args, "--ttl") || "24");
   const chunkMb   = parseFloat(flag(args, "--chunk-mb") || "64");
   const prefetch  = hasFlag(args, "--prefetch");
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
   const dryRun    = hasFlag(args, "--dry-run");
+  const hydration = resolveHydrateState(hydrateStateArg, model);
 
   const regions = regionArg === "all"
     ? CDN_REGIONS
@@ -1398,11 +1401,13 @@ function cmdServeCdn(args) {
   }
 
   const fullModelGb = 8.0;
-  const chunkCount  = Math.ceil((fullModelGb * 1024) / chunkMb);
+  const hydratedGb = parseFloat((hydration.hydrated_bytes / 1024 / 1024 / 1024).toFixed(4));
+  const servingBaseGb = hydration.available ? Math.max(0.01, hydratedGb) : fullModelGb;
+  const chunkCount  = Math.ceil((servingBaseGb * 1024) / chunkMb);
 
   const cdnPlan = regions.map(r => {
-    const cachedGb    = parseFloat((fullModelGb * r.cache_hit_rate).toFixed(2));
-    const transferGb  = parseFloat((fullModelGb - cachedGb).toFixed(2));
+    const cachedGb    = parseFloat((servingBaseGb * r.cache_hit_rate).toFixed(3));
+    const transferGb  = parseFloat((servingBaseGb - cachedGb).toFixed(3));
     const costUsd     = parseFloat((transferGb * r.cost_per_gb).toFixed(4));
     return {
       region:           r.id,
@@ -1426,6 +1431,7 @@ function cmdServeCdn(args) {
     generated_at:     now(),
     model,
     dry_run:          dryRun,
+    hydration:        hydration,
     config: {
       regions:        regions.map(r => r.id),
       ttl_hours:      ttlH,
@@ -1436,9 +1442,9 @@ function cmdServeCdn(args) {
     cdn_plan:         cdnPlan,
     summary: {
       regions_served:       cdnPlan.length,
-      total_model_gb:       fullModelGb,
+      total_model_gb:       servingBaseGb,
       total_transfer_gb:    totalTransfer,
-      full_push_avoided_gb: parseFloat((fullModelGb * cdnPlan.length - totalTransfer).toFixed(2)),
+      full_push_avoided_gb: parseFloat((servingBaseGb * cdnPlan.length - totalTransfer).toFixed(2)),
       total_cost_usd:       totalCost,
       avg_latency_ms:       avgLatency,
       proof_policy:         "chunk+capability per region",
@@ -1447,10 +1453,29 @@ function cmdServeCdn(args) {
     proof_hash:       proofHash(`serve-cdn:${model}:${regions.map(r=>r.id).join(",")}:${ttlH}`),
   };
 
-  const result = wrapResult("serve-cdn", payload, { modelRef: model, status: dryRun ? "SKIP" : "PASS" });
+  const gatePassed = hydration.available && hydration.model_match && hydration.hydrated_regions > 0;
+  const status = dryRun ? "SKIP" : gatePassed ? "PASS" : "FAIL";
+  const result = wrapResult("serve-cdn", payload, {
+    modelRef: model,
+    status,
+    exitCode: status === "FAIL" ? 1 : 0,
+    warnings: gatePassed ? [] : ["hydrate-state gate not satisfied"],
+    modelStateDelta: {
+      hydrated_regions: hydration.hydrated_regions,
+      hydrated_bytes: hydration.hydrated_bytes,
+      readiness_score: hydration.readiness_score,
+    },
+  });
   printJson(result);
+  if (status === "FAIL") {
+    process.exitCode = 1;
+  }
   if (!dryRun) {
-    console.error(`\n  → CDN plan active: ${cdnPlan.length} region(s)  avg latency ${avgLatency}ms  ~$${totalCost}/push`);
+    if (status === "FAIL") {
+      console.error("\n  → serve-cdn blocked: hydrate state missing or incompatible; run weights hydrate first");
+    } else {
+      console.error(`\n  → CDN plan active: ${cdnPlan.length} region(s)  avg latency ${avgLatency}ms  ~$${totalCost}/push`);
+    }
   } else {
     console.error(`\n  → dry-run: CDN plan computed for ${cdnPlan.length} region(s), not activated`);
   }
@@ -1458,6 +1483,7 @@ function cmdServeCdn(args) {
 
 function cmdCdnStatus(args) {
   const model = args[0] || null;
+  const hydration = resolveHydrateState(null, model);
   const payload = {
     schema_version: "aurekai.weightops.cdn_status.v1",
     generated_at:   now(),
@@ -1465,6 +1491,7 @@ function cmdCdnStatus(args) {
     active_plans:   [],
     total_regions:  0,
     cache_hit_rate_avg: 0,
+    hydration,
     notes: "No CDN plans active. Use: akai weights serve-cdn --model <model.akmodel> [--region <id>]",
   };
   const result = wrapResult("cdn-status", payload, { status: "PASS" });
@@ -1482,12 +1509,15 @@ function cmdMoqStream(args) {
   const relay        = flag(args, "--relay")    || MOQ_RELAY_DEFAULT;
   const track        = flag(args, "--track")    || `aurekai/weights/${baseModelName(model)}`;
   const chunkMs      = parseInt(flag(args, "--chunk-ms") || "50", 10);
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
   const dryRun       = hasFlag(args, "--dry-run");
+  const hydration = resolveHydrateState(hydrateStateArg, model);
 
   // Model size heuristic
   const qMatch   = model.match(/\.(q[2-9]|fp16)\.ak/i);
   const quant    = qMatch ? qMatch[1].toLowerCase() : "q4";
-  const totalGb  = QUANT_SIZE_GB[quant] ?? 3.2;
+  const hydrateGb = parseFloat((hydration.hydrated_bytes / 1024 / 1024 / 1024).toFixed(4));
+  const totalGb  = hydration.available ? Math.max(0.01, hydrateGb) : (QUANT_SIZE_GB[quant] ?? 3.2);
   const totalMb  = totalGb * 1024;
 
   // Chunk sizing: target chunkMs at ~100 MB/s relay throughput
@@ -1515,6 +1545,7 @@ function cmdMoqStream(args) {
     generated_at:            now(),
     model,
     dry_run:                 dryRun,
+    hydration,
     relay_uri:               relay,
     track_name:              track,
     transport:               "QUIC/MoQ-draft-04",
@@ -1542,16 +1573,25 @@ function cmdMoqStream(args) {
     proof_hash:              proofHash(`moq-stream:${model}:${relay}:${track}`),
   };
 
+  const gatePassed = hydration.available && hydration.model_match && hydration.hydrated_regions > 0;
+  const status = dryRun ? "SKIP" : gatePassed ? "PASS" : "FAIL";
   const result = wrapResult("moq-stream", payload, {
     modelRef: model,
     bytesWritten: dryRun ? 0 : bytesStreamed,
-    status: dryRun ? "SKIP" : "PASS",
+    status,
+    exitCode: status === "FAIL" ? 1 : 0,
+    warnings: gatePassed ? [] : ["hydrate-state gate not satisfied"],
   });
   printJson(result);
+  if (status === "FAIL") process.exitCode = 1;
   if (dryRun) {
     console.error(`\n  → dry-run: MoQ stream plan ready — ${chunkCount} chunks × ${chunkMs}ms on ${relay}`);
   } else {
-    console.error(`\n  → streaming ${chunkCount} chunks to ${relay} on track '${track}'  (subscriber ready at ${subscriberReadyAtPct}%)`);
+    if (status === "FAIL") {
+      console.error("\n  → moq-stream blocked: hydrate state missing or incompatible; run weights hydrate first");
+    } else {
+      console.error(`\n  → streaming ${chunkCount} chunks to ${relay} on track '${track}'  (subscriber ready at ${subscriberReadyAtPct}%)`);
+    }
   }
 }
 

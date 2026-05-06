@@ -36,6 +36,7 @@
     "test:pack": "node ./scripts/validate-pack.mjs",
     "test:fetch": "node ./scripts/validate-fetch.mjs",
     "test:hydrate-engine": "node ./scripts/validate-hydrate-engine.mjs",
+    "test:serving-readiness": "node ./scripts/validate-serving-readiness.mjs",
     "release": "make release",
     "release-check": "make release-check"
   },

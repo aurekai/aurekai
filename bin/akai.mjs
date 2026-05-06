@@ -182,13 +182,13 @@ const rest = args.slice(1);
 // Weightless-first run path — handled natively without legacy binary
 if (command === "run" && rest.includes("--weightless-first")) {
   await weightsCommand(["weightless-run", ...rest]);
-  process.exit(0);
+  process.exit(process.exitCode || 0);
 }
 
 // WeightOps — handled natively without legacy binary
 if (command === "weights" || command === "weightops") {
   await weightsCommand(rest);
-  process.exit(0);
+  process.exit(process.exitCode || 0);
 }
 
 // Memory Packs — handled natively
