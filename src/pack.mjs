@@ -302,7 +302,7 @@ async function buildPack(args) {
   });
 }
 
-function readPackIndex(packPath) {
+export function readPackIndex(packPath) {
   const p = resolve(packPath);
   if (!existsSync(p)) throw new Error(`pack not found: ${packPath}`);
 

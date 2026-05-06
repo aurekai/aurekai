@@ -9,6 +9,7 @@ import { casCommand } from "../src/cas.mjs";
 import { packCommand } from "../src/pack.mjs";
 import { fetchCommand } from "../src/fetch.mjs";
 import { deltaCommand } from "../src/delta.mjs";
+import { manifestCommand } from "../src/manifest-command.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -30,6 +31,7 @@ function printHelp() {
   console.log("  akai pack build|inspect|materialize ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
   console.log("  akai delta plan|bench ...");
+  console.log("  akai manifest bin-compile|bin-verify|keygen|sign|verify-signature ...");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -221,6 +223,12 @@ if (command === "fetch") {
 if (command === "delta") {
   await deltaCommand(rest);
   process.exit(0);
+}
+
+// Manifest tooling — handled natively
+if (command === "manifest") {
+  await manifestCommand(rest);
+  process.exit(process.exitCode || 0);
 }
 
 const target = resolveLegacyBinary(command);

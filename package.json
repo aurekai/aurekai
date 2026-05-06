@@ -36,6 +36,7 @@
     "test:cas-chunking": "node ./scripts/validate-cas-chunking.mjs",
     "test:delta-planner": "node ./scripts/validate-delta-planner.mjs",
     "test:benchmark-gates": "node ./scripts/validate-benchmark-gates.mjs",
+    "test:manifest-signing": "node ./scripts/validate-manifest-signing.mjs",
     "test:pack": "node ./scripts/validate-pack.mjs",
     "test:fetch": "node ./scripts/validate-fetch.mjs",
     "test:hydrate-engine": "node ./scripts/validate-hydrate-engine.mjs",
