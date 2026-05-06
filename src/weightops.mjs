@@ -2635,6 +2635,72 @@ function cmdPipelineDag(args) {
 
   const dagHash = proofHash(`dag:${plan.name}:steps=${steps.map(s => s.id).join(",")}`);
 
+  const modelRefForPlan = modelArg || "model.akmodel";
+  const stepById = new Map(steps.map(s => [s.id, s]));
+  const commandArtifactSuffix = {
+    "weights.pull-region": "akhydrate",
+    "weights.synth-quant": "akmodel",
+    "weights.sbom": "aksbom",
+    "weights.proof-chain": "akproof",
+    "weights.integrity-gate": "akgate",
+    "weights.serve-cdn": "akcdnplan",
+    "weights.moq-stream": "akstream",
+    "weights.marketplace": "akmarket",
+    "weights.arb-route": "akroute",
+  };
+
+  const compiledSteps = order.map(stepId => {
+    const step = stepById.get(stepId) || { id: stepId, command: "unknown", depends_on: [], inputs: [] };
+    const dependsOn = step.depends_on || [];
+
+    const resolvedInputs = (step.inputs || []).map(input => {
+      if (typeof input !== "string" || !input.startsWith("$")) return input;
+      const m = input.match(/^\$([a-zA-Z0-9._-]+)\.(.+)$/);
+      if (!m) return input;
+      const depId = m[1];
+      const depField = m[2];
+      if (depField !== "output") return input;
+      const suffix = commandArtifactSuffix[stepById.get(depId)?.command] || "akartifact";
+      return `contract://${depId}/output.${suffix}`;
+    });
+
+    const suffix = commandArtifactSuffix[step.command] || "akartifact";
+    const artifactRef = `contract://${step.id}/output.${suffix}`;
+    const isGatedStep = gatedCommands.has(String(step.command || "").trim());
+
+    return {
+      id: step.id,
+      command: step.command,
+      depends_on: dependsOn,
+      resolved_inputs: resolvedInputs,
+      output_ref: artifactRef,
+      evidence_refs: isGatedStep
+        ? {
+            hydrate_state_ref: hydration.state_path || null,
+            integrity_proof_ref: integrity.proof_hash || integrityArg || null,
+          }
+        : null,
+      gate_required: isGatedStep,
+      gate_passed: isGatedStep ? evidenceOk : true,
+    };
+  });
+
+  const executionContract = {
+    schema_version: "aurekai.weightops.pipeline_contract.v1",
+    contract_id: proofHash(`pipeline-contract:${plan.name}:${order.join(",")}`),
+    generated_at: now(),
+    model_ref: modelRefForPlan,
+    plan_ref: planArg || "(inline/default)",
+    gate_evidence: {
+      hydrate_state_ref: hydration.state_path || null,
+      integrity_proof_ref: integrity.proof_hash || integrityArg || null,
+      required: requiresEvidence,
+      passed: !requiresEvidence || evidenceOk,
+    },
+    execution_order: order,
+    steps: compiledSteps,
+  };
+
   const payload = {
     schema_version: "aurekai.weightops.pipeline_dag.v1",
     plan_name: plan.name,
@@ -2654,6 +2720,7 @@ function cmdPipelineDag(args) {
       integrity,
       passed: !requiresEvidence || evidenceOk,
     },
+    execution_contract: executionContract,
     validation: {
       valid: validationErrors.length === 0,
       errors: validationErrors,

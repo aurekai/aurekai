@@ -39,6 +39,7 @@
     "test:serving-readiness": "node ./scripts/validate-serving-readiness.mjs",
     "test:promotion-gates": "node ./scripts/validate-promotion-gates.mjs",
     "test:pipeline-gates": "node ./scripts/validate-pipeline-gates.mjs",
+    "test:pipeline-contract": "node ./scripts/validate-pipeline-contract.mjs",
     "release": "make release",
     "release-check": "make release-check"
   },
