@@ -19,6 +19,9 @@ import { canonCommand } from "../src/canon.mjs";
 import { netCommand } from "../src/net-seal.mjs";
 import { graphCommand } from "../src/graph-ops.mjs";
 import { truthCommand, buildTruthMatrix } from "../src/truth-matrix.mjs";
+import { wireCommand } from "../src/wire-ops.mjs";
+import { briefCommand } from "../src/brief-gen.mjs";
+import { meterCommand } from "../src/meter.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -27,6 +30,7 @@ const NATIVE_TOP_LEVEL_COMMANDS = [
   "weights", "weightops", "memory", "cas", "pack", "fetch", "delta",
   "manifest", "bench", "proof", "mcp", "block", "gauge", "fpqx",
   "canon", "net", "graph",
+  "wire", "brief", "meter",
   "runtime doctor|capabilities", "capability registry",
   "model verify", "truth",
   "run --weightless-first",
@@ -39,6 +43,9 @@ const NATIVE_CAPABILITY_COMMANDS = new Set([
   "canon.hash", "canon.parse", "canon.diff",
   "net.seal", "net.eval_sealed",
   "graph.lineage", "graph.merkle", "graph.validate",
+  "wire.report", "wire.doctor",
+  "brief.generate",
+  "meter.record", "meter.list", "meter.summary",
   "block.inspect", "block.commute",
   "fpqx.align", "fpqx.eval",
   "release.gate", "manifest.verify", "doctor.deep",
@@ -74,6 +81,12 @@ function printHelp() {
   console.log("  akai graph lineage   --model <model> [--depth <N>] [--json]");
   console.log("  akai graph merkle    --inputs <f1,f2,...> [--json]");
   console.log("  akai graph validate  --merkle <file.akgraph> [--json]");
+  console.log("  akai wire report     [--model <name>] [--since <iso>] [--out <file>] [--json]");
+  console.log("  akai wire doctor     [--json]");
+  console.log("  akai brief generate  --input <file> [--title <text>] [--format json|md] [--out <file>] [--json]");
+  console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
+  console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
+  console.log("  akai meter summary   [--model <name>] [--since <iso>] [--json]");
   console.log("  akai cas import|verify|materialize|stats|gc ...");
   console.log("  akai pack build|inspect|materialize|optimize|mount ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
@@ -437,6 +450,24 @@ if (command === "net" || command === "netlist") {
 // Graph operations — handled natively
 if (command === "graph") {
   await graphCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Wire diagnostics / reporting — handled natively
+if (command === "wire") {
+  await wireCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Brief generation — handled natively
+if (command === "brief") {
+  await briefCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Meter (usage event recording) — handled natively
+if (command === "meter") {
+  await meterCommand(rest);
   process.exit(process.exitCode || 0);
 }
 

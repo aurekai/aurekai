@@ -43,6 +43,9 @@ const NATIVE_COMMANDS = new Map([
   // net / wire
   ["net.seal",                  "akai net seal"],
   ["net.eval_sealed",           "akai net eval-sealed"],
+  // wire
+  ["wire.report",               "akai wire report"],
+  ["wire.doctor",               "akai wire doctor"],
   // graph
   ["graph.lineage",             "akai graph lineage"],
   ["graph.merkle",              "akai graph merkle"],
@@ -76,6 +79,12 @@ const NATIVE_COMMANDS = new Map([
   ["release.gate",              "akai weights integrity-gate"],
   ["manifest.verify",           "akai manifest verify"],
   ["doctor.deep",               "akai runtime doctor"],
+  // brief / publish
+  ["brief.generate",            "akai brief generate"],
+  // metering / commerce
+  ["meter.record",              "akai meter record"],
+  ["meter.list",                "akai meter list"],
+  ["meter.summary",             "akai meter summary"],
 ]);
 
 /**
@@ -105,7 +114,6 @@ const DECLARED_ONLY_COMMANDS = new Set([
   "auth.verify",
   "gate.issue",
   "gate.guard",
-  "meter.record",
   "usage.report",
   "ledger.export",
   "finance.margin",
@@ -141,14 +149,11 @@ const DECLARED_ONLY_COMMANDS = new Set([
   "tel.sim_call",
   "tel.sim_sms",
   "tel.send_sms",
-  "wire.doctor",
   "wire.ingest_pcap",
   "wire.probe",
-  "wire.report",
   "wire.recipe",
   "wire.space_export",
   "moq.video_relay",
-  "brief.generate",
   "narrate.brief",
   "render.document",
   "pack.deliverable",
