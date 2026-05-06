@@ -47,6 +47,11 @@
     "test:promotion-gates": "node ./scripts/validate-promotion-gates.mjs",
     "test:pipeline-gates": "node ./scripts/validate-pipeline-gates.mjs",
     "test:pipeline-contract": "node ./scripts/validate-pipeline-contract.mjs",
+    "test:bench": "node ./scripts/validate-bench.mjs",
+    "test:proof-compact": "node ./scripts/validate-proof-compact.mjs",
+    "test:pack-optimize": "node ./scripts/validate-pack-optimize.mjs",
+    "native:build": "make -C native all",
+    "native:check": "make -C native check",
     "release": "make release",
     "release-check": "make release-check"
   },

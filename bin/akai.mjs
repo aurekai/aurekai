@@ -10,6 +10,8 @@ import { packCommand } from "../src/pack.mjs";
 import { fetchCommand } from "../src/fetch.mjs";
 import { deltaCommand } from "../src/delta.mjs";
 import { manifestCommand } from "../src/manifest-command.mjs";
+import { benchCommand } from "../src/bench.mjs";
+import { proofCommand } from "../src/proof-compact.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -28,10 +30,13 @@ function printHelp() {
   console.log("  akai model:inspect ...");
   console.log("  akai fpqx:align-sae ...");
   console.log("  akai cas import|verify|materialize|stats|gc ...");
-  console.log("  akai pack build|inspect|materialize ...");
+  console.log("  akai pack build|inspect|materialize|optimize|mount ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
   console.log("  akai delta plan|bench ...");
   console.log("  akai manifest bin-compile|bin-verify|keygen|sign|verify-signature ...");
+  console.log("  akai bench distribution|hydrate|pack-layout|proof|all [--size-mb N] [--runs N]");
+  console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
+  console.log("  akai proof view --bin <proof.akproofbin> [--json]");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -228,6 +233,18 @@ if (command === "delta") {
 // Manifest tooling — handled natively
 if (command === "manifest") {
   await manifestCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Benchmark suite — handled natively
+if (command === "bench") {
+  await benchCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Proof compression — handled natively
+if (command === "proof") {
+  await proofCommand(rest);
   process.exit(process.exitCode || 0);
 }
 

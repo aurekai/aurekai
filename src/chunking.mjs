@@ -1,5 +1,52 @@
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { blake3 } from "@napi-rs/blake-hash";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const NATIVE_CHUNK_BIN = join(__dirname, "..", "native", "bin", "akai-chunk");
+
+/**
+ * Chunk a file using the native C operator (akai-chunk) if available.
+ * Falls back to JS implementation otherwise.
+ *
+ * @param {string} filePath - Absolute path to file on disk.
+ * @param {object} [opts]   - { targetSize, minSize, maxSize }
+ * @returns {{ chunks: Array<{index,offset,length,sha256}>, native: boolean }}
+ */
+export function chunkFileFast(filePath, opts = {}) {
+  const nativeAvailable = existsSync(NATIVE_CHUNK_BIN);
+  if (nativeAvailable) {
+    const args = [filePath];
+    if (opts.minSize)    args.push("--min",    String(opts.minSize));
+    if (opts.targetSize) args.push("--target", String(opts.targetSize));
+    if (opts.maxSize)    args.push("--max",    String(opts.maxSize));
+    const result = spawnSync(NATIVE_CHUNK_BIN, args.slice(1), {
+      input: undefined,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (result.status === 0 && result.stdout) {
+      const doc = JSON.parse(result.stdout);
+      return {
+        chunks: doc.chunks.map(c => ({
+          index: c.index,
+          offset: c.offset,
+          length: c.length,
+          sha256: c.sha256,
+          // blake3 not available from native binary — will be set by caller if needed
+          blake3: null,
+        })),
+        native: true,
+        size_bytes: doc.size_bytes,
+      };
+    }
+    // fall through to JS on failure
+  }
+  return null; // caller falls back to chunkBufferCdc
+}
 
 const CDC_DEFAULTS = {
   targetSize: 1024 * 1024,
