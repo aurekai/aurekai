@@ -19,6 +19,19 @@ import { fpqxCommand } from "../src/fpqx-command.mjs";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
 
+const NATIVE_TOP_LEVEL_COMMANDS = [
+  "weights", "weightops", "memory", "cas", "pack", "fetch", "delta",
+  "manifest", "bench", "proof", "mcp", "block", "gauge", "fpqx",
+  "run --weightless-first",
+];
+
+const NATIVE_CAPABILITY_COMMANDS = new Set([
+  "proof.bundle",
+  "runtime.capabilities",
+  "capability.registry",
+  "model.verify",
+]);
+
 function printHelp() {
   console.log(`${VERSION.product} CLI v${VERSION.release}`);
   console.log(`legacy codename: ${VERSION.legacyCodename}`);
@@ -31,13 +44,18 @@ function printHelp() {
   console.log("  akai uninstall --user|--system [--service]");
   console.log("  akai sae:activate ...");
   console.log("  akai model:inspect ...");
+  console.log("  akai model verify <model>");
   console.log("  akai fpqx:align-sae ...");
+  console.log("  akai runtime doctor [--deep] [--json]");
+  console.log("  akai runtime capabilities [--json]");
+  console.log("  akai capability registry [--json]");
   console.log("  akai cas import|verify|materialize|stats|gc ...");
   console.log("  akai pack build|inspect|materialize|optimize|mount ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
   console.log("  akai delta plan|bench ...");
   console.log("  akai manifest bin-compile|bin-verify|keygen|sign|verify-signature ...");
   console.log("  akai bench distribution|hydrate|pack-layout|proof|all [--size-mb N] [--runs N]");
+  console.log("  akai proof bundle --in <proof.json> [--out <aurekai-proof.akproof.json>] [--json]");
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view --bin <proof.akproofbin> [--json]");
   console.log("  akai mcp start|stop|status [--host <host>] [--port <port>]");
@@ -181,6 +199,165 @@ function detectLegacyEnv() {
   return env;
 }
 
+function runtimeTargetFor(command) {
+  const target = resolveLegacyBinary(command);
+  let reachable = false;
+  if (target.bin === "bonfyre-hyper") {
+    const which = spawnSync("which", [target.bin], { encoding: "utf8" });
+    reachable = which.status === 0;
+  } else {
+    reachable = existsSync(target.bin);
+  }
+  return { target, reachable };
+}
+
+function flattenCapabilities(capDoc) {
+  const out = [];
+  const families = Array.isArray(capDoc?.families) ? capDoc.families : [];
+  for (const family of families) {
+    const cmds = Array.isArray(family?.commands) ? family.commands : [];
+    for (const cmd of cmds) {
+      out.push({ family: family.id || "unknown", command: String(cmd) });
+    }
+  }
+  return out;
+}
+
+function classifyCapabilityCommand(command, hyperReachable) {
+  if (NATIVE_CAPABILITY_COMMANDS.has(command)) return "native";
+  return hyperReachable ? "delegated" : "unavailable";
+}
+
+function cmdRuntimeDoctor(args) {
+  const asJson = args.includes("--json");
+  const deep = args.includes("--deep");
+  const envHyper = process.env.AKAI_HYPER || process.env.AUREKAI_HYPER || process.env.BONFYRE_HYPER || null;
+  const check = runtimeTargetFor("doctor");
+  const targetType = check.target.bin === "bonfyre-hyper" ? "path-fallback" : "resolved-artifact";
+
+  const payload = {
+    schema_version: "aurekai.runtime.doctor.v1",
+    status: check.reachable ? "PASS" : "FAIL",
+    checked_at: new Date().toISOString(),
+    deep,
+    hyper_runtime: {
+      reachable: check.reachable,
+      target_bin: check.target.bin,
+      target_args: check.target.args,
+      resolution_type: targetType,
+      env_override: envHyper,
+    },
+    remediation: check.reachable
+      ? []
+      : [
+          "Set AKAI_HYPER=/path/to/bonfyre-hyper",
+          "Install bonfyre-hyper on PATH",
+          "Clone ../bonfyre-hyper/src/hyper.ts and install bun",
+        ],
+  };
+
+  if (asJson) {
+    process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
+    process.exit(check.reachable ? 0 : 1);
+  }
+
+  if (check.reachable) {
+    console.log("HyperRuntime contract: PASS");
+    console.log(`Resolved target: ${check.target.bin}`);
+    process.exit(0);
+  }
+
+  console.error("HyperRuntime contract: FAIL");
+  console.error(`Resolved target: ${check.target.bin}`);
+  console.error("Resolution options:");
+  console.error("  1. Set AKAI_HYPER=/path/to/bonfyre-hyper");
+  console.error("  2. Place bonfyre-hyper on your PATH");
+  console.error("  3. Clone ../bonfyre-hyper/src/hyper.ts and install bun");
+  process.exit(1);
+}
+
+function cmdRuntimeCapabilities(args) {
+  const asJson = args.includes("--json");
+  const capPath = join(repoRoot, "registry", "aurekai.capabilities.json");
+  const capDoc = JSON.parse(readFileSync(capPath, "utf8"));
+  const flat = flattenCapabilities(capDoc);
+  const check = runtimeTargetFor("runtime");
+
+  const entries = flat.map(item => ({
+    family: item.family,
+    command: item.command,
+    execution_state: classifyCapabilityCommand(item.command, check.reachable),
+  }));
+
+  const stateCounts = entries.reduce((acc, entry) => {
+    acc[entry.execution_state] = (acc[entry.execution_state] || 0) + 1;
+    return acc;
+  }, { native: 0, delegated: 0, unavailable: 0 });
+
+  const payload = {
+    schema_version: "aurekai.runtime.capabilities.v1",
+    generated_at: new Date().toISOString(),
+    source: capPath,
+    hyper_runtime_reachable: check.reachable,
+    totals: {
+      commands: entries.length,
+      ...stateCounts,
+    },
+    capabilities: entries,
+  };
+
+  if (asJson) {
+    process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
+    return;
+  }
+
+  console.log(`Runtime capabilities: ${entries.length} commands`);
+  console.log(`native=${stateCounts.native} delegated=${stateCounts.delegated} unavailable=${stateCounts.unavailable}`);
+}
+
+function cmdCapabilityRegistry(args) {
+  const asJson = args.includes("--json");
+  const capPath = join(repoRoot, "registry", "aurekai.capabilities.json");
+  const capDoc = JSON.parse(readFileSync(capPath, "utf8"));
+  const check = runtimeTargetFor("capability");
+  const flat = flattenCapabilities(capDoc);
+
+  const families = (capDoc.families || []).map(family => ({
+    id: family.id,
+    label: family.label,
+    command_count: Array.isArray(family.commands) ? family.commands.length : 0,
+  }));
+
+  const payload = {
+    schema_version: "aurekai.capability.registry.v1",
+    generated_at: new Date().toISOString(),
+    source: capPath,
+    family_count: families.length,
+    command_count: flat.length,
+    hyper_runtime_reachable: check.reachable,
+    families,
+    experimental_tracks: capDoc.experimental_tracks || [],
+    packs: capDoc.packs || {},
+  };
+
+  if (asJson) {
+    process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
+    return;
+  }
+
+  console.log(`Capability registry: families=${families.length} commands=${flat.length}`);
+  console.log(`hyper-runtime reachable=${check.reachable ? "yes" : "no"}`);
+}
+
+async function cmdModelVerify(args) {
+  const model = args.find(arg => !arg.startsWith("-"));
+  if (!model) {
+    throw new Error("model verify requires <model>");
+  }
+  const passThrough = args.filter(arg => arg !== model);
+  await weightsCommand(["prove", model, ...passThrough]);
+}
+
 const rawArgs = process.argv.slice(2);
 if (rawArgs.length === 0 || rawArgs[0] === "--help" || rawArgs[0] === "-h" || rawArgs[0] === "help") {
   printHelp();
@@ -196,6 +373,23 @@ if (rawArgs[0] === "manifest:print") {
 const args = normalizeArgs(rawArgs);
 const command = args[0];
 const rest = args.slice(1);
+
+if (command === "runtime" && (rest[0] === "doctor" || rest[0] === "capabilities")) {
+  if (rest[0] === "doctor") cmdRuntimeDoctor(rest.slice(1));
+  if (rest[0] === "capabilities") cmdRuntimeCapabilities(rest.slice(1));
+  process.exit(0);
+}
+
+if (command === "capability" && rest[0] === "registry") {
+  cmdCapabilityRegistry(rest.slice(1));
+  process.exit(0);
+}
+
+if ((command === "model" && rest[0] === "verify") || command === "model:verify") {
+  const modelArgs = command === "model:verify" ? rest : rest.slice(1);
+  await cmdModelVerify(modelArgs);
+  process.exit(process.exitCode || 0);
+}
 
 // Weightless-first run path — handled natively without legacy binary
 if (command === "run" && rest.includes("--weightless-first")) {
@@ -293,11 +487,6 @@ if (target.bin === "bonfyre-hyper") {
 }
 
 if (!binaryReachable) {
-  const nativeCommands = [
-    "weights", "weightops", "memory", "cas", "pack", "fetch", "delta",
-    "manifest", "bench", "proof", "mcp", "block", "gauge", "fpqx",
-    "run --weightless-first",
-  ];
   console.error(`  error: command '${command}' requires the bonfyre-hyper runtime, which is not installed.`);
   console.error("");
   console.error("  Resolution options:");
@@ -306,7 +495,10 @@ if (!binaryReachable) {
   console.error("    3. Clone bonfyre-hyper to ../bonfyre-hyper/src/hyper.ts and install bun");
   console.error("");
   console.error("  Natively available without bonfyre-hyper:");
-  console.error("    " + nativeCommands.join("  "));
+  console.error("    " + NATIVE_TOP_LEVEL_COMMANDS.join("  "));
+  console.error("");
+  console.error("  Contract check:");
+  console.error("    akai runtime doctor --json");
   process.exit(127);
 }
 

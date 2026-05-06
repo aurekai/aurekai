@@ -370,8 +370,55 @@ async function cmdProofView(args) {
   });
 }
 
+async function cmdProofBundle(args) {
+  const inFile = flag(args, "--in") || flag(args, "--proof") || args.find(a => !a.startsWith("-"));
+  if (!inFile) throw new Error("proof bundle requires --in <proof.json>");
+  const outFile = flag(args, "--out");
+  const asJson = hasFlag(args, "--json");
+
+  const inPath = resolve(inFile);
+  if (!existsSync(inPath)) throw new Error(`proof file not found: ${inFile}`);
+
+  const proofRaw = readFileSync(inPath);
+  const proofDoc = JSON.parse(proofRaw.toString("utf8"));
+  const graph = extractProofGraph(proofDoc);
+  const sourceHash = createHash("sha256").update(proofRaw).digest("hex");
+
+  const bundle = {
+    schema_version: "aurekai.proof.bundle.v1",
+    bundled_at: now(),
+    source: inPath,
+    source_bytes: proofRaw.length,
+    source_hash: `sha256:${sourceHash}`,
+    node_count: graph.nodes.length,
+    edge_count: graph.edges.length,
+    metadata: graph.meta,
+  };
+
+  if (outFile) {
+    const outPath = resolve(outFile);
+    mkdirSync(dirname(outPath), { recursive: true });
+    writeFileSync(outPath, JSON.stringify(bundle, null, 2) + "\n", "utf8");
+    bundle.output = outPath;
+  }
+
+  if (asJson) {
+    process.stdout.write(JSON.stringify(bundle, null, 2) + "\n");
+    return;
+  }
+
+  printJson({
+    schema_version: "aurekai.weightops.result.v1",
+    command: "proof.bundle",
+    status: "PASS",
+    created_at: now(),
+    payload: bundle,
+  });
+}
+
 function printProofHelp() {
   console.log("Usage:");
+  console.log("  akai proof bundle  --in <proof.json> [--out <aurekai-proof.akproof.json>] [--json]");
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view    --bin <proof.akproofbin> [--json]");
   console.log("");
@@ -388,6 +435,7 @@ export async function proofCommand(args) {
     return;
   }
 
+  if (sub === "bundle") return cmdProofBundle(rest);
   if (sub === "compact") return cmdProofCompact(rest);
   if (sub === "view") return cmdProofView(rest);
 
