@@ -62,7 +62,7 @@ function printHelp() {
   console.log("  akai weights drift-monitor --model <model.akmodel> [--baseline <model@tag>] [--window <Nh>] [--threshold <0-1>] [--emit-alert] [--dry-run]");
   console.log("  akai weights perf-profile --model <model.akmodel> [--tasks <t,...>] [--hardware <hw>] [--warmup <N>] [--runs <N>] [--out <file.akprofile>]");
   console.log("  akai weights ensemble-merge --models <m1,m2,...> [--method <linear|slerp|task-vector>] [--weights <w1,w2,...>] [--out <file.akmodel>] [--dry-run]");
-  console.log("  akai weights pipeline-dag --plan <steps.json> [--validate-only] [--out <file.akdag>] [--dry-run]");
+  console.log("  akai weights pipeline-dag --plan <steps.json> [--validate-only] [--out <file.akdag>] [--model <model.akmodel>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--dry-run]");
   console.log("  akai weights edge-compile --model <model.akmodel> --target <rpi4|jetson|coral|wasm> [--optimize <speed|size|balanced>] [--out <file.akedge>] [--dry-run]");
   console.log("  akai weights quantize-target --model <model.akmodel> --target <rpi4|jetson|coral|wasm|x86-avx2|arm-neon> [--bits <4|8|16>] [--calibrate <calib.json>] [--out <file.akquant>] [--dry-run]");
   console.log("  akai weights adapter-list --model <model.akmodel> [--task <task>]");

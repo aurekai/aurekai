@@ -144,7 +144,7 @@ function printWeightsHelp() {
   console.log("  akai weights perf-profile --model <model.akmodel> [--tasks <t,...>] [--hardware <hw>] [--warmup <N>] [--runs <N>] [--out <file.akprofile>]");
   // Group D — Multi-model Orchestration
   console.log("  akai weights ensemble-merge --models <m1,m2,...> [--method <linear|slerp|task-vector>] [--weights <w1,w2,...>] [--out <file.akmodel>] [--dry-run]");
-  console.log("  akai weights pipeline-dag --plan <steps.json> [--validate-only] [--out <file.akdag>] [--dry-run]");
+  console.log("  akai weights pipeline-dag --plan <steps.json> [--validate-only] [--out <file.akdag>] [--model <model.akmodel>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--dry-run]");
   // Group E — Edge + Embedded
   console.log("  akai weights edge-compile --model <model.akmodel> --target <rpi4|jetson|coral|wasm> [--optimize <speed|size|balanced>] [--out <file.akedge>] [--dry-run]");
   console.log("  akai weights quantize-target --model <model.akmodel> --target <rpi4|jetson|coral|wasm|x86-avx2|arm-neon> [--bits <4|8|16>] [--calibrate <calib.json>] [--out <file.akquant>] [--dry-run]");
@@ -2557,6 +2557,9 @@ function cmdPipelineDag(args) {
   const planArg     = flag(args, "--plan") || null;
   const validateOnly = hasFlag(args, "--validate-only");
   const outFile     = flag(args, "--out") || null;
+  const modelArg    = flag(args, "--model") || null;
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
+  const integrityArg = flag(args, "--integrity-proof") || flag(args, "--integrity-gate") || null;
   const dryRun      = hasFlag(args, "--dry-run");
 
   let plan = null;
@@ -2609,6 +2612,27 @@ function cmdPipelineDag(args) {
     });
   });
 
+  const gatedCommands = new Set([
+    "weights.serve-cdn",
+    "weights.moq-stream",
+    "weights.marketplace",
+    "weights.arb-route",
+  ]);
+
+  const requiresEvidence = steps.some(s => gatedCommands.has(String(s.command || "").trim()));
+  const hydration = resolveHydrateState(hydrateStateArg, modelArg);
+  const integrity = resolveIntegrityEvidence(integrityArg, modelArg);
+  const evidenceOk = hydration.available
+    && hydration.model_match
+    && hydration.hydrated_regions > 0
+    && integrity.available
+    && integrity.gate_open
+    && integrity.model_match;
+
+  if (requiresEvidence && !evidenceOk) {
+    validationErrors.push("pipeline includes gated steps but hydration/integrity evidence is missing or invalid");
+  }
+
   const dagHash = proofHash(`dag:${plan.name}:steps=${steps.map(s => s.id).join(",")}`);
 
   const payload = {
@@ -2623,6 +2647,13 @@ function cmdPipelineDag(args) {
       status: validateOnly ? "pending" : "planned",
     })),
     execution_order: order,
+    model_ref: modelArg,
+    gate_evidence: {
+      required: requiresEvidence,
+      hydration,
+      integrity,
+      passed: !requiresEvidence || evidenceOk,
+    },
     validation: {
       valid: validationErrors.length === 0,
       errors: validationErrors,
@@ -2647,6 +2678,9 @@ function cmdPipelineDag(args) {
   });
 
   printJson(result);
+  if (validationErrors.length > 0) {
+    process.exitCode = 1;
+  }
   console.error(`\n  → PIPELINE DAG: ${steps.length} steps (${order.join(" → ")}) — ${validationErrors.length === 0 ? "VALID" : `INVALID: ${validationErrors[0]}`}`);
 }
 
