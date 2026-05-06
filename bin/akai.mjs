@@ -44,8 +44,8 @@ function printHelp() {
   console.log("  akai block inspect <model|layer|tensor> [--layer N] [--tensor name] [--json]");
   console.log("  akai block commute --a <delta_a> --b <delta_b> [--tensor name] [--json]");
   console.log("  akai gauge fix <model.fpqx> --preserve energy,subspace,cosine [--json]");
-  console.log("  akai fpqx plan <model> --target edge|metal|cuda|neon [--context 8k|128k]");
-  console.log("  akai weights compile <model> --objective latency=N,bw=N,cosine=N --target metal|cuda|cpu");
+  console.log("  akai fpqx plan <model.safetensors> --target edge|metal|cuda|neon [--context 8k|128k]");
+  console.log("  akai weights compile <model.safetensors> --objective latency=N,bw=N,cosine=N --target metal|cuda|cpu");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -282,6 +282,34 @@ if (command === "fpqx" || command === "fpqx:plan" || command === "fpqx:align-sae
 }
 
 const target = resolveLegacyBinary(command);
+
+// Before spawning, verify the binary is reachable — spawnSync gives no output on ENOENT
+let binaryReachable = false;
+if (target.bin === "bonfyre-hyper") {
+  const which = spawnSync("which", [target.bin], { encoding: "utf8" });
+  binaryReachable = which.status === 0;
+} else {
+  binaryReachable = existsSync(target.bin);
+}
+
+if (!binaryReachable) {
+  const nativeCommands = [
+    "weights", "weightops", "memory", "cas", "pack", "fetch", "delta",
+    "manifest", "bench", "proof", "mcp", "block", "gauge", "fpqx",
+    "run --weightless-first",
+  ];
+  console.error(`  error: command '${command}' requires the bonfyre-hyper runtime, which is not installed.`);
+  console.error("");
+  console.error("  Resolution options:");
+  console.error("    1. Set AKAI_HYPER=/path/to/bonfyre-hyper in your environment");
+  console.error("    2. Place a bonfyre-hyper binary on your PATH");
+  console.error("    3. Clone bonfyre-hyper to ../bonfyre-hyper/src/hyper.ts and install bun");
+  console.error("");
+  console.error("  Natively available without bonfyre-hyper:");
+  console.error("    " + nativeCommands.join("  "));
+  process.exit(127);
+}
+
 const proc = spawnSync(target.bin, [...target.args, ...rest], {
   stdio: "inherit",
   env: detectLegacyEnv(),
