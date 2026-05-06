@@ -651,49 +651,79 @@ function cmdCompileOperatorAlgebra(args) {
 
 function cmdStatus(args) {
   const model = args[0] || null;
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
   const runId = randomUUID();
 
-  // Read real hydration state from audit log — infer checkpoint from most recent operations
   let hydrationState = null;
   if (model) {
-    const logPath = auditLogPath(model);
-    let lastOps = [];
-    if (existsSync(logPath)) {
-      try {
-        lastOps = readFileSync(logPath, "utf8").split("\n").filter(l => l.trim())
-          .map(l => { try { return JSON.parse(l); } catch { return null; } })
-          .filter(Boolean)
-          .slice(-20);
-      } catch { /* unreadable log */ }
+    // 1. Try real hydrate-state artifact first (written by hydrate engine)
+    const hydrateState = resolveHydrateState(hydrateStateArg, model);
+    if (hydrateState.available && hydrateState.model_match) {
+      const pct = Math.round(hydrateState.readiness_score * 100);
+      const checkpoint = pct >= 100 ? "full"
+        : pct >= 68 ? "quality"
+        : pct >= 41 ? "usable"
+        : pct >= 22 ? "draft"
+        : pct > 0  ? "route/gate"
+        : "skeleton";
+      hydrationState = {
+        model,
+        checkpoint,
+        pct,
+        readiness_score: hydrateState.readiness_score,
+        source:              "hydrate-state-artifact",
+        state_file:          hydrateState.state_path,
+        hydrated_regions:    hydrateState.hydrated_regions,
+        total_regions:       hydrateState.total_regions,
+        hydrated_bytes:      hydrateState.hydrated_bytes,
+        region_names:        hydrateState.region_names,
+        supported_tasks: pct >= 41 ? ["chat", "summarize", "brief"]
+          : pct >= 22 ? ["summarize-draft", "classify"]
+          : ["route", "identify"],
+        proof_hash: proofHash(`status:${model}:hydrate-state:${hydrateState.run_id}`),
+      };
+    } else {
+      // 2. Fall back: infer checkpoint from audit log operations
+      const logPath = auditLogPath(model);
+      let lastOps = [];
+      if (existsSync(logPath)) {
+        try {
+          lastOps = readFileSync(logPath, "utf8").split("\n").filter(l => l.trim())
+            .map(l => { try { return JSON.parse(l); } catch { return null; } })
+            .filter(Boolean)
+            .slice(-20);
+        } catch { /* unreadable log */ }
+      }
+      const hasProve     = lastOps.some(e => e.operation === "prove");
+      const hasSkeleton  = lastOps.some(e => e.operation === "skeleton");
+      const hasHydrate   = lastOps.some(e => e.operation === "hydrate");
+      const hasCompile   = lastOps.some(e => e.operation === "compile" || e.operation === "compile.algebra");
+      const lastEntry    = lastOps[lastOps.length - 1] || null;
+
+      const checkpoint = hasProve ? "quality"
+        : hasHydrate  ? "usable"
+        : hasCompile  ? "draft"
+        : hasSkeleton ? "skeleton"
+        : "unknown";
+      const pctMap = { quality: 68, usable: 41, draft: 22, skeleton: 0, unknown: 0 };
+      const pct = pctMap[checkpoint];
+
+      hydrationState = {
+        model,
+        checkpoint,
+        pct,
+        readiness_score: parseFloat((pct / 100).toFixed(2)),
+        source:              "audit-log-inference",
+        derived_from_audit:  lastOps.length > 0,
+        audit_entry_count:   lastOps.length,
+        last_operation:      lastEntry?.operation || null,
+        last_operation_at:   lastEntry?.timestamp || null,
+        supported_tasks: pct >= 41 ? ["chat", "summarize", "brief"]
+          : pct >= 22 ? ["summarize-draft", "classify"]
+          : ["route", "identify"],
+        proof_hash: proofHash(`status:${model}:${checkpoint}:${lastOps.length}`),
+      };
     }
-    const hasProve     = lastOps.some(e => e.operation === "prove");
-    const hasSkeleton  = lastOps.some(e => e.operation === "skeleton");
-    const hasHydrate   = lastOps.some(e => e.operation === "hydrate");
-    const hasCompile   = lastOps.some(e => e.operation === "compile");
-    const lastEntry    = lastOps[lastOps.length - 1] || null;
-
-    const checkpoint = hasProve ? "quality"
-      : hasHydrate  ? "usable"
-      : hasCompile  ? "draft"
-      : hasSkeleton ? "skeleton"
-      : "unknown";
-    const pctMap = { quality: 68, usable: 41, draft: 22, skeleton: 0, unknown: 0 };
-    const pct = pctMap[checkpoint];
-
-    hydrationState = {
-      model,
-      checkpoint,
-      pct,
-      readiness_score: parseFloat((pct / 100).toFixed(2)),
-      derived_from_audit: lastOps.length > 0,
-      audit_entry_count: lastOps.length,
-      last_operation: lastEntry?.operation || null,
-      last_operation_at: lastEntry?.timestamp || null,
-      supported_tasks: pct >= 41 ? ["chat", "summarize", "brief"]
-        : pct >= 22 ? ["summarize-draft", "classify"]
-        : ["route", "identify"],
-      proof_hash: proofHash(`status:${model}:${checkpoint}:${lastOps.length}`),
-    };
   }
 
   const payload = {
@@ -2284,84 +2314,130 @@ function cmdProofChain(args) {
   const dryRun    = hasFlag(args, "--dry-run");
 
   const modelId   = baseModelName(model);
-  const qMatch    = model.match(/\.(q[2-9]|fp16)\.akmodel$/i);
-  const quant     = qMatch ? qMatch[1].toLowerCase() : "q4";
 
-  // Construct proof chain links from transformation history
-  const chainLinks = [
-    {
+  // Load real audit log entries for this model
+  const logPath = auditLogPath(model);
+  let auditEntries = [];
+  if (existsSync(logPath)) {
+    try {
+      auditEntries = readFileSync(logPath, "utf8").split("\n").filter(l => l.trim())
+        .map(l => { try { return JSON.parse(l); } catch { return null; } })
+        .filter(Boolean);
+    } catch { /* unreadable */ }
+  }
+
+  // Require either a local model file OR at least one audit entry to build a real chain
+  const modelExists = existsSync(model);
+  if (!modelExists && auditEntries.length === 0) {
+    // Also check SBOM as a valid starting point
+    const sbomExists = sbomFile && existsSync(sbomFile);
+    if (!sbomExists) {
+      console.error(`  error: no model file, audit log, or SBOM found for '${model}'`);
+      console.error("  proof-chain requires at least one real artifact. Run akai weights skeleton or hydrate first.");
+      process.exit(1);
+    }
+  }
+
+  // Build chain links from real recorded operations
+  const chainLinks = [];
+
+  // If the model file itself exists, use its real hash as the origin link
+  if (modelExists) {
+    const modelBuf = readFileSync(model);
+    const modelHash = "ak:sha256:" + createHash("sha256").update(modelBuf).digest("hex").slice(0, 32);
+    chainLinks.push({
       sequence:     0,
       link_type:    "origin",
-      artifact:     `hf://aurekai/model-memory/${modelId}`,
-      operation:    "base-model",
+      artifact:     model,
+      operation:    "model-file",
       parent_hash:  null,
-      current_hash: proofHash(`origin:${modelId}:fp16`),
-      timestamp:    new Date(Date.now() - 86400000).toISOString(),
-      agent:        "aurekai-ingest",
-      metadata:     { source: "huggingface", original_size: 14.0 },
-    },
-    {
-      sequence:     1,
-      link_type:    "transformation",
-      artifact:     `model:${modelId}.${quant}.akmodel`,
-      operation:    "synth-quant",
-      parent_hash:  proofHash(`origin:${modelId}:fp16`),
-      current_hash: proofHash(`synth-quant:${modelId}:fp16→${quant}`),
-      timestamp:    new Date(Date.now() - 43200000).toISOString(),
-      agent:        "aurekai-quant-service",
-      metadata:     { from_quant: "fp16", to_quant: quant, fidelity: 0.94 },
-    },
-    {
-      sequence:     2,
+      current_hash: modelHash,
+      timestamp:    now(),
+      agent:        "local",
+      metadata:     { file_size: modelBuf.length },
+    });
+  }
+
+  // Add a link for each real audit entry
+  auditEntries.forEach((entry, i) => {
+    const seq = chainLinks.length;
+    const parentHash = chainLinks[seq - 1]?.current_hash || null;
+    chainLinks.push({
+      sequence:     seq,
+      link_type:    entry.operation === "prove" ? "attestation" : "operation",
+      artifact:     `${modelId}@${entry.operation}`,
+      operation:    entry.operation,
+      parent_hash:  parentHash,
+      current_hash: entry.proof_hash || proofHash(`${entry.operation}:${modelId}:seq=${seq}`),
+      timestamp:    entry.timestamp,
+      agent:        entry.actor || "akai-runner",
+      metadata:     {
+        bytes_read:    entry.bytes_read,
+        bytes_written: entry.bytes_written,
+        duration_ms:   entry.duration_ms,
+        status:        entry.status,
+      },
+    });
+  });
+
+  // If an SBOM file is provided and exists, add it as an attestation link
+  const sbomDoc = sbomFile ? readJsonMaybe(sbomFile) : null;
+  if (sbomDoc) {
+    const seq = chainLinks.length;
+    const parentHash = chainLinks[seq - 1]?.current_hash || null;
+    const sbomHash = proofHash(JSON.stringify(sbomDoc));
+    chainLinks.push({
+      sequence:     seq,
       link_type:    "attestation",
-      artifact:     `sbom:${modelId}.${quant}.aksbom`,
-      operation:    "sbom-generate",
-      parent_hash:  proofHash(`synth-quant:${modelId}:fp16→${quant}`),
-      current_hash: proofHash(`sbom:${modelId}:${quant}:8`),
-      timestamp:    new Date(Date.now() - 21600000).toISOString(),
-      agent:        "aurekai-sbom-service",
-      metadata:     { components: 8, license: "apache-2.0" },
-    },
-  ];
+      artifact:     sbomFile,
+      operation:    "sbom",
+      parent_hash:  parentHash,
+      current_hash: sbomHash,
+      timestamp:    sbomDoc.generated_at || now(),
+      agent:        "local",
+      metadata:     { sbom_file: sbomFile, components: sbomDoc.components?.length || null },
+    });
+  }
+
+  if (chainLinks.length === 0) {
+    console.error(`  error: no chain links could be built for '${model}' — no model file, audit entries, or SBOM`);
+    process.exit(1);
+  }
+
+  const proofRoot = proofHash(chainLinks.map(l => l.current_hash).join(":"));
 
   const payload = {
     schema_version:   "aurekai.weightops.proof_chain.v1",
     generated_at:     now(),
     model_ref:        modelId,
-    proof_root:       proofHash(`proof-chain:${modelId}:${chainLinks.length}`),
+    proof_root:       proofRoot,
     chain_name:       chainName,
     chain_links:      chainLinks,
     lineage: {
-      base_model:     modelId,
-      transformations: chainLinks.filter(l => l.link_type === "transformation").map(l => l.operation),
-      attestations_count: chainLinks.filter(l => l.link_type === "attestation").length,
-      verification_count: 0,
+      base_model:          modelId,
+      transformations:     chainLinks.filter(l => l.link_type === "operation").map(l => l.operation),
+      attestations_count:  chainLinks.filter(l => l.link_type === "attestation").length,
+      verification_count:  chainLinks.filter(l => l.operation === "prove").length,
     },
-    audit_trail: chainLinks.map(l => ({
-      timestamp: l.timestamp,
-      event:     `${l.link_type} - ${l.operation}`,
-      hash:      l.current_hash,
-    })),
-    integrity_status: "valid",
-    verified_count:   chainLinks.filter(l => l.link_type === "attestation").length,
+    integrity_status: "recorded",
     total_links:      chainLinks.length,
     output_file:      outFile,
   };
 
   if (!dryRun) writeJsonArtifact(outFile, payload);
-  
+
   const result = wrapResult("proof-chain", payload, {
     modelRef: modelId,
-    outputArtifacts: dryRun ? [] : [{ type: "proof", path: outFile, hash: payload.proof_root, size_mb: 1.2 }],
-    bytesWritten: dryRun ? 0 : 4096,
+    outputArtifacts: dryRun ? [] : [{ type: "proof", path: outFile, hash: proofRoot, size_mb: JSON.stringify(payload).length / 1e6 }],
+    bytesWritten: dryRun ? 0 : Buffer.byteLength(JSON.stringify(payload)),
     status: "PASS",
   });
 
   printJson(result);
   if (dryRun) {
-    console.error(`\n  → dry-run: proof chain computed with ${chainLinks.length} links — not written`);
+    console.error(`\n  → dry-run: proof chain has ${chainLinks.length} links (${auditEntries.length} from audit log)`);
   } else {
-    console.error(`\n  → proof chain written: ${outFile}  (${chainLinks.length} links, lineage verified)`);
+    console.error(`\n  → proof chain written: ${outFile}  (${chainLinks.length} links, ${auditEntries.length} from audit log)`);
   }
 }
 
