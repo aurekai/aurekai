@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.mjs";
 import { weightsCommand, memoryCommand } from "../src/weightops.mjs";
 import { casCommand } from "../src/cas.mjs";
+import { packCommand } from "../src/pack.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -24,6 +25,7 @@ function printHelp() {
   console.log("  akai model:inspect ...");
   console.log("  akai fpqx:align-sae ...");
   console.log("  akai cas import|verify|materialize|stats|gc ...");
+  console.log("  akai pack build|inspect|materialize ...");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -196,6 +198,12 @@ if (command === "memory") {
 // CAS — handled natively
 if (command === "cas") {
   await casCommand(rest);
+  process.exit(0);
+}
+
+// Packs — handled natively
+if (command === "pack") {
+  await packCommand(rest);
   process.exit(0);
 }
 
