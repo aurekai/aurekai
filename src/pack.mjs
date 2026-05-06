@@ -12,8 +12,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { chunkBufferCdc } from "./chunking.mjs";
-import { compileManifestBinary, parseManifestBinary } from "./manifest-bin.mjs";
-
+import { compileManifestBinary, parseManifestBinary } from "./manifest-bin.mjs";import { sliceFile, mmapStats, evict as mmapEvict } from "./mmap.mjs";
 const PACK_MAGIC = Buffer.from("AKPACKV2", "ascii");
 const HEADER_LEN = PACK_MAGIC.length + 16;
 
@@ -375,15 +374,12 @@ async function inspectPack(args) {
   });
 }
 
+/**
+ * Zero-copy read from pack payload using the mmap pool.
+ * Maps the pack file once on first call; subsequent calls return Buffer.subarray() views.
+ */
 function readPackBytes(packPath, start, length) {
-  const fd = openSync(packPath, "r");
-  try {
-    const buf = Buffer.alloc(length);
-    readSync(fd, buf, 0, length, start);
-    return buf;
-  } finally {
-    closeSync(fd);
-  }
+  return sliceFile(packPath, start, length);
 }
 
 async function materializePack(args) {
@@ -404,6 +400,10 @@ async function materializePack(args) {
     throw new Error(oneFile ? `file '${oneFile}' not found in pack` : "pack has no files");
   }
 
+  // Prime the mmap pool for this pack before extracting any chunks.
+  // After this point every readPackBytes() call returns a zero-copy subarray.
+  sliceFile(idx.packPath, 0, 0); // warms the mapping without slicing payload
+
   const extracted = [];
   for (const f of targets) {
     const outPath = join(outDir, f.name);
@@ -413,6 +413,7 @@ async function materializePack(args) {
     try {
       for (const chunkRef of f.chunk_refs) {
         const chunk = idx.metadata.chunks[chunkRef];
+        // Zero-copy: returns Buffer.subarray() view into the already-mapped pack buffer.
         const data = readPackBytes(idx.packPath, chunk.pack_offset_bytes, chunk.size_bytes);
         writeSync(fd, data);
       }
@@ -435,6 +436,8 @@ async function materializePack(args) {
     });
   }
 
+  const poolStats = mmapStats();
+
   printJson({
     schema_version: "aurekai.pack.result.v1",
     command: "pack.materialize",
@@ -446,6 +449,12 @@ async function materializePack(args) {
       extracted_count: extracted.length,
       extracted,
       verify,
+      zero_copy: true,
+      mmap_pool: {
+        mapped_files: poolStats.mapped_file_count,
+        mapped_bytes: poolStats.total_mapped_bytes,
+        total_slices: poolStats.total_slice_count,
+      },
     },
   });
 }

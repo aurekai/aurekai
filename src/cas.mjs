@@ -5,6 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { Blake3Hasher } from "@napi-rs/blake-hash";
 import { chunkBufferCdc, hashStringsToBlake3 } from "./chunking.mjs";
+import { sliceFile, mmapStats } from "./mmap.mjs";
 
 function now() {
   return new Date().toISOString();
@@ -339,12 +340,15 @@ async function cmdMaterialize(args) {
       const chunkId = String(chunk.hashes?.blake3 || "").replace("blake3:", "");
       const chunkPath = join(d.chunks, chunkId);
       if (!existsSync(chunkPath)) throw new Error(`chunk missing for materialize: ${chunk.hashes.blake3}`);
-      writeSync(fd, readFileSync(chunkPath));
+      // Zero-copy: maps each chunk file once; subsequent reads are Buffer.subarray() views.
+      const chunkSize = statSync(chunkPath).size;
+      writeSync(fd, sliceFile(chunkPath, 0, chunkSize));
     }
   } finally {
     closeSync(fd);
   }
 
+  const poolStats = mmapStats();
   const st = statSync(outPath);
   printJson({
     schema_version: "aurekai.cas.result.v1",
@@ -358,6 +362,12 @@ async function cmdMaterialize(args) {
       hash_sha256: manifest.hashes.sha256,
       hash_blake3: manifest.hashes.blake3,
       chunk_count: manifest.chunk_graph?.chunk_count || 0,
+      zero_copy: true,
+      mmap_pool: {
+        mapped_files: poolStats.mapped_file_count,
+        mapped_bytes: poolStats.total_mapped_bytes,
+        total_slices: poolStats.total_slice_count,
+      },
     },
   });
 }
@@ -492,6 +502,7 @@ function printCasHelp() {
   console.log("  akai cas materialize <ref|ak://sha256:...> --out <path>");
   console.log("  akai cas stats");
   console.log("  akai cas gc [--dry-run]");
+  console.log("  akai cas mmap-stats");
 }
 
 export async function casCommand(args) {
@@ -508,6 +519,17 @@ export async function casCommand(args) {
   if (sub === "materialize") return cmdMaterialize(rest);
   if (sub === "stats") return cmdStats();
   if (sub === "gc") return cmdGc(rest);
+  if (sub === "mmap-stats") {
+    const stats = mmapStats();
+    process.stdout.write(JSON.stringify({
+      schema_version: "aurekai.mmap.stats.v1",
+      command: "cas.mmap-stats",
+      status: "PASS",
+      created_at: new Date().toISOString(),
+      payload: stats,
+    }, null, 2) + "\n");
+    return;
+  }
 
   throw new Error(`unknown cas subcommand '${sub}'`);
 }
