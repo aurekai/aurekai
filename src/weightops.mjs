@@ -10,6 +10,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { executeHydrationEngine } from "./hydrate-engine.mjs";
 
 // ---------------------------------------------------------------------------
 // Execution ladder (weightless-first policy, V1 static heuristics)
@@ -105,7 +106,7 @@ function wrapResult(commandName, payload, opts = {}) {
 function printWeightsHelp() {
   console.log("Usage:");
   console.log("  akai weights negotiate --for <recipe> [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
-  console.log("  akai weights hydrate <model> [--progressive] [--emit-readiness]");
+  console.log("  akai weights hydrate <model> [--progressive] [--emit-readiness] [--plan <file.akhydrate|json>] [--source <path|url>] [--out-dir <dir>] [--chunk-bytes <N>]");
   console.log("  akai weights compile <recipe> [--out <file.akweights>]");
   console.log("  akai weights status [<model>]");
   console.log("  akai weights skeleton <model> [--out <file.akskel>]");
@@ -270,12 +271,69 @@ function cmdNegotiate(args) {
 // Command: weights hydrate
 // ---------------------------------------------------------------------------
 
-function cmdHydrate(args) {
+async function cmdHydrate(args) {
   const model       = args[0] || "model.akmodel";
   const progressive = hasFlag(args, "--progressive");
   const emitEvents  = hasFlag(args, "--emit-readiness");
+  const planInput   = flag(args, "--plan");
+  const source      = flag(args, "--source");
+  const outDir      = flag(args, "--out-dir") || ".aurekai/hydrated";
+  const chunkBytes  = parseInt(flag(args, "--chunk-bytes") || "262144", 10);
 
   const runId = randomUUID();
+
+  // Real data-plane path: consume pull plan + fetch byte ranges from source.
+  if (planInput || source) {
+    try {
+      const payload = await executeHydrationEngine({
+        model,
+        source,
+        planInput,
+        outDir,
+        chunkBytes: Number.isFinite(chunkBytes) ? chunkBytes : 262144,
+        runId,
+      });
+
+      const result = wrapResult("hydrate", payload, {
+        modelRef: model,
+        inputArtifacts: [
+          ...(planInput ? [{ type: "pull-plan", path: planInput, hash: proofHash(planInput), size_mb: 0.1 }] : []),
+          ...(source ? [{ type: "source", path: source, hash: proofHash(source), size_mb: 0.1 }] : []),
+        ],
+        outputArtifacts: payload.output_artifacts,
+        bytesRead: payload.bytes_transferred,
+        bytesWritten: payload.bytes_transferred,
+        modelStateDelta: {
+          hydration_mode: "range-engine",
+          region_count: payload.region_count,
+          bytes_transferred: payload.bytes_transferred,
+        },
+        status: "PASS",
+      });
+      printJson(result);
+      return;
+    } catch (err) {
+      const payload = {
+        schema_version: "aurekai.weightops.hydrate.v1",
+        run_id: runId,
+        model,
+        plan_ref: planInput,
+        source,
+        generated_at: now(),
+        error: err.message,
+      };
+      const result = wrapResult("hydrate", payload, {
+        modelRef: model,
+        status: "FAIL",
+        exitCode: 1,
+        errors: [err.message],
+        modelStateDelta: { hydration_mode: "range-engine", failed: true },
+      });
+      printJson(result);
+      process.exitCode = 1;
+      return;
+    }
+  }
 
   if (progressive || emitEvents) {
     // Emit checkpoint progression
@@ -3606,7 +3664,7 @@ export function memoryCommand(args) {
 // Main dispatcher
 // ---------------------------------------------------------------------------
 
-export function weightsCommand(args) {
+export async function weightsCommand(args) {
   _COMMAND_START_TIME = Date.now();  // Track execution duration
   const sub = args[0];
   const rest = args.slice(1);

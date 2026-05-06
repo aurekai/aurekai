@@ -35,6 +35,7 @@
     "test:weightops-envelope": "node ./scripts/validate-weightops-envelope.mjs",
     "test:pack": "node ./scripts/validate-pack.mjs",
     "test:fetch": "node ./scripts/validate-fetch.mjs",
+    "test:hydrate-engine": "node ./scripts/validate-hydrate-engine.mjs",
     "release": "make release",
     "release-check": "make release-check"
   },
