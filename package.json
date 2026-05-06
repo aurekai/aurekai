@@ -33,6 +33,9 @@
     "manifest": "node ./bin/akai.mjs manifest:print",
     "manifest:render": "node ./src/render-manifest.mjs",
     "test:weightops-envelope": "node ./scripts/validate-weightops-envelope.mjs",
+    "test:cas-chunking": "node ./scripts/validate-cas-chunking.mjs",
+    "test:delta-planner": "node ./scripts/validate-delta-planner.mjs",
+    "test:benchmark-gates": "node ./scripts/validate-benchmark-gates.mjs",
     "test:pack": "node ./scripts/validate-pack.mjs",
     "test:fetch": "node ./scripts/validate-fetch.mjs",
     "test:hydrate-engine": "node ./scripts/validate-hydrate-engine.mjs",
@@ -45,5 +48,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@napi-rs/blake-hash": "^1.3.6"
   }
 }

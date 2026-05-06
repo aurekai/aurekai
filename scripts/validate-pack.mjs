@@ -33,6 +33,8 @@ if (!existsSync(pack)) throw new Error("pack not created");
 const inspected = run(["pack", "inspect", pack]);
 if (inspected.command !== "pack.inspect") throw new Error("inspect command mismatch");
 if (inspected.payload.file_count !== 2) throw new Error("inspect file_count mismatch");
+if ((inspected.payload.unique_chunk_count || 0) < 2) throw new Error("inspect unique_chunk_count mismatch");
+if ((inspected.payload.binary_manifest?.region_count || 0) !== 2) throw new Error("binary manifest region_count mismatch");
 
 const matAll = run(["pack", "materialize", pack, "--out-dir", out, "--verify"]);
 if (matAll.command !== "pack.materialize") throw new Error("materialize command mismatch");

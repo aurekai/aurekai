@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import {
   createReadStream,
-  createWriteStream,
   existsSync,
   mkdirSync,
   openSync,
@@ -12,9 +11,11 @@ import {
   closeSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
+import { chunkBufferCdc } from "./chunking.mjs";
+import { compileManifestBinary, parseManifestBinary } from "./manifest-bin.mjs";
 
-const PACK_MAGIC = Buffer.from("AKPACKV1", "ascii");
-const HEADER_LEN = PACK_MAGIC.length + 8;
+const PACK_MAGIC = Buffer.from("AKPACKV2", "ascii");
+const HEADER_LEN = PACK_MAGIC.length + 16;
 
 function now() {
   return new Date().toISOString();
@@ -95,8 +96,9 @@ async function buildPack(args) {
     throw new Error("pack build requires at least one input file");
   }
 
-  const files = [];
-  let offset = 0;
+  const fileEntries = [];
+  const uniqueChunks = [];
+  const chunkByHash = new Map();
 
   for (const input of inputFiles) {
     const p = resolve(input);
@@ -104,47 +106,175 @@ async function buildPack(args) {
     const st = statSync(p);
     if (!st.isFile()) throw new Error(`input is not a file: ${input}`);
     const hashes = await hashFile(p);
+    const content = readFileSync(p);
+    const chunks = chunkBufferCdc(content);
+    const chunkRefs = [];
 
-    files.push({
+    for (const chunk of chunks) {
+      const key = chunk.hashes.blake3;
+      if (!chunkByHash.has(key)) {
+        chunkByHash.set(key, uniqueChunks.length);
+        uniqueChunks.push({
+          blake3: chunk.hashes.blake3,
+          sha256: chunk.hashes.sha256,
+          size_bytes: chunk.length,
+          logical_ref_count: 0,
+          data: chunk.buffer,
+          pack_offset_bytes: 0,
+        });
+      }
+      const chunkIndex = chunkByHash.get(key);
+      uniqueChunks[chunkIndex].logical_ref_count += 1;
+      chunkRefs.push(chunkIndex);
+    }
+
+    fileEntries.push({
       name: basename(p),
       source_path: p,
       size_bytes: st.size,
-      offset_bytes: offset,
       sha256: hashes.sha256,
       blake2b: hashes.blake2b,
+      chunk_refs: chunkRefs,
     });
-    offset += st.size;
   }
 
+  fileEntries.sort((a, b) => a.size_bytes - b.size_bytes);
+
+  let packOffset = 0;
+  for (const chunk of uniqueChunks) {
+    chunk.pack_offset_bytes = packOffset;
+    packOffset += chunk.size_bytes;
+  }
+
+  let firstChunkIndex = 0;
+  const regions = fileEntries.map(file => {
+    const region = {
+      name: file.name,
+      source_path: file.source_path,
+      logical_size_bytes: file.size_bytes,
+      sha256: file.sha256,
+      chunk_refs: file.chunk_refs,
+      first_chunk_index: firstChunkIndex,
+      chunk_count: file.chunk_refs.length,
+    };
+    firstChunkIndex += file.chunk_refs.length;
+    return region;
+  });
+
   const metadata = {
-    schema_version: "aurekai.pack.v1",
+    schema_version: "aurekai.pack.v2",
     created_at: now(),
-    file_count: files.length,
-    payload_bytes: files.reduce((s, f) => s + f.size_bytes, 0),
-    files,
+    layout: {
+      strategy: "size-ascending-region-first",
+      chunking: "content-defined",
+      hash: "blake3",
+      binary_manifest: true,
+    },
+    file_count: fileEntries.length,
+    region_count: regions.length,
+    unique_chunk_count: uniqueChunks.length,
+    logical_payload_bytes: fileEntries.reduce((s, f) => s + f.size_bytes, 0),
+    stored_payload_bytes: uniqueChunks.reduce((s, c) => s + c.size_bytes, 0),
+    dedupe_ratio: Number((fileEntries.reduce((s, f) => s + f.size_bytes, 0) / Math.max(1, uniqueChunks.reduce((s, c) => s + c.size_bytes, 0))).toFixed(4)),
+    regions: regions.map(region => ({
+      name: region.name,
+      source_path: region.source_path,
+      logical_size_bytes: region.logical_size_bytes,
+      sha256: region.sha256,
+      chunk_refs: region.chunk_refs,
+      first_chunk_index: region.first_chunk_index,
+      chunk_count: region.chunk_count,
+    })),
+    chunks: uniqueChunks.map(chunk => ({
+      blake3: chunk.blake3,
+      sha256: chunk.sha256,
+      size_bytes: chunk.size_bytes,
+      logical_ref_count: chunk.logical_ref_count,
+      pack_offset_bytes: chunk.pack_offset_bytes,
+    })),
+    files: regions.map(region => ({
+      name: region.name,
+      size_bytes: region.logical_size_bytes,
+      sha256: region.sha256,
+      chunk_count: region.chunk_count,
+    })),
   };
 
   const metadataBuf = Buffer.from(JSON.stringify(metadata), "utf8");
-  const header = Buffer.concat([PACK_MAGIC, writeU64LE(metadataBuf.length)]);
+  const draftBinaryManifest = compileManifestBinary({
+    regions: regions.map(region => ({
+      name: region.name,
+      first_chunk_index: region.first_chunk_index,
+      chunk_count: region.chunk_count,
+      logical_size_bytes: region.logical_size_bytes,
+    })),
+    chunks: uniqueChunks.map(chunk => ({
+      blake3: chunk.blake3,
+      pack_offset_bytes: 0,
+      size_bytes: chunk.size_bytes,
+      logical_ref_count: chunk.logical_ref_count,
+    })),
+  });
+  const makeAbsoluteChunks = payloadStart => uniqueChunks.map(chunk => ({
+    blake3: chunk.blake3,
+    sha256: chunk.sha256,
+    size_bytes: chunk.size_bytes,
+    logical_ref_count: chunk.logical_ref_count,
+    pack_offset_bytes: payloadStart + chunk.pack_offset_bytes,
+  }));
+
+  let finalizedMetadata = null;
+  let finalizedMetadataBuf = null;
+  let metadataLength = metadataBuf.length;
+
+  while (true) {
+    const payloadStart = HEADER_LEN + metadataLength + draftBinaryManifest.length;
+    const candidateMetadata = {
+      ...metadata,
+      binary_manifest_bytes: draftBinaryManifest.length,
+      payload_start_bytes: payloadStart,
+      chunks: makeAbsoluteChunks(payloadStart),
+    };
+    const candidateBuf = Buffer.from(JSON.stringify(candidateMetadata), "utf8");
+    if (candidateBuf.length === metadataLength) {
+      finalizedMetadata = candidateMetadata;
+      finalizedMetadataBuf = candidateBuf;
+      break;
+    }
+    metadataLength = candidateBuf.length;
+  }
+
+  const binaryManifest = compileManifestBinary({
+    regions: regions.map(region => ({
+      name: region.name,
+      first_chunk_index: region.first_chunk_index,
+      chunk_count: region.chunk_count,
+      logical_size_bytes: region.logical_size_bytes,
+    })),
+    chunks: uniqueChunks.map(chunk => ({
+      blake3: chunk.blake3,
+      pack_offset_bytes: chunk.pack_offset_bytes,
+      size_bytes: chunk.size_bytes,
+      logical_ref_count: chunk.logical_ref_count,
+    })),
+  });
 
   const outPath = resolve(out);
   mkdirSync(dirname(outPath), { recursive: true });
 
-  const fd = openSync(outPath, "w");
-  writeSync(fd, header);
-  writeSync(fd, metadataBuf);
-  closeSync(fd);
+  const rewriteFd = openSync(outPath, "w");
+  writeSync(rewriteFd, Buffer.concat([
+    PACK_MAGIC,
+    writeU64LE(finalizedMetadataBuf.length),
+    writeU64LE(binaryManifest.length),
+  ]));
+  writeSync(rewriteFd, finalizedMetadataBuf);
+  writeSync(rewriteFd, binaryManifest);
 
-  for (const entry of files) {
-    await new Promise((resolveP, rejectP) => {
-      const r = createReadStream(entry.source_path);
-      const w = createWriteStream(outPath, { flags: "a" });
-      r.on("error", rejectP);
-      w.on("error", rejectP);
-      w.on("finish", resolveP);
-      r.pipe(w);
-    });
+  for (const chunk of uniqueChunks) {
+    writeSync(rewriteFd, chunk.data);
   }
+  closeSync(rewriteFd);
 
   const outHashes = await hashFile(outPath);
   const outStat = statSync(outPath);
@@ -156,13 +286,18 @@ async function buildPack(args) {
     created_at: now(),
     payload: {
       output: outPath,
-      file_count: files.length,
+      file_count: fileEntries.length,
+      region_count: regions.length,
+      unique_chunk_count: uniqueChunks.length,
       metadata_bytes: metadataBuf.length,
-      payload_bytes: metadata.payload_bytes,
+      binary_manifest_bytes: binaryManifest.length,
+      logical_payload_bytes: finalizedMetadata.logical_payload_bytes,
+      stored_payload_bytes: finalizedMetadata.stored_payload_bytes,
+      dedupe_ratio: finalizedMetadata.dedupe_ratio,
       pack_bytes: outStat.size,
       sha256: outHashes.sha256,
       blake2b: outHashes.blake2b,
-      files: files.map(f => ({ name: f.name, size_bytes: f.size_bytes, offset_bytes: f.offset_bytes })),
+      files: finalizedMetadata.files.map(f => ({ name: f.name, size_bytes: f.size_bytes, chunk_count: f.chunk_count })),
     },
   });
 }
@@ -183,6 +318,9 @@ function readPackIndex(packPath) {
   const lenBuf = Buffer.alloc(8);
   readSync(fd, lenBuf, 0, 8, PACK_MAGIC.length);
   const metadataLen = readU64LE(lenBuf, 0);
+  const binLenBuf = Buffer.alloc(8);
+  readSync(fd, binLenBuf, 0, 8, PACK_MAGIC.length + 8);
+  const binaryManifestLen = readU64LE(binLenBuf, 0);
 
   const metadataStart = HEADER_LEN;
   const metaBuf = Buffer.alloc(metadataLen);
@@ -190,13 +328,20 @@ function readPackIndex(packPath) {
   const metadataRaw = metaBuf.toString("utf8");
   const metadata = JSON.parse(metadataRaw);
 
+  const binaryManifestStart = metadataStart + metadataLen;
+  const binaryManifestBuf = Buffer.alloc(binaryManifestLen);
+  readSync(fd, binaryManifestBuf, 0, binaryManifestLen, binaryManifestStart);
+  const binaryManifest = parseManifestBinary(binaryManifestBuf);
+
   closeSync(fd);
 
   return {
     packPath: p,
     metadata,
     metadataLen,
-    payloadStart: HEADER_LEN + metadataLen,
+    binaryManifest,
+    binaryManifestLen,
+    payloadStart: HEADER_LEN + metadataLen + binaryManifestLen,
     packSize: statSync(p).size,
   };
 }
@@ -216,31 +361,29 @@ async function inspectPack(args) {
       pack_path: idx.packPath,
       schema_version: idx.metadata.schema_version,
       metadata_bytes: idx.metadataLen,
+      binary_manifest_bytes: idx.binaryManifestLen,
+      binary_manifest: idx.binaryManifest,
       payload_start: idx.payloadStart,
-      payload_bytes: idx.metadata.payload_bytes,
+      payload_bytes: idx.metadata.stored_payload_bytes,
       pack_bytes: idx.packSize,
       file_count: idx.metadata.file_count,
-      files: idx.metadata.files.map(f => ({
-        name: f.name,
-        size_bytes: f.size_bytes,
-        offset_bytes: f.offset_bytes,
-        sha256: f.sha256,
-      })),
+      unique_chunk_count: idx.metadata.unique_chunk_count,
+      regions: idx.metadata.regions,
+      chunks: idx.metadata.chunks,
+      files: idx.metadata.files,
     },
   });
 }
 
-async function copyRange(packPath, start, length, outPath) {
-  mkdirSync(dirname(outPath), { recursive: true });
-
-  await new Promise((resolveP, rejectP) => {
-    const r = createReadStream(packPath, { start, end: start + length - 1 });
-    const w = createWriteStream(outPath, { flags: "w" });
-    r.on("error", rejectP);
-    w.on("error", rejectP);
-    w.on("finish", resolveP);
-    r.pipe(w);
-  });
+function readPackBytes(packPath, start, length) {
+  const fd = openSync(packPath, "r");
+  try {
+    const buf = Buffer.alloc(length);
+    readSync(fd, buf, 0, length, start);
+    return buf;
+  } finally {
+    closeSync(fd);
+  }
 }
 
 async function materializePack(args) {
@@ -254,8 +397,8 @@ async function materializePack(args) {
   const idx = readPackIndex(packPath);
 
   const targets = oneFile
-    ? idx.metadata.files.filter(f => f.name === oneFile)
-    : idx.metadata.files;
+    ? idx.metadata.regions.filter(f => f.name === oneFile)
+    : idx.metadata.regions;
 
   if (targets.length === 0) {
     throw new Error(oneFile ? `file '${oneFile}' not found in pack` : "pack has no files");
@@ -263,9 +406,19 @@ async function materializePack(args) {
 
   const extracted = [];
   for (const f of targets) {
-    const absStart = idx.payloadStart + f.offset_bytes;
     const outPath = join(outDir, f.name);
-    await copyRange(idx.packPath, absStart, f.size_bytes, outPath);
+    mkdirSync(dirname(outPath), { recursive: true });
+
+    const fd = openSync(outPath, "w");
+    try {
+      for (const chunkRef of f.chunk_refs) {
+        const chunk = idx.metadata.chunks[chunkRef];
+        const data = readPackBytes(idx.packPath, chunk.pack_offset_bytes, chunk.size_bytes);
+        writeSync(fd, data);
+      }
+    } finally {
+      closeSync(fd);
+    }
 
     let hashOk = null;
     if (verify) {

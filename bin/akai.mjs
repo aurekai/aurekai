@@ -8,6 +8,7 @@ import { weightsCommand, memoryCommand } from "../src/weightops.mjs";
 import { casCommand } from "../src/cas.mjs";
 import { packCommand } from "../src/pack.mjs";
 import { fetchCommand } from "../src/fetch.mjs";
+import { deltaCommand } from "../src/delta.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -28,6 +29,7 @@ function printHelp() {
   console.log("  akai cas import|verify|materialize|stats|gc ...");
   console.log("  akai pack build|inspect|materialize ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
+  console.log("  akai delta plan|bench ...");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -212,6 +214,12 @@ if (command === "pack") {
 // Fetch — handled natively
 if (command === "fetch") {
   await fetchCommand(rest);
+  process.exit(0);
+}
+
+// Delta planner — handled natively
+if (command === "delta") {
+  await deltaCommand(rest);
   process.exit(0);
 }
 
