@@ -653,20 +653,55 @@ function cmdStatus(args) {
   const model = args[0] || null;
   const runId = randomUUID();
 
+  // Read real hydration state from audit log — infer checkpoint from most recent operations
+  let hydrationState = null;
+  if (model) {
+    const logPath = auditLogPath(model);
+    let lastOps = [];
+    if (existsSync(logPath)) {
+      try {
+        lastOps = readFileSync(logPath, "utf8").split("\n").filter(l => l.trim())
+          .map(l => { try { return JSON.parse(l); } catch { return null; } })
+          .filter(Boolean)
+          .slice(-20);
+      } catch { /* unreadable log */ }
+    }
+    const hasProve     = lastOps.some(e => e.operation === "prove");
+    const hasSkeleton  = lastOps.some(e => e.operation === "skeleton");
+    const hasHydrate   = lastOps.some(e => e.operation === "hydrate");
+    const hasCompile   = lastOps.some(e => e.operation === "compile");
+    const lastEntry    = lastOps[lastOps.length - 1] || null;
+
+    const checkpoint = hasProve ? "quality"
+      : hasHydrate  ? "usable"
+      : hasCompile  ? "draft"
+      : hasSkeleton ? "skeleton"
+      : "unknown";
+    const pctMap = { quality: 68, usable: 41, draft: 22, skeleton: 0, unknown: 0 };
+    const pct = pctMap[checkpoint];
+
+    hydrationState = {
+      model,
+      checkpoint,
+      pct,
+      readiness_score: parseFloat((pct / 100).toFixed(2)),
+      derived_from_audit: lastOps.length > 0,
+      audit_entry_count: lastOps.length,
+      last_operation: lastEntry?.operation || null,
+      last_operation_at: lastEntry?.timestamp || null,
+      supported_tasks: pct >= 41 ? ["chat", "summarize", "brief"]
+        : pct >= 22 ? ["summarize-draft", "classify"]
+        : ["route", "identify"],
+      proof_hash: proofHash(`status:${model}:${checkpoint}:${lastOps.length}`),
+    };
+  }
+
   const payload = {
     schema_version: "aurekai.weightops.status.v1",
     run_id:         runId,
     generated_at:   now(),
     model:          model || "(all)",
-    hydration_state: model ? {
-      model,
-      checkpoint:     "usable",
-      pct:            41,
-      readiness_score:0.41,
-      supported_tasks:["chat", "summarize", "brief"],
-      missing_regions:["layers.9-19.q4", "fp16_refinement"],
-      proof_hash:     proofHash(`status:${model}`),
-    } : null,
+    hydration_state: hydrationState,
     cache: {
       semantic_cache_hits:    0,
       proof_cache_hits:       0,
@@ -676,7 +711,7 @@ function cmdStatus(args) {
 
   const status = wrapResult("status", payload, {
     modelRef: model || "(all)",
-    modelStateDelta: { readiness_score: payload.hydration_state?.readiness_score || 0 },
+    modelStateDelta: { readiness_score: hydrationState?.readiness_score || 0 },
   });
   printJson(status);
 }
@@ -944,21 +979,35 @@ function cmdProve(args) {
   const model   = args[0] || "model.akmodel";
   const recipe  = flag(args, "--tasks") || flag(args, "--for") || null;
 
+  // Require the model file to actually exist — we cannot prove a file we cannot read
+  if (!existsSync(model)) {
+    console.error(`  error: model file not found: ${model}`);
+    console.error("  Proof requires a local model artifact. Ensure the model has been hydrated first.");
+    process.exit(1);
+  }
+
+  // Compute proof hashes from real file content
+  const modelBuf = readFileSync(model);
+  const modelHash = "ak:sha256:" + createHash("sha256").update(modelBuf).digest("hex").slice(0, 32);
+  const fileSize = modelBuf.length;
+
   const payload = {
     schema_version: "aurekai.weightops.proof.v1",
     model,
     recipe:         recipe || "(general)",
     generated_at:   now(),
     proof_bundle: {
-      source_proof:        proofHash(`src:${model}`),
-      chunk_proof:         proofHash(`chunks:${model}`),
+      source_proof:        proofHash(`src:${modelHash}`),
+      chunk_proof:         proofHash(`chunks:${modelHash}`),
       license_proof:       proofHash(`license:${model}`),
-      eval_proof:          proofHash(`eval:${model}`),
-      capability_proof:    proofHash(`capability:${model}:${recipe}`),
-      compression_proof:   proofHash(`compress:${model}`),
-      security_proof:      proofHash(`security:${model}`),
-      runtime_compat_proof:proofHash(`compat:${model}`),
+      eval_proof:          proofHash(`eval:${modelHash}`),
+      capability_proof:    proofHash(`capability:${modelHash}:${recipe}`),
+      compression_proof:   proofHash(`compress:${modelHash}`),
+      security_proof:      proofHash(`security:${modelHash}`),
+      runtime_compat_proof:proofHash(`compat:${modelHash}`),
     },
+    model_hash:          modelHash,
+    file_size_bytes:     fileSize,
     verified_chunks_pct: 100,
     compatible_recipes:  recipe ? [recipe] : ["(all validated at checkpoint 68%)"],
     output_file: model.replace(/\.akmodel$/, ".akweightproof"),
@@ -967,7 +1016,8 @@ function cmdProve(args) {
   const result = wrapResult("prove", payload, {
     modelRef: model,
     outputArtifacts: [{ ref: payload.output_file, role: "proof-bundle" }],
-    modelStateDelta: { verified_chunks_pct: 100 },
+    bytesRead: fileSize,
+    modelStateDelta: { verified_chunks_pct: 100, model_hash: modelHash },
   });
   printJson(result);
 }
@@ -1641,14 +1691,16 @@ function cmdMarketplaceInspect(args) {
     console.error("  error: marketplace inspect requires a model id (e.g. mistral-7b-q4)");
     process.exit(1);
   }
-  const model = MARKETPLACE_CATALOG.find(m => m.id === modelId);
+  const { catalog, source: catalogSource } = loadMarketplaceCatalog();
+  const model = catalog.find(m => m.id === modelId);
   if (!model) {
-    console.error(`  error: model '${modelId}' not found in catalog. Use: akai weights marketplace --list`);
+    console.error(`  error: model '${modelId}' not found in catalog (source: ${catalogSource}). Use: akai weights marketplace --list`);
     process.exit(1);
   }
   const payload = {
     schema_version: "aurekai.weightops.marketplace.v1",
     generated_at:   now(),
+    catalog_source: catalogSource,
     ...model,
     ghost_ready:    model.sae_compatible || model.memory_pack_available,
     proof_hash:     proofHash(`marketplace-inspect:${model.id}`),
@@ -2329,46 +2381,63 @@ async function cmdIntegrityGate(args) {
   const dryRun      = hasFlag(args, "--dry-run");
 
   const modelId     = baseModelName(model);
-  const qMatch      = model.match(/\.(q[2-9]|fp16)\.akmodel$/i);
-  const quant       = qMatch ? qMatch[1].toLowerCase() : "q4";
 
-  // Assemble signatures from available artifacts
-  const signatures = [
-    {
-      signer_id:        "aurekai-origin-key",
-      signature:        proofHash(`sig:origin:${modelId}`),
-      timestamp:        new Date(Date.now() - 86400000).toISOString(),
-      attestation_type: "origin",
-      status:           "valid",
-    },
-    {
-      signer_id:        "aurekai-quant-key",
-      signature:        proofHash(`sig:quant:${modelId}:${quant}`),
-      timestamp:        new Date(Date.now() - 43200000).toISOString(),
-      attestation_type: "transformation",
-      status:           "valid",
-    },
-  ];
+  const errors = [];
+  const warnings = [];
 
-  // Tamper checks
-  const tamperChecks = [
-    { check_type: "hash_verification",  result: "pass", detail: "Model hashes match baseline" },
-    { check_type: "lineage_check",      result: "pass", detail: "Complete transformation lineage verified" },
-    { check_type: "sbom_validation",    result: "pass", detail: "SBOM components all accounted for" },
-    { check_type: "proof_verification", result: "pass", detail: "Proof chain integrity confirmed" },
-  ];
+  // Validate each provided input actually exists — only attest what we can read
+  if (proofFile && !existsSync(proofFile)) {
+    errors.push(`proof file not found: ${proofFile}`);
+  }
+  if (sbomFile && !existsSync(sbomFile)) {
+    errors.push(`SBOM file not found: ${sbomFile}`);
+  }
+  if (signatureFile && !existsSync(signatureFile)) {
+    errors.push(`signature file not found: ${signatureFile}`);
+  }
+  if (publicKeyFile && !existsSync(publicKeyFile)) {
+    errors.push(`public key file not found: ${publicKeyFile}`);
+  }
 
-  const oracleAttestations = oracleMode !== "none"
-    ? [
-        {
-          oracle_id:    "huggingface-safety-oracle",
-          attestation:  `Model ${modelId} passed safety screening on 2024-12-15`,
-          verified_at:  new Date(Date.now() - 3600000).toISOString(),
-          confidence:   0.97,
-        },
-      ]
-    : [];
+  if (errors.length > 0) {
+    const payload = {
+      schema_version: "aurekai.weightops.integrity_gate.v1",
+      generated_at:   now(),
+      model_ref:      modelId,
+      gate_status:    "FAIL",
+      gate_open:      false,
+      errors,
+    };
+    const result = wrapResult("integrity-gate", payload, {
+      modelRef: modelId,
+      status: "FAIL",
+      exitCode: 1,
+      errors,
+    });
+    printJson(result);
+    console.error(`\n  → GATE BLOCKED: missing input artifacts — ${errors.join("; ")}`);
+    if (!dryRun) process.exitCode = 1;
+    return;
+  }
 
+  // Build tamper checks only from artifacts that are actually present
+  const tamperChecks = [];
+
+  const proofDoc = proofFile ? readJsonMaybe(proofFile) : null;
+  if (proofFile) {
+    const proofOk = proofDoc && (proofDoc.schema_version?.includes("proof") || proofDoc.proof_bundle);
+    tamperChecks.push({ check_type: "proof_verification", result: proofOk ? "pass" : "fail",
+      detail: proofOk ? `Proof document loaded: ${proofFile}` : `Proof document malformed or unrecognized schema: ${proofFile}` });
+  }
+
+  const sbomDoc = sbomFile ? readJsonMaybe(sbomFile) : null;
+  if (sbomFile) {
+    const sbomOk = sbomDoc && (sbomDoc.schema_version?.includes("sbom") || sbomDoc.components || sbomDoc.bomFormat);
+    tamperChecks.push({ check_type: "sbom_validation", result: sbomOk ? "pass" : "fail",
+      detail: sbomOk ? `SBOM loaded: ${sbomFile}` : `SBOM malformed or unrecognized schema: ${sbomFile}` });
+  }
+
+  // Signature verification via real verifySignatureForFile when signature provided
   let signatureVerification = null;
   if (signatureFile) {
     try {
@@ -2378,92 +2447,93 @@ async function cmdIntegrityGate(args) {
         publicKeyPath: publicKeyFile,
         casRef,
       });
+      tamperChecks.push({ check_type: "signature_verification", result: signatureVerification.pass ? "pass" : "fail",
+        detail: signatureVerification.pass ? "Signature valid" : `Signature verification failed: ${signatureVerification.error || "mismatch"}` });
     } catch (err) {
-      signatureVerification = {
-        pass: false,
-        signature_valid: false,
-        file_hash_match: false,
-        cas_binding_match: false,
-        error: err.message,
-      };
+      signatureVerification = { pass: false, error: err.message };
+      tamperChecks.push({ check_type: "signature_verification", result: "fail", detail: err.message });
     }
   }
 
-  if (signaturePolicy === "strict") {
-    if (!signatureVerification) {
-      tamperChecks.push({ check_type: "signature_policy", result: "fail", detail: "Strict signature policy requires --signature <sig.json>" });
-    } else if (!signatureVerification.pass) {
-      tamperChecks.push({ check_type: "signature_policy", result: "fail", detail: "Strict signature verification failed" });
-    } else {
-      tamperChecks.push({ check_type: "signature_policy", result: "pass", detail: "Strict signature verification passed" });
-      signatures.push({
-        signer_id: "manifest-signature",
-        signature: proofHash(`sigdoc:${signatureFile}`),
-        timestamp: now(),
-        attestation_type: "signature-policy",
-        status: "valid",
-      });
-    }
+  if (signaturePolicy === "strict" && !signatureVerification?.pass) {
+    tamperChecks.push({ check_type: "signature_policy", result: "fail",
+      detail: signatureVerification ? "Strict signature verification failed" : "Strict policy requires --signature <sig.json>" });
   }
 
-  const allChecksPassed = tamperChecks.every(c => c.result === "pass");
-  const gateOpen = allChecksPassed && signatures.length >= 2;
+  // Only assert signatures from artifacts that were actually provided and verified
+  const signatures = [];
+  if (proofDoc?.proof_bundle) {
+    signatures.push({
+      signer_id: "proof-bundle",
+      signature: proofHash(JSON.stringify(proofDoc.proof_bundle)),
+      timestamp: proofDoc.generated_at || now(),
+      attestation_type: "proof",
+      status: "loaded-from-file",
+    });
+  }
+  if (signatureVerification?.pass) {
+    signatures.push({
+      signer_id: "manifest-signature",
+      signature: proofHash(`sigdoc:${signatureFile}`),
+      timestamp: now(),
+      attestation_type: "signature-policy",
+      status: "verified",
+    });
+  }
+
+  const allChecksPassed = tamperChecks.length > 0 && tamperChecks.every(c => c.result === "pass");
+  const noInputsProvided = !proofFile && !sbomFile && !signatureFile;
+  const gateOpen = !noInputsProvided && allChecksPassed;
+
+  if (noInputsProvided) {
+    warnings.push("No proof, SBOM, or signature provided. Gate cannot be meaningfully evaluated — pass --proof, --sbom, or --signature.");
+  }
+
+  // Oracle attestations only when oracle mode is explicitly enabled AND we have a verified proof
+  const oracleAttestations = (oracleMode !== "none" && proofDoc)
+    ? [{ oracle_id: "local-proof-oracle", attestation: `Proof document for ${modelId} loaded and schema-validated`,
+        verified_at: now(), confidence: 0.80, source: proofFile }]
+    : [];
+
+  const qMatch = model.match(/\.(q[2-9]|fp16)\.akmodel$/i);
+  const quant = qMatch ? qMatch[1].toLowerCase() : null;
 
   const payload = {
     schema_version:       "aurekai.weightops.integrity_gate.v1",
     generated_at:         now(),
     model_ref:            modelId,
-    gate_status:          gateOpen ? "PASS" : "FAIL",
+    gate_status:          gateOpen ? "PASS" : (noInputsProvided ? "INCONCLUSIVE" : "FAIL"),
     gate_open:            gateOpen,
     signature_policy:     signaturePolicy,
     signature_verification: signatureVerification,
     signatures,
-    threshold: {
-      required_signatures: 2,
-      total_signers:       signatures.length,
-      threshold_met:       signatures.length >= 2,
-    },
     tamper_checks:        tamperChecks,
     oracle_attestations:  oracleAttestations,
-    compliance: {
-      license_verified:     true,
-      attribution_valid:    true,
-      code_of_conduct_ok:   true,
-      safety_policy_ok:     true,
-    },
-    risk_assessment: {
-      tamper_risk:          0.02,
-      compliance_risk:      0.01,
-      overall_risk:         0.02,
-      recommendation:       gateOpen ? "Safe to use — all verifications passed" : "BLOCKED — integrity issues detected",
-    },
+    warnings,
     verified_at:          now(),
-    expiry:               new Date(Date.now() + 2592000000).toISOString(), // 30 days
-    audit_log: [
-      `Origin model signature verified (96 hours ago)`,
-      `Quantization transformation verified (48 hours ago)`,
-      `SBOM component audit passed`,
-      `Integrity gate verified (just now)`,
-    ],
+    expiry:               gateOpen ? new Date(Date.now() + 2592000000).toISOString() : null,
   };
 
   const result = wrapResult("integrity-gate", payload, {
     modelRef: modelId,
     inputArtifacts: [
-      { type: "model", path: modelId, hash: proofHash(modelId), size_mb: 3200 },
       ...(proofFile ? [{ type: "proof", path: proofFile, hash: proofHash(proofFile), size_mb: 1.2 }] : []),
       ...(sbomFile ? [{ type: "sbom", path: sbomFile, hash: proofHash(sbomFile), size_mb: 0.1 }] : []),
     ],
-    bytesRead: 3200 * 1024 * 1024 + (proofFile ? 4096 : 0) + (sbomFile ? 512 : 0),
-    status: gateOpen ? "PASS" : "FAIL",
-    exitCode: gateOpen ? 0 : 3,
+    bytesRead: (proofFile ? 4096 : 0) + (sbomFile ? 512 : 0),
+    status: gateOpen ? "PASS" : (noInputsProvided ? "INCONCLUSIVE" : "FAIL"),
+    exitCode: gateOpen ? 0 : (noInputsProvided ? 2 : 3),
+    warnings,
   });
 
   printJson(result);
   if (gateOpen) {
-    console.error(`\n  → GATE OPEN: all integrity checks passed (${signatures.length} signatures, ${tamperChecks.filter(c => c.result === "pass").length}/4 tamper checks)`);
+    console.error(`\n  → GATE OPEN: all integrity checks passed (${signatures.length} signatures, ${tamperChecks.filter(c => c.result === "pass").length}/${tamperChecks.length} tamper checks)`);
+  } else if (noInputsProvided) {
+    console.error(`\n  → GATE INCONCLUSIVE: no proof, SBOM, or signature provided`);
+    if (!dryRun) process.exitCode = 2;
   } else {
-    console.error(`\n  → GATE BLOCKED: integrity failures detected — review audit log`);
+    console.error(`\n  → GATE BLOCKED: integrity failures detected`);
     if (!dryRun) process.exitCode = 3;
   }
 }
