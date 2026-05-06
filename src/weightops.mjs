@@ -26,7 +26,7 @@ import {
 } from "./drift.mjs";
 
 // ---------------------------------------------------------------------------
-// Execution ladder (weightless-first policy, V1 static heuristics)
+// Execution ladder (weightless-first policy)
 // ---------------------------------------------------------------------------
 
 const LADDER = [
@@ -1492,9 +1492,11 @@ const BUNDLED_MARKETPLACE_CATALOG = [
 ];
 
 function loadMarketplaceCatalog() {
+  const defaultRegistryPath = join(homedir(), ".aurekai", "registry", "marketplace.json");
+
   const candidates = [
     process.env.AUREKAI_REGISTRY ? join(process.env.AUREKAI_REGISTRY, "marketplace.json") : null,
-    join(homedir(), ".aurekai", "registry", "marketplace.json"),
+    defaultRegistryPath,
     join(process.cwd(), "registry", "marketplace.json"),
   ].filter(Boolean);
 
@@ -1509,7 +1511,23 @@ function loadMarketplaceCatalog() {
       } catch { /* malformed — try next */ }
     }
   }
-  return { catalog: BUNDLED_MARKETPLACE_CATALOG, source: "bundled-default" };
+
+  // Seed the default registry path from the bundled catalog on first use
+  try {
+    mkdirSync(dirname(defaultRegistryPath), { recursive: true });
+    writeFileSync(defaultRegistryPath, JSON.stringify(BUNDLED_MARKETPLACE_CATALOG, null, 2), { flag: "wx" });
+    return { catalog: BUNDLED_MARKETPLACE_CATALOG, source: defaultRegistryPath };
+  } catch {
+    // File already exists or write failed — return bundled in-memory
+    if (existsSync(defaultRegistryPath)) {
+      try {
+        const data = JSON.parse(readFileSync(defaultRegistryPath, "utf8"));
+        const catalog = Array.isArray(data) ? data : data.models;
+        if (Array.isArray(catalog) && catalog.length > 0) return { catalog, source: defaultRegistryPath };
+      } catch { /* fall through */ }
+    }
+    return { catalog: BUNDLED_MARKETPLACE_CATALOG, source: "bundled-default" };
+  }
 }
 
 function scoreModel(model, tasks, budgetGb, diskGb, qualityMin) {
