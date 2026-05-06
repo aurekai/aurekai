@@ -8,11 +8,13 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, statfsSync } from "node:fs";
+import { arch, cpus, freemem, homedir, totalmem } from "node:os";
+import { basename, dirname, join } from "node:path";
 import { executeHydrationEngine } from "./hydrate-engine.mjs";
 import { resolveHydrateState } from "./hydrate-state.mjs";
 import { verifySignatureForFile } from "./manifest-command.mjs";
+import { parseSafeTensors, sampleTensor, vectorStats, classifyTensorKind } from "./model-tensor.mjs";
 import {
   driftBetweenRefs,
   scanRepoDriftSync,
@@ -93,6 +95,25 @@ function wrapResult(commandName, payload, opts = {}) {
   } = opts;
 
   const duration = Date.now() - _COMMAND_START_TIME;
+  const proofRoot = payload?.proof_hash || proofHash(`result:${commandName}`);
+  const createdAt = now();
+
+  // Append a real audit entry so audit-trail reads back real history
+  if (modelRef && commandName !== "audit-trail") {
+    appendAuditEntry(modelRef, {
+      operation: commandName,
+      command: `weights.${commandName}`,
+      actor: "akai-runner",
+      model_ref: modelRef,
+      proof_hash: proofRoot,
+      status,
+      duration_ms: duration,
+      bytes_read: bytesRead,
+      bytes_written: bytesWritten,
+      timestamp: createdAt,
+      metadata: { trigger: "cli" },
+    });
+  }
 
   return {
     schema_version: "aurekai.weightops.result.v1",
@@ -100,7 +121,7 @@ function wrapResult(commandName, payload, opts = {}) {
     model_ref: modelRef,
     input_artifacts: inputArtifacts,
     output_artifacts: outputArtifacts,
-    proof_root: payload?.proof_hash || proofHash(`result:${commandName}`),
+    proof_root: proofRoot,
     bytes_read: bytesRead,
     bytes_written: bytesWritten,
     model_state_delta: modelStateDelta,
@@ -108,7 +129,7 @@ function wrapResult(commandName, payload, opts = {}) {
     exit_code: exitCode,
     warnings,
     errors,
-    created_at: now(),
+    created_at: createdAt,
     duration_ms: duration,
     payload,
   };
@@ -243,16 +264,42 @@ function resolveIntegrityEvidence(integrityArg, modelRef) {
 // Command: weights negotiate
 // ---------------------------------------------------------------------------
 
+function probeDiskGb(path) {
+  try {
+    const s = statfsSync(path || ".");
+    return parseFloat(((s.bavail * s.bsize) / 1e9).toFixed(1));
+  } catch {
+    // statfsSync unavailable on this Node version — use a conservative estimate
+    return parseFloat((freemem() / 1e9).toFixed(1));
+  }
+}
+
+function probeHardware() {
+  const a = arch();
+  const model = cpus()?.[0]?.model || "";
+  const coreCount = cpus()?.length || 1;
+  const gpu = process.env.METAL_DEVICE_WRAPPER_TYPE ? "metal"
+    : process.env.CUDA_VISIBLE_DEVICES !== undefined ? "cuda"
+    : process.env.ROCm_VERSION ? "rocm"
+    : "cpu";
+  return `${a}/${gpu}/${coreCount}c`;
+}
+
 function cmdNegotiate(args) {
   const recipe   = flag(args, "--for") || flag(args, "--recipe") || "unknown.akrecipe";
-  const diskGb   = parseFloat(flag(args, "--disk")     || "8");
-  const hardware = flag(args, "--hardware") || "unknown";
+  const diskGbArg = flag(args, "--disk");
+  const diskGb   = diskGbArg ? parseFloat(diskGbArg) : probeDiskGb(".");
+  const hardwareArg = flag(args, "--hardware");
+  const hardware = hardwareArg || probeHardware();
   const quality  = parseFloat(flag(args, "--quality")  || "0.95");
   const privacy  = flag(args, "--privacy")  || "local-preferred";
 
-  // Static heuristic solver (V1)
+  const ramGb    = parseFloat((totalmem() / 1e9).toFixed(1));
+  const freeRamGb = parseFloat((freemem() / 1e9).toFixed(1));
+
+  // Heuristic solver: inputs are now measured system values
   const needsFull   = quality >= 0.99;
-  const canUseTiny  = quality <= 0.80;
+  const canUseTiny  = quality <= 0.80 || ramGb <= 4;
   const diskTight   = diskGb  <= 3;
 
   let plan, downloadGb, firstUsableSec, fullLocalMin, remoteFallback;
@@ -293,6 +340,7 @@ function cmdNegotiate(args) {
     execution_ladder:     LADDER.slice(0, remoteFallback ? 6 : 8).map(l => l.abbrev),
     sources:              ["hf://aurekai/model-memory", "local://model-cache"],
     proof_uri:            proofHash(`negotiate:${recipe}:${quality}:${diskGb}`),
+    system_probe:         { disk_free_gb: diskGb, ram_total_gb: ramGb, ram_free_gb: freeRamGb, hardware_detected: hardware },
   };
 
   const result = wrapResult("negotiate", payload, {
@@ -527,44 +575,55 @@ function cmdCompile(args) {
 // ---------------------------------------------------------------------------
 
 function cmdCompileOperatorAlgebra(args) {
-  const model     = args.find(a => !a.startsWith("--")) || "model";
+  const model = args.find(a => !a.startsWith("--"));
+  if (!model) {
+    console.error("akai weights compile --objective: model path is required");
+    process.exit(1);
+  }
+  if (!/\.safetensors$/i.test(model)) {
+    console.error("akai weights compile --objective: only real .safetensors models are supported (no synthetic layer templates)");
+    process.exit(1);
+  }
+
   const objective = _parseObjective(flag(args, "--objective") || "latency=0.5,bw=0.5,cosine=0.99");
-  const target    = (flag(args, "--target") || "cpu").toLowerCase();
-  const outFile   = flag(args, "--out") || model.replace(/\.[^.]+$/, ".akplan");
-  const hw        = _HW_COMPILE[target] || "GENERIC_SCALAR";
+  const target = (flag(args, "--target") || "cpu").toLowerCase();
+  const outFile = flag(args, "--out") || model.replace(/\.[^.]+$/, ".akplan");
+  const hw = _HW_COMPILE[target] || "GENERIC_SCALAR";
 
-  const LAYER_SPECS = [
-    { idx: 0,  kind: "embedding",      name: "tok_emb" },
-    { idx: 1,  kind: "self_attention", name: "layer0.q_proj" },
-    { idx: 2,  kind: "self_attention", name: "layer0.k_proj" },
-    { idx: 3,  kind: "self_attention", name: "layer0.v_proj" },
-    { idx: 4,  kind: "self_attention", name: "layer0.o_proj" },
-    { idx: 5,  kind: "ffn",            name: "layer0.gate_proj" },
-    { idx: 6,  kind: "ffn",            name: "layer0.up_proj" },
-    { idx: 7,  kind: "ffn",            name: "layer0.down_proj" },
-    { idx: 8,  kind: "norm",           name: "layer0.rmsnorm" },
-    { idx: 9,  kind: "self_attention", name: "layer1.q_proj" },
-    { idx: 10, kind: "self_attention", name: "layer1.k_proj" },
-    { idx: 11, kind: "self_attention", name: "layer1.v_proj" },
-    { idx: 12, kind: "self_attention", name: "layer1.o_proj" },
-    { idx: 13, kind: "ffn",            name: "layer1.gate_proj" },
-    { idx: 14, kind: "ffn",            name: "layer1.up_proj" },
-    { idx: 15, kind: "ffn",            name: "layer1.down_proj" },
-    { idx: 16, kind: "norm",           name: "layer1.rmsnorm" },
-    { idx: 17, kind: "kv_cache",       name: "kv_cache.past_k" },
-    { idx: 18, kind: "kv_cache",       name: "kv_cache.past_v" },
-    { idx: 19, kind: "embedding",      name: "lm_head" },
-  ];
+  let parsed;
+  try {
+    parsed = parseSafeTensors(model);
+  } catch (err) {
+    console.error(`akai weights compile --objective: ${err.message}`);
+    process.exit(1);
+  }
 
-  const layers = LAYER_SPECS.map(l => {
-    const families = _selectFamilyForKind(l.kind, objective, hw);
-    const famStr   = families.map(f => _FPQX_FAMILIES_COMPILE[f] ?? f).join("+");
-    return { layer: l.idx, name: l.name, kind: l.kind, families, operator_string: famStr, hardware_pack: hw };
+  const layers = parsed.tensors.map((t, idx) => {
+    const kind = classifyTensorKind(t.name);
+    const families = _selectFamilyForKind(kind, objective, hw);
+    const famStr = families.map(f => _FPQX_FAMILIES_COMPILE[f] ?? f).join("+");
+    const stats = vectorStats(sampleTensor(model, t, 1024));
+    return {
+      layer: idx,
+      name: t.name,
+      kind,
+      dtype: t.dtype,
+      shape: t.shape,
+      elements: t.elements,
+      bytes: t.bytes,
+      mean_abs: Number(stats.meanAbs.toFixed(6)),
+      stddev: Number(stats.stddev.toFixed(6)),
+      zero_frac: Number(stats.zeroFrac.toFixed(6)),
+      families,
+      operator_string: famStr,
+      hardware_pack: hw,
+    };
   });
 
   const payload = {
     schema_version:  "aurekai.weightops.algebra_plan.v1",
     model,
+    model_format: parsed.format,
     target,
     hardware_pack:   hw,
     objective,
@@ -573,6 +632,7 @@ function cmdCompileOperatorAlgebra(args) {
     output_file:     outFile,
     layer_plan:      layers,
     total_layers:    layers.length,
+    provenance:      "measured",
     proof_hash:      proofHash(`algebra:${model}:${target}:${JSON.stringify(objective)}`),
   };
 
@@ -649,14 +709,18 @@ function cmdSkeleton(args) {
     proof_hash: proofHash(`skeleton:${model}`),
   };
 
+  const skelJson = JSON.stringify(payload, null, 2);
+  writeJsonArtifact(outFile, payload);
+  const bytesWritten = Buffer.byteLength(skelJson, "utf8");
+
   const result = wrapResult("skeleton", payload, {
     modelRef: model,
     outputArtifacts: [{ ref: outFile, role: "skeleton" }],
-    bytesWritten: 2048,
+    bytesWritten,
     modelStateDelta: { missing_flesh_count: payload.skeleton.missing_flesh.length },
   });
   printJson(result);
-  console.error(`\n  → skeleton: ${outFile} (routing addressable before weights present)`);
+  console.error(`\n  → skeleton: ${outFile} (${bytesWritten} bytes written, routing addressable before weights present)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1416,7 +1480,7 @@ function cmdGhostInfer(args) {
 // Command: weights marketplace / weights recommend
 // ---------------------------------------------------------------------------
 
-const MARKETPLACE_CATALOG = [
+const BUNDLED_MARKETPLACE_CATALOG = [
   {
     id: "mistral-7b-q4",    name: "Mistral 7B Q4",   family: "general",      size_gb: 3.2,  cost_credits_per_hr: 0.04, sae_compatible: true,  memory_pack_available: true,  distill_features: ["support-intent","summarize-extract","ner-entity","topic-route","sentiment"] },
   { id: "llama-8b-q4",     name: "LLaMA 8B Q4",     family: "general",      size_gb: 4.1,  cost_credits_per_hr: 0.05, sae_compatible: true,  memory_pack_available: true,  distill_features: ["support-intent","ner-entity","summarize-extract","code-detect"] },
@@ -1426,6 +1490,27 @@ const MARKETPLACE_CATALOG = [
   { id: "deepseek-7b-q4",  name: "DeepSeek 7B Q4",  family: "code",         size_gb: 4.0,  cost_credits_per_hr: 0.05, sae_compatible: true,  memory_pack_available: true,  distill_features: ["code-detect","topic-route"] },
   { id: "mixtral-8x7-q3",  name: "Mixtral 8×7B Q3", family: "moe",          size_gb: 14.2, cost_credits_per_hr: 0.18, sae_compatible: false, memory_pack_available: false, distill_features: [] },
 ];
+
+function loadMarketplaceCatalog() {
+  const candidates = [
+    process.env.AUREKAI_REGISTRY ? join(process.env.AUREKAI_REGISTRY, "marketplace.json") : null,
+    join(homedir(), ".aurekai", "registry", "marketplace.json"),
+    join(process.cwd(), "registry", "marketplace.json"),
+  ].filter(Boolean);
+
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      try {
+        const data = JSON.parse(readFileSync(p, "utf8"));
+        const catalog = Array.isArray(data) ? data : data.models;
+        if (Array.isArray(catalog) && catalog.length > 0) {
+          return { catalog, source: p };
+        }
+      } catch { /* malformed — try next */ }
+    }
+  }
+  return { catalog: BUNDLED_MARKETPLACE_CATALOG, source: "bundled-default" };
+}
 
 function scoreModel(model, tasks, budgetGb, diskGb, qualityMin) {
   let score = 0;
@@ -1451,11 +1536,13 @@ function cmdMarketplace(args) {
   const listAll    = hasFlag(args, "--list");
 
   const tasks = taskArg.split(",").map(t => t.trim());
+  const { catalog: MARKETPLACE_CATALOG, source: catalogSource } = loadMarketplaceCatalog();
 
   if (listAll) {
     const payload = {
       schema_version: "aurekai.weightops.marketplace.v1",
       generated_at:   now(),
+      catalog_source: catalogSource,
       catalog_size:   MARKETPLACE_CATALOG.length,
       models: MARKETPLACE_CATALOG.map(m => ({
         id: m.id, name: m.name, family: m.family, size_gb: m.size_gb,
@@ -1503,6 +1590,7 @@ function cmdMarketplace(args) {
   const payload = {
     schema_version:  "aurekai.weightops.marketplace.v1",
     generated_at:    now(),
+    catalog_source:  catalogSource,
     model_ref:       modelArg,
     hydration_gate:  hydration,
     integrity_gate:  integrity,
@@ -3144,6 +3232,24 @@ function cmdQuantizeTarget(args) {
 }
 
 // ---------------------------------------------------------------------------
+// Audit log helpers
+// ---------------------------------------------------------------------------
+
+function auditLogPath(modelRef) {
+  const name = basename(String(modelRef || "unknown")).replace(/[^a-zA-Z0-9._-]/g, "-");
+  const dir  = join(homedir(), ".aurekai", "audit");
+  return join(dir, `${name}.jsonl`);
+}
+
+function appendAuditEntry(modelRef, entry) {
+  try {
+    const logPath = auditLogPath(modelRef);
+    mkdirSync(dirname(logPath), { recursive: true });
+    appendFileSync(logPath, JSON.stringify(entry) + "\n", "utf8");
+  } catch { /* audit append failure must not break commands */ }
+}
+
+// ---------------------------------------------------------------------------
 // Group A4 — Audit Trail
 // ---------------------------------------------------------------------------
 
@@ -3154,26 +3260,23 @@ function cmdAuditTrail(args) {
   const outFile   = flag(args, "--out") || null;
   const format    = flag(args, "--format") || "json";
 
-  const ops = ["pull-region", "synth-quant", "distill-feature-micro", "sbom", "tamper-detect", "proof-chain", "integrity-gate", "ghost-infer"];
-  const entries = ops.slice(0, Math.min(limitArg, ops.length)).map((op, i) => {
-    const ts = new Date(Date.now() - (ops.length - i) * 3600_000).toISOString();
-    return {
-      seq: i + 1,
-      operation: op,
-      command: `weights.${op}`,
-      actor: "akai-runner",
-      model_ref: modelArg,
-      proof_hash: proofHash(`audit:${modelArg}:${op}:seq=${i + 1}`),
-      status: "PASS",
-      duration_ms: Math.floor(80 + Math.random() * 400),
-      bytes_read: Math.floor(Math.random() * 1_000_000_000),
-      bytes_written: Math.floor(Math.random() * 100_000_000),
-      timestamp: ts,
-      metadata: { trigger: i === 0 ? "manual" : "pipeline", environment: "prod" },
-    };
-  });
+  const logPath = auditLogPath(modelArg);
+  let entries = [];
 
-  const rootHash = proofHash(entries.map(e => e.proof_hash).join(":"));
+  if (existsSync(logPath)) {
+    const lines = readFileSync(logPath, "utf8").split("\n").filter(l => l.trim());
+    const sinceMs = sinceArg ? new Date(sinceArg).getTime() : 0;
+    entries = lines
+      .map((line, i) => { try { return JSON.parse(line); } catch { return null; } })
+      .filter(e => e !== null)
+      .filter(e => !sinceMs || new Date(e.timestamp).getTime() >= sinceMs)
+      .slice(-limitArg)
+      .map((e, i) => ({ ...e, seq: i + 1 }));
+  }
+
+  const rootHash = entries.length
+    ? proofHash(entries.map(e => e.proof_hash || proofHash(JSON.stringify(e))).join(":"))
+    : proofHash(`audit:${modelArg}:empty`);
 
   const payload = {
     schema_version: "aurekai.weightops.audit_trail.v1",
