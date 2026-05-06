@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.sae_steer.v1.schema.json",
+  "title": "Aurekai WeightOps SAE Steer",
+  "description": "Output of akai weights sae-steer",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "steering_vector", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.sae_steer.v1" },
+    "model_ref": { "type": "string" },
+    "steering_vector": { "type": "object" },
+    "predicted_behavior_delta": { "type": "object" },
+    "output_artifact": { "type": ["string", "null"] },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

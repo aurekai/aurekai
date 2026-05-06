@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.budget_alert.v1.schema.json",
+  "title": "Aurekai WeightOps Budget Alert",
+  "description": "Output of akai weights budget-alert",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "budget_ceiling", "spent_so_far", "alert_fired", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.budget_alert.v1" },
+    "model_ref": { "type": "string" },
+    "budget_ceiling": { "type": "number" },
+    "window_hours": { "type": "integer" },
+    "spent_so_far": { "type": "number" },
+    "burn_rate_per_hour": { "type": "number" },
+    "eta_exhaust_hours": { "type": "number" },
+    "pct_consumed": { "type": "number" },
+    "alert_fired": { "type": "boolean" },
+    "fallback_policy": { "type": "object" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

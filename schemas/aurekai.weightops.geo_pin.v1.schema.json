@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.geo_pin.v1.schema.json",
+  "title": "Aurekai WeightOps Geo Pin",
+  "description": "Output of akai weights geo-pin",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "region", "location_attestation", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.geo_pin.v1" },
+    "model_ref": { "type": "string" },
+    "region": { "type": "string" },
+    "coordinates": { "type": "object" },
+    "replicas": { "type": "integer" },
+    "location_attestation": { "type": "object" },
+    "pinned": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

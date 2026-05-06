@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.freeze.v1.schema.json",
+  "title": "Aurekai WeightOps Freeze",
+  "description": "Output of akai weights freeze",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "freeze_certificate", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.freeze.v1" },
+    "model_ref": { "type": "string" },
+    "freeze_certificate": {
+      "type": "object",
+      "required": ["certificate_id", "model_ref", "frozen_at", "proof_root"],
+      "properties": {
+        "certificate_id": { "type": "string" },
+        "model_ref": { "type": "string" },
+        "frozen_at": { "type": "string" },
+        "reason": { "type": "string" },
+        "proof_root": { "type": "string" },
+        "issuer": { "type": "string" },
+        "signature": { "type": "string" },
+        "mutations_blocked": { "type": "boolean" },
+        "expiry": { "type": ["string", "null"] }
+      }
+    },
+    "layers_sealed": { "type": "integer" },
+    "param_count": { "type": "integer" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.credit_settle.v1.schema.json",
+  "title": "Aurekai WeightOps Credit Settle",
+  "description": "Output of akai weights credit-settle",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "settlement_period", "provider_balances", "total_credits", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.credit_settle.v1" },
+    "model_ref": { "type": "string" },
+    "settlement_period": { "type": "string" },
+    "provider_balances": { "type": "array", "items": { "type": "object" } },
+    "total_credits": { "type": "number" },
+    "currency": { "type": "string" },
+    "settlement_id": { "type": "string" },
+    "settled_at": { "type": "string" },
+    "ledger_entry": { "type": "object" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

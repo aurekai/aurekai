@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.escrow.v1.schema.json",
+  "title": "Aurekai WeightOps Escrow",
+  "description": "Output of akai weights escrow",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "escrow_id", "condition", "status", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.escrow.v1" },
+    "model_ref": { "type": "string" },
+    "escrow_id": { "type": "string" },
+    "condition": { "type": "string" },
+    "recipient": { "type": "string" },
+    "ttl_hours": { "type": "integer" },
+    "expires_at": { "type": "string" },
+    "status": { "type": "string" },
+    "condition_met": { "type": "boolean" },
+    "lock_hash": { "type": "string" },
+    "release_proof": { "type": ["string", "null"] },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

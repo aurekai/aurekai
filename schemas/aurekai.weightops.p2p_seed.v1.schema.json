@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.p2p_seed.v1.schema.json",
+  "title": "Aurekai WeightOps P2P Seed",
+  "description": "Output of akai weights p2p-seed",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "chunk_count", "chunks", "announce_hash", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.p2p_seed.v1" },
+    "model_ref": { "type": "string" },
+    "chunk_count": { "type": "integer" },
+    "chunk_size_bytes": { "type": "integer" },
+    "total_bytes": { "type": "integer" },
+    "chunks": { "type": "array", "items": { "type": "object" } },
+    "relay_uri": { "type": ["string", "null"] },
+    "peer_id": { "type": "string" },
+    "announce_hash": { "type": "string" },
+    "seeding": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

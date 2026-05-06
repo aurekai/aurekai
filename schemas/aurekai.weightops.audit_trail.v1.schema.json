@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.audit_trail.v1.schema.json",
+  "title": "Aurekai WeightOps Audit Trail",
+  "description": "Output of akai weights audit-trail",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "entry_count", "entries", "merkle_root"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.audit_trail.v1" },
+    "model_ref": { "type": "string" },
+    "since": { "type": ["string", "null"] },
+    "limit": { "type": "integer" },
+    "entry_count": { "type": "integer" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seq", "operation", "command", "proof_hash", "status", "timestamp"],
+        "properties": {
+          "seq": { "type": "integer" },
+          "operation": { "type": "string" },
+          "command": { "type": "string" },
+          "actor": { "type": "string" },
+          "model_ref": { "type": "string" },
+          "proof_hash": { "type": "string" },
+          "status": { "type": "string" },
+          "duration_ms": { "type": "integer" },
+          "bytes_read": { "type": "integer" },
+          "bytes_written": { "type": "integer" },
+          "timestamp": { "type": "string" },
+          "metadata": { "type": "object" }
+        }
+      }
+    },
+    "merkle_root": { "type": "string" },
+    "format": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -32,6 +32,7 @@
     "dashboard": "node ./bin/akai.mjs dashboard",
     "manifest": "node ./bin/akai.mjs manifest:print",
     "manifest:render": "node ./src/render-manifest.mjs",
+    "test:weightops-envelope": "node ./scripts/validate-weightops-envelope.mjs",
     "release": "make release",
     "release-check": "make release-check"
   },

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.kv_compress.v1.schema.json",
+  "title": "Aurekai WeightOps KV Compress",
+  "description": "Output of akai weights kv-compress",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "context_id", "compression", "output_artifact", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.kv_compress.v1" },
+    "model_ref": { "type": "string" },
+    "context_id": { "type": "string" },
+    "token_count": { "type": "integer" },
+    "layers": { "type": "integer" },
+    "heads_per_layer": { "type": "integer" },
+    "head_dim": { "type": "integer" },
+    "compression": { "type": "object" },
+    "output_artifact": { "type": "string" },
+    "resumable": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.hot_patch.v1.schema.json",
+  "title": "Aurekai WeightOps Hot Patch",
+  "description": "Output of akai weights hot-patch",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "patch_artifact", "session_id", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.hot_patch.v1" },
+    "model_ref": { "type": "string" },
+    "patch_artifact": { "type": "string" },
+    "session_id": { "type": "string" },
+    "affected_layers": { "type": "integer" },
+    "param_delta_count": { "type": "integer" },
+    "swap_latency_ms": { "type": "integer" },
+    "inference_paused_ms": { "type": "integer" },
+    "zero_downtime": { "type": "boolean" },
+    "rollback_artifact": { "type": "string" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

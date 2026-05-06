@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.sla_monitor.v1.schema.json",
+  "title": "Aurekai WeightOps SLA Monitor",
+  "description": "Output of akai weights sla-monitor",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "sla_policy", "provider_stats", "overall_compliant", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.sla_monitor.v1" },
+    "model_ref": { "type": "string" },
+    "window_minutes": { "type": "integer" },
+    "sla_policy": { "type": "object" },
+    "provider_stats": { "type": "array", "items": { "type": "object" } },
+    "violations": { "type": "array", "items": { "type": "object" } },
+    "overall_compliant": { "type": "boolean" },
+    "alert_emitted": { "type": "boolean" },
+    "proof_hash": { "type": "string" }
+  },
+  "additionalProperties": true
+}

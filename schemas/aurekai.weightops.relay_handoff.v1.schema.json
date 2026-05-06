@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.relay_handoff.v1.schema.json",
+  "title": "Aurekai WeightOps Relay Handoff",
+  "description": "Output of akai weights relay-handoff",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "session_id", "target_peer", "handoff_proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.relay_handoff.v1" },
+    "model_ref": { "type": "string" },
+    "session_id": { "type": "string" },
+    "source_peer": { "type": "string" },
+    "target_peer": { "type": "string" },
+    "tokens_transferred": { "type": "integer" },
+    "handoff_latency_ms": { "type": "integer" },
+    "proof_continuity": { "type": "boolean" },
+    "prior_proof_hash": { "type": "string" },
+    "handoff_proof_hash": { "type": "string" },
+    "kv_cache_transferred": { "type": "boolean" },
+    "kv_cache_bytes": { "type": "integer" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

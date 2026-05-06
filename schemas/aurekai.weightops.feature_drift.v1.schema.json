@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.feature_drift.v1.schema.json",
+  "title": "Aurekai WeightOps Feature Drift",
+  "description": "Output of akai weights feature-drift",
+  "type": "object",
+  "required": ["schema_version", "model_a", "model_b", "drift_results", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.feature_drift.v1" },
+    "model_a": { "type": "string" },
+    "model_b": { "type": "string" },
+    "features_analyzed": { "type": "array", "items": { "type": "string" } },
+    "top_k": { "type": "integer" },
+    "drift_results": { "type": "array", "items": { "type": "object" } },
+    "summary": { "type": "object" },
+    "proof_hash": { "type": "string" }
+  },
+  "additionalProperties": true
+}

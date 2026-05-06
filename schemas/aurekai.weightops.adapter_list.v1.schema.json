@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.adapter_list.v1.schema.json",
+  "title": "Aurekai WeightOps Adapter List",
+  "description": "Output of akai weights adapter-list",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "adapter_count", "adapters", "capability_matrix"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.adapter_list.v1" },
+    "model_ref": { "type": "string" },
+    "task_filter": { "type": ["string", "null"] },
+    "adapter_count": { "type": "integer" },
+    "adapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "task", "type", "base_compatible", "proof_hash"],
+        "properties": {
+          "id": { "type": "string" },
+          "task": { "type": "string" },
+          "type": { "type": "string" },
+          "rank": { "type": ["integer", "null"] },
+          "base_compatible": { "type": "boolean" },
+          "params_m": { "type": "number" },
+          "license": { "type": "string" },
+          "proof_hash": { "type": "string" }
+        }
+      }
+    },
+    "capability_matrix": { "type": "object" }
+  },
+  "additionalProperties": true
+}

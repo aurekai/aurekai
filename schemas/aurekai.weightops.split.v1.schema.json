@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.split.v1.schema.json",
+  "title": "Aurekai WeightOps Split",
+  "description": "Output of akai weights split",
+  "type": "object",
+  "required": ["schema_version", "source_model", "split_by", "shard_count", "shards", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.split.v1" },
+    "source_model": { "type": "string" },
+    "split_by": { "type": "string" },
+    "shard_count": { "type": "integer" },
+    "shards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["shard_index", "layer_range", "artifact", "proof_hash"],
+        "properties": {
+          "shard_index": { "type": "integer" },
+          "layer_range": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "integer" }
+          },
+          "layer_count": { "type": "integer" },
+          "artifact": { "type": "string" },
+          "size_mb": { "type": "number" },
+          "proof_hash": { "type": "string" }
+        }
+      }
+    },
+    "total_size_mb": { "type": "number" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

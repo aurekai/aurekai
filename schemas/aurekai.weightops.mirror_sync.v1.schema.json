@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.mirror_sync.v1.schema.json",
+  "title": "Aurekai WeightOps Mirror Sync",
+  "description": "Output of akai weights mirror-sync",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "mirrors", "total_delta_bytes", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.mirror_sync.v1" },
+    "model_ref": { "type": "string" },
+    "mirrors": { "type": "array", "items": { "type": "object" } },
+    "total_delta_bytes": { "type": "integer" },
+    "all_synced": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

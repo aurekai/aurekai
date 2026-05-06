@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.adapter_hot_swap.v1.schema.json",
+  "title": "Aurekai WeightOps Adapter Hot Swap",
+  "description": "Output of akai weights adapter-hot-swap",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "adapter_id", "session_id", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.adapter_hot_swap.v1" },
+    "model_ref": { "type": "string" },
+    "adapter_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "previous_adapter": { "type": ["string", "null"] },
+    "swap_latency_ms": { "type": "integer" },
+    "layers_patched": { "type": "integer" },
+    "inference_resumed": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

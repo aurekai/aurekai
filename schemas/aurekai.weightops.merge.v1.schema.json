@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.merge.v1.schema.json",
+  "title": "Aurekai WeightOps Merge",
+  "description": "Output of akai weights merge",
+  "type": "object",
+  "required": ["schema_version", "base_model", "adapters", "method", "output_model", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.merge.v1" },
+    "base_model": { "type": "string" },
+    "adapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["adapter_id", "weight"],
+        "properties": {
+          "adapter_id": { "type": "string" },
+          "weight": { "type": "number" }
+        }
+      }
+    },
+    "method": { "type": "string" },
+    "output_model": { "type": "string" },
+    "layer_count": { "type": "integer" },
+    "param_delta_norm": { "type": "number" },
+    "conflicts_resolved": { "type": "integer" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

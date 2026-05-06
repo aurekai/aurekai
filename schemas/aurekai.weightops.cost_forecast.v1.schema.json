@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.cost_forecast.v1.schema.json",
+  "title": "Aurekai WeightOps Cost Forecast",
+  "description": "Output of akai weights cost-forecast",
+  "type": "object",
+  "required": ["schema_version", "model_ref", "horizon_hours", "throughput_rps", "provider_forecasts", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.cost_forecast.v1" },
+    "model_ref": { "type": "string" },
+    "recipe": { "type": "string" },
+    "horizon_hours": { "type": "integer" },
+    "throughput_rps": { "type": "number" },
+    "provider_forecasts": { "type": "array", "items": { "type": "object" } },
+    "recommendation": { "type": "object" },
+    "proof_hash": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -131,6 +131,9 @@ function printWeightsHelp() {
   console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
+  console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
+  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--oracle <none|basic>] [--dry-run]");
+  console.log("  akai weights audit-trail --model <model.akmodel> [--since <iso8601>] [--limit <N>] [--out <file.akaudit>] [--format <json>] ");
   // Group B — Privacy + Federated
   console.log("  akai weights federated-merge --nodes <node1.akmodel,node2.akmodel,...> [--algorithm <fedavg|fedprox|scaffold>] [--rounds <N>] [--dp-epsilon <ε>] [--out <file.akmodel>] [--dry-run]");
   console.log("  akai weights dp-noise --model <model.akmodel> --epsilon <ε> --delta <δ> [--mechanism <gaussian|laplace>] [--sensitivity <S>] [--out <file.akmodel>] [--dry-run]");
@@ -143,6 +146,30 @@ function printWeightsHelp() {
   // Group E — Edge + Embedded
   console.log("  akai weights edge-compile --model <model.akmodel> --target <rpi4|jetson|coral|wasm> [--optimize <speed|size|balanced>] [--out <file.akedge>] [--dry-run]");
   console.log("  akai weights quantize-target --model <model.akmodel> --target <rpi4|jetson|coral|wasm|x86-avx2|arm-neon> [--bits <4|8|16>] [--calibrate <calib.json>] [--out <file.akquant>] [--dry-run]");
+  // Group B — Adapters & Composition
+  console.log("  akai weights adapter-list --model <model.akmodel> [--task <task>]");
+  console.log("  akai weights adapter-hot-swap --model <model.akmodel> --adapter <adapter-id> [--session <id>] [--dry-run]");
+  console.log("  akai weights merge --base <model.akmodel> --adapters <a1,a2,...> [--method <linear|slerp|task-vector>] [--weights <w1,w2,...>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights split --model <model.akmodel> [--by <layer-range>] [--chunks <N>] [--out-dir <dir>] [--dry-run]");
+  console.log("  akai weights freeze --model <model.akmodel> [--reason <text>] [--out <file.akfreeze>] [--dry-run]");
+  // Group C — SAE & KV
+  console.log("  akai weights sae-probe --model <model.akmodel> [--features <f1,f2,...>] [--layer <all|layer>] [--top-k <N>] [--dry-run]");
+  console.log("  akai weights sae-steer --model <model.akmodel> [--feature <name>] [--direction <toward|away>] [--magnitude <N>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights feature-drift --model-a <model@v1> --model-b <model@v2> [--features <all|f1,f2,...>] [--top-k <N>]");
+  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--dry-run]");
+  console.log("  akai weights kv-restore --cache <file.akkvcache> [--model <model.akmodel>] [--session <id>] [--dry-run]");
+  // Group D — Real-Time Ops
+  console.log("  akai weights sla-monitor --model <model.akmodel> [--window-min <N>] [--latency-sla-ms <N>] [--avail-sla <0-1>] [--emit-alert]");
+  console.log("  akai weights budget-alert --model <model.akmodel> [--ceiling <usd>] [--window-hours <N>] [--fallback <policy>] [--dry-run]");
+  console.log("  akai weights cost-forecast --model <model.akmodel> [--recipe <file.akrecipe>] [--horizon-hours <N>] [--rps <N>]");
+  console.log("  akai weights hot-patch --model <model.akmodel> --patch <file.akdelta> [--session <id>] [--dry-run]");
+  console.log("  akai weights credit-settle --model <model.akmodel> [--period <YYYY-MM>] [--out <file.akledger>] [--dry-run]");
+  // Group E — P2P & Mesh
+  console.log("  akai weights p2p-seed --model <model.akmodel> [--chunks <N>] [--relay <uri>] [--dry-run]");
+  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--dry-run]");
+  console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--dry-run]");
+  console.log("  akai weights mirror-sync --model <model.akmodel> [--mirrors <m1,m2,...>] [--dry-run]");
+  console.log("  akai weights escrow --model <model.akmodel> [--condition <rule>] [--recipient <id>] [--ttl-hours <N>] [--release] [--out <file.akescrow>] [--dry-run]");
 }
 
 function sanitizeRecipeArg(args) {
@@ -208,7 +235,7 @@ function cmdNegotiate(args) {
     remoteFallback = true;
   }
 
-  const result = {
+  const payload = {
     schema_version:       "aurekai.weightops.negotiate.v1",
     generated_at:         now(),
     recipe,
@@ -226,6 +253,16 @@ function cmdNegotiate(args) {
     proof_uri:            proofHash(`negotiate:${recipe}:${quality}:${diskGb}`),
   };
 
+  const result = wrapResult("negotiate", payload, {
+    modelRef: recipe,
+    bytesRead: 0,
+    bytesWritten: 0,
+    modelStateDelta: {
+      full_download_avoided: downloadGb < diskGb,
+      bytes_avoided_gb: parseFloat((diskGb - downloadGb).toFixed(1)),
+      first_usable_seconds: firstUsableSec,
+    },
+  });
   printJson(result);
 }
 
@@ -243,7 +280,7 @@ function cmdHydrate(args) {
   if (progressive || emitEvents) {
     // Emit checkpoint progression
     for (const cp of HYDRATION_CHECKPOINTS) {
-      const event = {
+      const payload = {
         schema_version: "aurekai.weightops.hydrate.v1",
         run_id:         runId,
         model,
@@ -254,11 +291,15 @@ function cmdHydrate(args) {
         proof_hash:     proofHash(`hydrate:${model}:${cp.name}`),
         emitted_at:     now(),
       };
+      const event = wrapResult("hydrate", payload, {
+        modelRef: model,
+        modelStateDelta: { checkpoint: cp.name, readiness_score: parseFloat((cp.pct / 100).toFixed(2)) },
+      });
       printJson(event);
     }
   } else {
     // Single summary
-    const plan = {
+    const payload = {
       schema_version:  "aurekai.weightops.hydrate.v1",
       run_id:          runId,
       model,
@@ -268,6 +309,10 @@ function cmdHydrate(args) {
       proof_hash:      proofHash(`hydrate:${model}:plan`),
       generated_at:    now(),
     };
+    const plan = wrapResult("hydrate", payload, {
+      modelRef: model,
+      modelStateDelta: { first_usable_at_pct: 22, quality_target_at_pct: 68 },
+    });
     printJson(plan);
   }
 }
@@ -281,7 +326,7 @@ function cmdCompile(args) {
   const outFile = flag(args, "--out") || recipe.replace(/\.akrecipe$/, ".akweights");
 
   // Static compiler — in production this would parse the recipe AST
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.compiled.v1",
     source_recipe:  recipe,
     output_file:    outFile,
@@ -313,6 +358,12 @@ function cmdCompile(args) {
     },
   };
 
+  const result = wrapResult("compile", payload, {
+    modelRef: recipe,
+    outputArtifacts: [{ ref: outFile, role: "compiled-plan" }],
+    bytesWritten: 4096,
+    modelStateDelta: { estimated_download_gb: payload.metrics.estimated_download_gb },
+  });
   printJson(result);
   console.error(`\n  → wrote plan: ${outFile}`);
 }
@@ -325,7 +376,7 @@ function cmdStatus(args) {
   const model = args[0] || null;
   const runId = randomUUID();
 
-  const status = {
+  const payload = {
     schema_version: "aurekai.weightops.status.v1",
     run_id:         runId,
     generated_at:   now(),
@@ -346,6 +397,10 @@ function cmdStatus(args) {
     },
   };
 
+  const status = wrapResult("status", payload, {
+    modelRef: model || "(all)",
+    modelStateDelta: { readiness_score: payload.hydration_state?.readiness_score || 0 },
+  });
   printJson(status);
 }
 
@@ -357,7 +412,7 @@ function cmdSkeleton(args) {
   const model   = args[0] || "model.akmodel";
   const outFile = flag(args, "--out") || model.replace(/\.akmodel$/, ".akskel");
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.skeleton.v1",
     source_model:   model,
     output_file:    outFile,
@@ -377,6 +432,12 @@ function cmdSkeleton(args) {
     proof_hash: proofHash(`skeleton:${model}`),
   };
 
+  const result = wrapResult("skeleton", payload, {
+    modelRef: model,
+    outputArtifacts: [{ ref: outFile, role: "skeleton" }],
+    bytesWritten: 2048,
+    modelStateDelta: { missing_flesh_count: payload.skeleton.missing_flesh.length },
+  });
   printJson(result);
   console.error(`\n  → skeleton: ${outFile} (routing addressable before weights present)`);
 }
@@ -389,7 +450,7 @@ function cmdTrace(args) {
   const recipe = flag(args, "--recipe") || args[0] || "recipe.akrecipe";
   const model  = flag(args, "--model")  || "model.akmodel";
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.trace.v1",
     recipe,
     model,
@@ -417,6 +478,10 @@ function cmdTrace(args) {
     proof_hash: proofHash(`trace:${recipe}:${model}`),
   };
 
+  const result = wrapResult("trace", payload, {
+    modelRef: model,
+    modelStateDelta: { hot_fraction: payload.hot_fraction, download_savings_pct: payload.download_savings_pct },
+  });
   printJson(result);
 }
 
@@ -598,7 +663,7 @@ function cmdProve(args) {
   const model   = args[0] || "model.akmodel";
   const recipe  = flag(args, "--tasks") || flag(args, "--for") || null;
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.proof.v1",
     model,
     recipe:         recipe || "(general)",
@@ -618,6 +683,11 @@ function cmdProve(args) {
     output_file: model.replace(/\.akmodel$/, ".akweightproof"),
   };
 
+  const result = wrapResult("prove", payload, {
+    modelRef: model,
+    outputArtifacts: [{ ref: payload.output_file, role: "proof-bundle" }],
+    modelStateDelta: { verified_chunks_pct: 100 },
+  });
   printJson(result);
 }
 
@@ -633,7 +703,7 @@ function cmdLease(args) {
   const expiryMs = Date.now() + (parseFloat(duration) * 3600000);
   const expires  = new Date(expiryMs).toISOString();
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.lease.v1",
     model,
     duration,
@@ -647,6 +717,10 @@ function cmdLease(args) {
     proof_hash: proofHash(`lease:${model}:${duration}`),
   };
 
+  const result = wrapResult("lease", payload, {
+    modelRef: model,
+    modelStateDelta: { lease_expires_at: expires, proof_retained: true },
+  });
   printJson(result);
   console.error(`\n  → lease expires: ${expires}  (weights deleted, proof retained)`);
 }
@@ -663,7 +737,7 @@ function cmdTeleport(args) {
     process.exit(1);
   }
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.teleport.v1",
     uri,
     generated_at:   now(),
@@ -677,6 +751,10 @@ function cmdTeleport(args) {
     proof_hash: proofHash(`teleport:${uri}`),
   };
 
+  const result = wrapResult("teleport", payload, {
+    modelRef: uri,
+    modelStateDelta: { local_cache_hit: false, team_cache_hit: false },
+  });
   printJson(result);
   console.error("\n  → In production: resolve chunks already present locally and skip their transfer.");
 }
@@ -689,7 +767,7 @@ function cmdWeightlessRun(args) {
   const recipe = sanitizeRecipeArg(args);
   const matchedStep = LADDER[3];
 
-  const result = {
+  const payload = {
     schema_version: "aurekai.weightops.weightless_run.v1",
     recipe,
     generated_at: now(),
@@ -709,6 +787,10 @@ function cmdWeightlessRun(args) {
     notes: "Executed with semantic/proof/lineage checks and SAE route without full tensor hydration.",
   };
 
+  const result = wrapResult("weightless-run", payload, {
+    modelRef: recipe,
+    modelStateDelta: { full_download_avoided: true, first_usable_seconds: 7 },
+  });
   printJson(result);
 }
 

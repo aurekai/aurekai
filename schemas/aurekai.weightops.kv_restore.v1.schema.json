@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aurekai.weightops.kv_restore.v1.schema.json",
+  "title": "Aurekai WeightOps KV Restore",
+  "description": "Output of akai weights kv-restore",
+  "type": "object",
+  "required": ["schema_version", "cache_artifact", "model_ref", "session_id", "proof_hash"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "aurekai.weightops.kv_restore.v1" },
+    "cache_artifact": { "type": "string" },
+    "model_ref": { "type": "string" },
+    "session_id": { "type": "string" },
+    "tokens_restored": { "type": "integer" },
+    "restore_latency_ms": { "type": "integer" },
+    "inference_offset": { "type": "integer" },
+    "cache_valid": { "type": "boolean" },
+    "proof_hash": { "type": "string" },
+    "dry_run": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

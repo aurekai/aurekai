@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.mjs";
 import { weightsCommand, memoryCommand } from "../src/weightops.mjs";
+import { casCommand } from "../src/cas.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -22,6 +23,7 @@ function printHelp() {
   console.log("  akai sae:activate ...");
   console.log("  akai model:inspect ...");
   console.log("  akai fpqx:align-sae ...");
+  console.log("  akai cas import|verify|materialize|stats|gc ...");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -48,6 +50,37 @@ function printHelp() {
   console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
+  console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
+  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--oracle <none|basic>] [--dry-run]");
+  console.log("  akai weights audit-trail --model <model.akmodel> [--since <iso8601>] [--limit <N>] [--out <file.akaudit>] [--format <json>]");
+  console.log("  akai weights federated-merge --nodes <node1.akmodel,node2.akmodel,...> [--algorithm <fedavg|fedprox|scaffold>] [--rounds <N>] [--dp-epsilon <eps>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights dp-noise --model <model.akmodel> --epsilon <eps> --delta <delta> [--mechanism <gaussian|laplace>] [--sensitivity <S>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights drift-monitor --model <model.akmodel> [--baseline <model@tag>] [--window <Nh>] [--threshold <0-1>] [--emit-alert] [--dry-run]");
+  console.log("  akai weights perf-profile --model <model.akmodel> [--tasks <t,...>] [--hardware <hw>] [--warmup <N>] [--runs <N>] [--out <file.akprofile>]");
+  console.log("  akai weights ensemble-merge --models <m1,m2,...> [--method <linear|slerp|task-vector>] [--weights <w1,w2,...>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights pipeline-dag --plan <steps.json> [--validate-only] [--out <file.akdag>] [--dry-run]");
+  console.log("  akai weights edge-compile --model <model.akmodel> --target <rpi4|jetson|coral|wasm> [--optimize <speed|size|balanced>] [--out <file.akedge>] [--dry-run]");
+  console.log("  akai weights quantize-target --model <model.akmodel> --target <rpi4|jetson|coral|wasm|x86-avx2|arm-neon> [--bits <4|8|16>] [--calibrate <calib.json>] [--out <file.akquant>] [--dry-run]");
+  console.log("  akai weights adapter-list --model <model.akmodel> [--task <task>]");
+  console.log("  akai weights adapter-hot-swap --model <model.akmodel> --adapter <adapter-id> [--session <id>] [--dry-run]");
+  console.log("  akai weights merge --base <model.akmodel> --adapters <a1,a2,...> [--method <linear|slerp|task-vector>] [--weights <w1,w2,...>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights split --model <model.akmodel> [--by <layer-range>] [--chunks <N>] [--out-dir <dir>] [--dry-run]");
+  console.log("  akai weights freeze --model <model.akmodel> [--reason <text>] [--out <file.akfreeze>] [--dry-run]");
+  console.log("  akai weights sae-probe --model <model.akmodel> [--features <f1,f2,...>] [--layer <all|layer>] [--top-k <N>] [--dry-run]");
+  console.log("  akai weights sae-steer --model <model.akmodel> [--feature <name>] [--direction <toward|away>] [--magnitude <N>] [--out <file.akmodel>] [--dry-run]");
+  console.log("  akai weights feature-drift --model-a <model@v1> --model-b <model@v2> [--features <all|f1,f2,...>] [--top-k <N>]");
+  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--dry-run]");
+  console.log("  akai weights kv-restore --cache <file.akkvcache> [--model <model.akmodel>] [--session <id>] [--dry-run]");
+  console.log("  akai weights sla-monitor --model <model.akmodel> [--window-min <N>] [--latency-sla-ms <N>] [--avail-sla <0-1>] [--emit-alert]");
+  console.log("  akai weights budget-alert --model <model.akmodel> [--ceiling <usd>] [--window-hours <N>] [--fallback <policy>] [--dry-run]");
+  console.log("  akai weights cost-forecast --model <model.akmodel> [--recipe <file.akrecipe>] [--horizon-hours <N>] [--rps <N>]");
+  console.log("  akai weights hot-patch --model <model.akmodel> --patch <file.akdelta> [--session <id>] [--dry-run]");
+  console.log("  akai weights credit-settle --model <model.akmodel> [--period <YYYY-MM>] [--out <file.akledger>] [--dry-run]");
+  console.log("  akai weights p2p-seed --model <model.akmodel> [--chunks <N>] [--relay <uri>] [--dry-run]");
+  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--dry-run]");
+  console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--dry-run]");
+  console.log("  akai weights mirror-sync --model <model.akmodel> [--mirrors <m1,m2,...>] [--dry-run]");
+  console.log("  akai weights escrow --model <model.akmodel> [--condition <rule>] [--recipient <id>] [--ttl-hours <N>] [--release] [--out <file.akescrow>] [--dry-run]");
   console.log("");
   console.log("Memory Packs (Phase 6):");
   console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
@@ -157,6 +190,12 @@ if (command === "weights" || command === "weightops") {
 // Memory Packs — handled natively
 if (command === "memory") {
   memoryCommand(rest);
+  process.exit(0);
+}
+
+// CAS — handled natively
+if (command === "cas") {
+  await casCommand(rest);
   process.exit(0);
 }
 
