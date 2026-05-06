@@ -420,7 +420,60 @@ async function cmdHydrate(args) {
 // Command: weights compile
 // ---------------------------------------------------------------------------
 
+// FPQx operator family descriptions (operator-algebra mode)
+const _FPQX_FAMILIES_COMPILE = {
+  A:  "Additive",
+  M:  "Multiplicative",
+  Pi: "Predictive",
+  D:  "Distilled",
+  La: "Adaptive",
+  H:  "Hardware-aligned",
+};
+
+const _HW_COMPILE = {
+  metal:  "METAL_SIMDGROUP", cuda: "CUDA_WARP", neon: "NEON_128",
+  avx2:   "AVX2_256",        cpu:  "AVX2_256",   edge: "NEON_128",
+};
+
+function _parseObjective(obj) {
+  // Parse "latency=0.2,bw=0.5,cosine=0.999" into an object
+  if (!obj || typeof obj !== "string") return {};
+  return Object.fromEntries(
+    obj.split(",").map(kv => {
+      const [k, v] = kv.split("=");
+      return [k.trim(), parseFloat(v) || v];
+    })
+  );
+}
+
+function _selectFamilyForKind(kind, objective, targetHw) {
+  const latency = objective.latency ?? 0.5;
+  const bw = objective.bw ?? 0.5;
+  // Low latency + low bw → prefer hardware-aligned + distilled
+  // High cosine requirement → add Predictive for residual-heavy
+  const base = ["A", "H"];
+  if (kind === "self_attention" || kind === "cross_attention") {
+    const f = [...base, "M"];
+    if (latency > 0.3) f.push("Pi");
+    return f;
+  }
+  if (kind === "ffn") {
+    return bw < 0.4 ? ["A", "H"] : ["A", "M", "H"];
+  }
+  if (kind === "kv_cache") {
+    return latency < 0.3 ? ["D", "H"] : ["D", "La", "H"];
+  }
+  if (kind === "embedding") return ["A", "La", "H"];
+  if (kind === "norm") return ["A", "H"];
+  return base;
+}
+
 function cmdCompile(args) {
+  // Detect operator-algebra mode: triggered by --objective or --target (not legacy recipe mode)
+  const hasObjective = args.some(a => a.startsWith("--objective"));
+  const hasTarget    = args.some(a => a.startsWith("--target"));
+  if (hasObjective || hasTarget) return cmdCompileOperatorAlgebra(args);
+
   const recipe  = args[0] || "recipe.akrecipe";
   const outFile = flag(args, "--out") || recipe.replace(/\.akrecipe$/, ".akweights");
 
@@ -465,6 +518,71 @@ function cmdCompile(args) {
   });
   printJson(result);
   console.error(`\n  → wrote plan: ${outFile}`);
+}
+
+// ---------------------------------------------------------------------------
+// Command: weights compile --objective (operator-algebra mode)
+// Compiles a model's tensors to a selected FPQx operator algebra.
+// min E[L_task + α L_op + β C_bw + γ C_lat + δ C_ctx]
+// ---------------------------------------------------------------------------
+
+function cmdCompileOperatorAlgebra(args) {
+  const model     = args.find(a => !a.startsWith("--")) || "model";
+  const objective = _parseObjective(flag(args, "--objective") || "latency=0.5,bw=0.5,cosine=0.99");
+  const target    = (flag(args, "--target") || "cpu").toLowerCase();
+  const outFile   = flag(args, "--out") || model.replace(/\.[^.]+$/, ".akplan");
+  const hw        = _HW_COMPILE[target] || "GENERIC_SCALAR";
+
+  const LAYER_SPECS = [
+    { idx: 0,  kind: "embedding",      name: "tok_emb" },
+    { idx: 1,  kind: "self_attention", name: "layer0.q_proj" },
+    { idx: 2,  kind: "self_attention", name: "layer0.k_proj" },
+    { idx: 3,  kind: "self_attention", name: "layer0.v_proj" },
+    { idx: 4,  kind: "self_attention", name: "layer0.o_proj" },
+    { idx: 5,  kind: "ffn",            name: "layer0.gate_proj" },
+    { idx: 6,  kind: "ffn",            name: "layer0.up_proj" },
+    { idx: 7,  kind: "ffn",            name: "layer0.down_proj" },
+    { idx: 8,  kind: "norm",           name: "layer0.rmsnorm" },
+    { idx: 9,  kind: "self_attention", name: "layer1.q_proj" },
+    { idx: 10, kind: "self_attention", name: "layer1.k_proj" },
+    { idx: 11, kind: "self_attention", name: "layer1.v_proj" },
+    { idx: 12, kind: "self_attention", name: "layer1.o_proj" },
+    { idx: 13, kind: "ffn",            name: "layer1.gate_proj" },
+    { idx: 14, kind: "ffn",            name: "layer1.up_proj" },
+    { idx: 15, kind: "ffn",            name: "layer1.down_proj" },
+    { idx: 16, kind: "norm",           name: "layer1.rmsnorm" },
+    { idx: 17, kind: "kv_cache",       name: "kv_cache.past_k" },
+    { idx: 18, kind: "kv_cache",       name: "kv_cache.past_v" },
+    { idx: 19, kind: "embedding",      name: "lm_head" },
+  ];
+
+  const layers = LAYER_SPECS.map(l => {
+    const families = _selectFamilyForKind(l.kind, objective, hw);
+    const famStr   = families.map(f => _FPQX_FAMILIES_COMPILE[f] ?? f).join("+");
+    return { layer: l.idx, name: l.name, kind: l.kind, families, operator_string: famStr, hardware_pack: hw };
+  });
+
+  const payload = {
+    schema_version:  "aurekai.weightops.algebra_plan.v1",
+    model,
+    target,
+    hardware_pack:   hw,
+    objective,
+    operator_model:  "𝒯(x,c,h,t) = (B + R + P) ⊙ S + Π(x,c,h,t) + Δ_seq(c,t)",
+    lagrangian:      "min E[L_task + α L_op + β C_bw + γ C_lat + δ C_ctx]",
+    output_file:     outFile,
+    layer_plan:      layers,
+    total_layers:    layers.length,
+    proof_hash:      proofHash(`algebra:${model}:${target}:${JSON.stringify(objective)}`),
+  };
+
+  const result = wrapResult("compile.algebra", payload, {
+    modelRef: model,
+    outputArtifacts: [{ ref: outFile, role: "algebra-plan" }],
+    modelStateDelta: { operator_algebra_mode: true, target, hw },
+  });
+  printJson(result);
+  console.error(`\n  → operator-algebra plan: ${outFile}`);
 }
 
 // ---------------------------------------------------------------------------

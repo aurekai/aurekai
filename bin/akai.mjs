@@ -13,6 +13,8 @@ import { manifestCommand } from "../src/manifest-command.mjs";
 import { benchCommand } from "../src/bench.mjs";
 import { proofCommand } from "../src/proof-compact.mjs";
 import { mcpCommand } from "../src/mcp-distribution.mjs";
+import { blockCommand, gaugeCommand } from "../src/block.mjs";
+import { fpqxCommand } from "../src/fpqx-command.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -39,6 +41,11 @@ function printHelp() {
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view --bin <proof.akproofbin> [--json]");
   console.log("  akai mcp start|stop|status [--host <host>] [--port <port>]");
+  console.log("  akai block inspect <model|layer|tensor> [--layer N] [--tensor name] [--json]");
+  console.log("  akai block commute --a <delta_a> --b <delta_b> [--tensor name] [--json]");
+  console.log("  akai gauge fix <model.fpqx> --preserve energy,subspace,cosine [--json]");
+  console.log("  akai fpqx plan <model> --target edge|metal|cuda|neon [--context 8k|128k]");
+  console.log("  akai weights compile <model> --objective latency=N,bw=N,cosine=N --target metal|cuda|cpu");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -253,6 +260,24 @@ if (command === "proof") {
 // MCP distribution server — handled natively
 if (command === "mcp") {
   await mcpCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Block Algebra — handled natively
+if (command === "block") {
+  await blockCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Gauge operations — handled natively
+if (command === "gauge") {
+  await gaugeCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// FPQ-X planning — handled natively
+if (command === "fpqx" || command === "fpqx:plan" || command === "fpqx:align-sae") {
+  await fpqxCommand(command === "fpqx:plan" ? ["plan", ...rest] : rest);
   process.exit(process.exitCode || 0);
 }
 

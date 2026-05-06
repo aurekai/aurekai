@@ -28,7 +28,8 @@ BINS := \
   $(OUTDIR)/akai-chunk \
   $(OUTDIR)/akai-mmap-bench \
   $(OUTDIR)/akai-proof-fast \
-  $(OUTDIR)/akai-cas-fast
+  $(OUTDIR)/akai-cas-fast \
+  $(OUTDIR)/akai-block-inspect
 
 .PHONY: all clean check install
 
@@ -49,6 +50,9 @@ $(OUTDIR)/akai-proof-fast: akai-proof-fast.c
 $(OUTDIR)/akai-cas-fast: akai-cas-fast.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(CRYPTO_LDFLAGS)
 
+$(OUTDIR)/akai-block-inspect: akai-block-inspect.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(CRYPTO_LDFLAGS) -lm
+
 clean:
 	rm -rf $(OUTDIR)
 
@@ -64,4 +68,6 @@ check: all
 	$(OUTDIR)/akai-proof-fast /tmp/akai-proof-test.json | grep -q '"chain_valid": true' && echo "PASS proof-fast"
 	@echo "=== smoke: akai-cas-fast ==="
 	$(OUTDIR)/akai-cas-fast /tmp/akai-chunk-test.bin | grep -q '"schema_version": "aurekai.cas.fast.v1"' && echo "PASS cas-fast"
+	@echo "=== smoke: akai-block-inspect ==="
+	$(OUTDIR)/akai-block-inspect /tmp/akai-chunk-test.bin --tensor q_proj | grep -q '"schema_version": "aurekai.block.inspect.v1"' && echo "PASS block-inspect"
 	@echo "=== all native smoke tests passed ==="

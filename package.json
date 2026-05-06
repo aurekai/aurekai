@@ -51,6 +51,7 @@
     "test:proof-compact": "node ./scripts/validate-proof-compact.mjs",
     "test:pack-optimize": "node ./scripts/validate-pack-optimize.mjs",
     "test:integration-bindings": "node ./scripts/validate-integration-bindings.mjs",
+    "test:block-algebra": "node ./scripts/validate-block-algebra.mjs",
     "native:build": "make -C native all",
     "native:check": "make -C native check",
     "release": "make release",
