@@ -24,6 +24,19 @@ function activate(context) {
       const editor = vscode.window.activeTextEditor;
       const manifestPath = editor && editor.document ? editor.document.uri.fsPath : "aurekai.manifest.json";
       runCommand(`akai manifest:print --file "${manifestPath}"`, "Aurekai Manifest");
+    }),
+    vscode.commands.registerCommand("aurekai.mcpStart", () =>
+      runCommand("akai mcp start", "Aurekai MCP Start")
+    ),
+    vscode.commands.registerCommand("aurekai.mcpStop", () =>
+      runCommand("akai mcp stop", "Aurekai MCP Stop")
+    ),
+    vscode.commands.registerCommand("aurekai.casMaterialize", async () => {
+      const ref = await vscode.window.showInputBox({ prompt: "CAS ref or artifact id (e.g. my-model@v1 or ak://sha256:...)" });
+      if (!ref) return;
+      const out = await vscode.window.showInputBox({ prompt: "Output file path" });
+      if (!out) return;
+      runCommand(`akai cas materialize "${ref}" --out "${out}"`, "Aurekai CAS Materialize");
     })
   );
 }

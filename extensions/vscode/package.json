@@ -57,6 +57,18 @@
       {
         "command": "aurekai.inspectManifest",
         "title": "Aurekai: Inspect Manifest"
+      },
+      {
+        "command": "aurekai.mcpStart",
+        "title": "Aurekai: Start MCP Distribution Server"
+      },
+      {
+        "command": "aurekai.mcpStop",
+        "title": "Aurekai: Stop MCP Distribution Server"
+      },
+      {
+        "command": "aurekai.casMaterialize",
+        "title": "Aurekai: CAS Materialize"
       }
     ],
     "jsonValidation": [

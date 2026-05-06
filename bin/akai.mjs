@@ -12,6 +12,7 @@ import { deltaCommand } from "../src/delta.mjs";
 import { manifestCommand } from "../src/manifest-command.mjs";
 import { benchCommand } from "../src/bench.mjs";
 import { proofCommand } from "../src/proof-compact.mjs";
+import { mcpCommand } from "../src/mcp-distribution.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -37,6 +38,7 @@ function printHelp() {
   console.log("  akai bench distribution|hydrate|pack-layout|proof|all [--size-mb N] [--runs N]");
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view --bin <proof.akproofbin> [--json]");
+  console.log("  akai mcp start|stop|status [--host <host>] [--port <port>]");
   console.log("");
   console.log("WeightOps (Phase 6):");
   console.log("  akai weights negotiate --for <recipe>  [--disk <GB>] [--hardware <hw>] [--quality <0-1>]");
@@ -245,6 +247,12 @@ if (command === "bench") {
 // Proof compression — handled natively
 if (command === "proof") {
   await proofCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// MCP distribution server — handled natively
+if (command === "mcp") {
+  await mcpCommand(rest);
   process.exit(process.exitCode || 0);
 }
 

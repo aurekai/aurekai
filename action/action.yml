@@ -1,0 +1,83 @@
+name: "Aurekai CAS Distribution"
+description: "Import, materialize, or inspect artifacts via Aurekai CAS"
+author: "Aurekai"
+
+inputs:
+  mode:
+    description: "Operation mode: import | materialize | stats"
+    required: true
+    default: "stats"
+  artifact:
+    description: "Artifact file path (for mode=import)"
+    required: false
+  ref:
+    description: "CAS ref/artifact id (for mode=materialize)"
+    required: false
+  out:
+    description: "Output path for materialize"
+    required: false
+  ref_name:
+    description: "Optional ref name for import"
+    required: false
+  cas_home:
+    description: "Custom AKAI_CAS_HOME"
+    required: false
+    default: ""
+
+outputs:
+  status:
+    description: "PASS/WARN/FAIL from Aurekai envelope"
+    value: ${{ steps.run.outputs.status }}
+  payload_json:
+    description: "JSON payload emitted by Aurekai command"
+    value: ${{ steps.run.outputs.payload_json }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: run
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        MODE="${{ inputs.mode }}"
+        ARTIFACT="${{ inputs.artifact }}"
+        REF="${{ inputs.ref }}"
+        OUT="${{ inputs.out }}"
+        REF_NAME="${{ inputs.ref_name }}"
+        CAS_HOME="${{ inputs.cas_home }}"
+
+        if [[ -n "$CAS_HOME" ]]; then
+          export AKAI_CAS_HOME="$CAS_HOME"
+        fi
+
+        if [[ "$MODE" == "import" ]]; then
+          if [[ -z "$ARTIFACT" ]]; then
+            echo "mode=import requires input 'artifact'" >&2
+            exit 1
+          fi
+          if [[ -n "$REF_NAME" ]]; then
+            OUTPUT=$(node ./bin/akai.mjs cas import "$ARTIFACT" --ref "$REF_NAME")
+          else
+            OUTPUT=$(node ./bin/akai.mjs cas import "$ARTIFACT")
+          fi
+        elif [[ "$MODE" == "materialize" ]]; then
+          if [[ -z "$REF" || -z "$OUT" ]]; then
+            echo "mode=materialize requires inputs 'ref' and 'out'" >&2
+            exit 1
+          fi
+          OUTPUT=$(node ./bin/akai.mjs cas materialize "$REF" --out "$OUT")
+        elif [[ "$MODE" == "stats" ]]; then
+          OUTPUT=$(node ./bin/akai.mjs cas stats)
+        else
+          echo "unknown mode: $MODE" >&2
+          exit 1
+        fi
+
+        STATUS=$(printf '%s' "$OUTPUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{const j=JSON.parse(d);process.stdout.write(j.status||"UNKNOWN")})')
+        PAYLOAD=$(printf '%s' "$OUTPUT" | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{const j=JSON.parse(d);process.stdout.write(JSON.stringify(j.payload||{}))})')
+
+        {
+          echo "status=$STATUS"
+          echo "payload_json=$PAYLOAD"
+        } >> "$GITHUB_OUTPUT"
