@@ -80,6 +80,39 @@ function resolveCasBinding(refOrId) {
   };
 }
 
+export { resolveCasBinding, hashFile };
+
+export async function verifySignatureForFile({ filePath, signaturePath, publicKeyPath = null, casRef = null }) {
+  const resolvedFile = resolve(filePath);
+  const sigDoc = loadJsonMaybe(signaturePath);
+  const actualHashes = await hashFile(resolvedFile);
+  const actualBinding = resolveCasBinding(casRef);
+  const payload = {
+    schema_version: sigDoc.schema_version,
+    created_at: sigDoc.created_at,
+    algorithm: sigDoc.algorithm,
+    file: sigDoc.file,
+    cas_binding: sigDoc.cas_binding,
+  };
+
+  const payloadBytes = Buffer.from(JSON.stringify(payload), "utf8");
+  const publicKeyPem = publicKeyPath ? readFileSync(resolve(publicKeyPath), "utf8") : sigDoc.public_key_pem;
+  if (!publicKeyPem) throw new Error("public key required via --public-key or embedded signature doc");
+
+  const signatureOk = verifyBytes(null, payloadBytes, publicKeyPem, Buffer.from(sigDoc.signature_base64, "base64"));
+  const fileOk = sigDoc.file.sha256 === actualHashes.sha256 && sigDoc.file.blake3 === actualHashes.blake3;
+  const casOk = !sigDoc.cas_binding || JSON.stringify(sigDoc.cas_binding) === JSON.stringify(actualBinding);
+  return {
+    pass: signatureOk && fileOk && casOk,
+    signature_valid: signatureOk,
+    file_hash_match: fileOk,
+    cas_binding_match: casOk,
+    actual_sha256: actualHashes.sha256,
+    actual_blake3: actualHashes.blake3,
+    signature_path: resolve(signaturePath),
+  };
+}
+
 function manifestSourceFromPack(packPath) {
   const idx = readPackIndex(packPath);
   return {
@@ -299,25 +332,8 @@ async function cmdVerifySignature(args) {
   }
 
   const filePath = resolve(file);
-  const sigDoc = loadJsonMaybe(signaturePath);
-  const actualHashes = await hashFile(filePath);
-  const actualBinding = resolveCasBinding(casRef);
-  const payload = {
-    schema_version: sigDoc.schema_version,
-    created_at: sigDoc.created_at,
-    algorithm: sigDoc.algorithm,
-    file: sigDoc.file,
-    cas_binding: sigDoc.cas_binding,
-  };
-
-  const payloadBytes = Buffer.from(JSON.stringify(payload), "utf8");
-  const publicKeyPem = publicKeyPath ? readFileSync(resolve(publicKeyPath), "utf8") : sigDoc.public_key_pem;
-  if (!publicKeyPem) throw new Error("public key required via --public-key or embedded signature doc");
-
-  const signatureOk = verifyBytes(null, payloadBytes, publicKeyPem, Buffer.from(sigDoc.signature_base64, "base64"));
-  const fileOk = sigDoc.file.sha256 === actualHashes.sha256 && sigDoc.file.blake3 === actualHashes.blake3;
-  const casOk = !sigDoc.cas_binding || JSON.stringify(sigDoc.cas_binding) === JSON.stringify(actualBinding);
-  const pass = signatureOk && fileOk && casOk;
+  const verification = await verifySignatureForFile({ filePath, signaturePath, publicKeyPath, casRef });
+  const pass = verification.pass;
 
   printJson({
     schema_version: "aurekai.manifest.result.v1",
@@ -326,12 +342,7 @@ async function cmdVerifySignature(args) {
     created_at: now(),
     payload: {
       file_path: filePath,
-      signature_path: resolve(signaturePath),
-      signature_valid: signatureOk,
-      file_hash_match: fileOk,
-      cas_binding_match: casOk,
-      actual_sha256: actualHashes.sha256,
-      actual_blake3: actualHashes.blake3,
+      ...verification,
     },
   });
 

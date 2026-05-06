@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { executeHydrationEngine } from "./hydrate-engine.mjs";
 import { resolveHydrateState } from "./hydrate-state.mjs";
+import { verifySignatureForFile } from "./manifest-command.mjs";
 
 // ---------------------------------------------------------------------------
 // Execution ladder (weightless-first policy, V1 static heuristics)
@@ -134,7 +135,7 @@ function printWeightsHelp() {
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
   console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
-  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--oracle <none|basic>] [--dry-run]");
+  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--signature <sig.json>] [--public-key <pem>] [--cas-ref <ref>] [--signature-policy <none|strict>] [--oracle <none|basic>] [--dry-run]");
   console.log("  akai weights audit-trail --model <model.akmodel> [--since <iso8601>] [--limit <N>] [--out <file.akaudit>] [--format <json>] ");
   // Group B — Privacy + Federated
   console.log("  akai weights federated-merge --nodes <node1.akmodel,node2.akmodel,...> [--algorithm <fedavg|fedprox|scaffold>] [--rounds <N>] [--dp-epsilon <ε>] [--out <file.akmodel>] [--dry-run]");
@@ -2082,10 +2083,14 @@ function cmdProofChain(args) {
 // Command: weights integrity-gate
 // ---------------------------------------------------------------------------
 
-function cmdIntegrityGate(args) {
+async function cmdIntegrityGate(args) {
   const model       = flag(args, "--model")     || args[0] || "model.akmodel";
   const proofFile   = flag(args, "--proof")     || null;
   const sbomFile    = flag(args, "--sbom")      || null;
+  const signatureFile = flag(args, "--signature") || null;
+  const publicKeyFile = flag(args, "--public-key") || null;
+  const casRef      = flag(args, "--cas-ref")   || null;
+  const signaturePolicy = flag(args, "--signature-policy") || "none";
   const oracleMode  = flag(args, "--oracle")    || "none";
   const dryRun      = hasFlag(args, "--dry-run");
 
@@ -2130,6 +2135,43 @@ function cmdIntegrityGate(args) {
       ]
     : [];
 
+  let signatureVerification = null;
+  if (signatureFile) {
+    try {
+      signatureVerification = await verifySignatureForFile({
+        filePath: proofFile || sbomFile || signatureFile,
+        signaturePath: signatureFile,
+        publicKeyPath: publicKeyFile,
+        casRef,
+      });
+    } catch (err) {
+      signatureVerification = {
+        pass: false,
+        signature_valid: false,
+        file_hash_match: false,
+        cas_binding_match: false,
+        error: err.message,
+      };
+    }
+  }
+
+  if (signaturePolicy === "strict") {
+    if (!signatureVerification) {
+      tamperChecks.push({ check_type: "signature_policy", result: "fail", detail: "Strict signature policy requires --signature <sig.json>" });
+    } else if (!signatureVerification.pass) {
+      tamperChecks.push({ check_type: "signature_policy", result: "fail", detail: "Strict signature verification failed" });
+    } else {
+      tamperChecks.push({ check_type: "signature_policy", result: "pass", detail: "Strict signature verification passed" });
+      signatures.push({
+        signer_id: "manifest-signature",
+        signature: proofHash(`sigdoc:${signatureFile}`),
+        timestamp: now(),
+        attestation_type: "signature-policy",
+        status: "valid",
+      });
+    }
+  }
+
   const allChecksPassed = tamperChecks.every(c => c.result === "pass");
   const gateOpen = allChecksPassed && signatures.length >= 2;
 
@@ -2139,6 +2181,8 @@ function cmdIntegrityGate(args) {
     model_ref:            modelId,
     gate_status:          gateOpen ? "PASS" : "FAIL",
     gate_open:            gateOpen,
+    signature_policy:     signaturePolicy,
+    signature_verification: signatureVerification,
     signatures,
     threshold: {
       required_signatures: 2,

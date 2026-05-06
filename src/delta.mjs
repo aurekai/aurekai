@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chunkBufferCdc } from "./chunking.mjs";
 
@@ -117,6 +117,43 @@ function planDelta(oldGraph, newGraph) {
   };
 }
 
+function buildDeltaArtifact(oldGraph, newGraph) {
+  const oldByHash = new Map(oldGraph.chunks.map(chunk => [chunk.blake3, chunk]));
+  const newBytes = readFileSync(newGraph.path);
+  const operations = newGraph.chunks.map(chunk => {
+    if (oldByHash.has(chunk.blake3)) {
+      return {
+        op: "reuse",
+        blake3: chunk.blake3,
+        length: chunk.length,
+      };
+    }
+
+    return {
+      op: "inline",
+      blake3: chunk.blake3,
+      length: chunk.length,
+      data_base64: newBytes.subarray(chunk.offset, chunk.offset + chunk.length).toString("base64"),
+    };
+  });
+
+  return {
+    schema_version: "aurekai.delta.artifact.v1",
+    created_at: now(),
+    old: {
+      path: oldGraph.path,
+      sha256: oldGraph.sha256,
+      size_bytes: oldGraph.size_bytes,
+    },
+    target: {
+      sha256: newGraph.sha256,
+      size_bytes: newGraph.size_bytes,
+      chunk_count: newGraph.chunks.length,
+    },
+    operations,
+  };
+}
+
 function cmdPlan(args) {
   const oldFile = flag(args, "--old") || args[0];
   const newFile = flag(args, "--new") || args[1];
@@ -125,6 +162,13 @@ function cmdPlan(args) {
   const oldGraph = loadChunkGraph(oldFile);
   const newGraph = loadChunkGraph(newFile);
   const plan = planDelta(oldGraph, newGraph);
+  const out = flag(args, "--out");
+  let artifactOut = null;
+  if (out) {
+    artifactOut = resolve(out);
+    mkdirSync(resolve(artifactOut, ".."), { recursive: true });
+    writeFileSync(artifactOut, JSON.stringify(buildDeltaArtifact(oldGraph, newGraph), null, 2) + "\n");
+  }
 
   printJson({
     schema_version: "aurekai.delta.result.v1",
@@ -134,9 +178,67 @@ function cmdPlan(args) {
     payload: {
       old: { path: oldGraph.path, size_bytes: oldGraph.size_bytes, chunk_count: oldGraph.chunks.length, sha256: oldGraph.sha256 },
       new: { path: newGraph.path, size_bytes: newGraph.size_bytes, chunk_count: newGraph.chunks.length, sha256: newGraph.sha256 },
+      delta_artifact_out: artifactOut,
       ...plan,
     },
   });
+}
+
+function cmdApply(args) {
+  const oldFile = flag(args, "--old") || args[0];
+  const deltaFile = flag(args, "--delta");
+  const out = flag(args, "--out");
+  if (!oldFile || !deltaFile || !out) {
+    throw new Error("delta apply requires --old <file> --delta <file.akdelta.json> --out <file>");
+  }
+
+  const oldGraph = loadChunkGraph(oldFile);
+  const oldBytes = readFileSync(oldGraph.path);
+  const oldByHash = new Map(oldGraph.chunks.map(chunk => [chunk.blake3, oldBytes.subarray(chunk.offset, chunk.offset + chunk.length)]));
+  const deltaDoc = JSON.parse(readFileSync(resolve(deltaFile), "utf8"));
+  if (deltaDoc.schema_version !== "aurekai.delta.artifact.v1") {
+    throw new Error("invalid delta artifact schema");
+  }
+
+  const reconstructed = [];
+  for (const op of deltaDoc.operations || []) {
+    if (op.op === "reuse") {
+      const buf = oldByHash.get(op.blake3);
+      if (!buf) throw new Error(`missing reusable chunk in old artifact: ${op.blake3}`);
+      reconstructed.push(buf);
+      continue;
+    }
+    if (op.op === "inline") {
+      reconstructed.push(Buffer.from(op.data_base64, "base64"));
+      continue;
+    }
+    throw new Error(`unknown delta op '${op.op}'`);
+  }
+
+  const outBytes = Buffer.concat(reconstructed);
+  const actualSha = `sha256:${sha256(outBytes)}`;
+  const pass = actualSha === deltaDoc.target.sha256;
+  const outPath = resolve(out);
+  writeFileSync(outPath, outBytes);
+
+  printJson({
+    schema_version: "aurekai.delta.result.v1",
+    command: "delta.apply",
+    status: pass ? "PASS" : "FAIL",
+    created_at: now(),
+    payload: {
+      old_path: oldGraph.path,
+      delta_path: resolve(deltaFile),
+      out_path: outPath,
+      bytes_written: outBytes.length,
+      expected_sha256: deltaDoc.target.sha256,
+      actual_sha256: actualSha,
+      reused_chunks: (deltaDoc.operations || []).filter(op => op.op === "reuse").length,
+      inline_chunks: (deltaDoc.operations || []).filter(op => op.op === "inline").length,
+    },
+  });
+
+  if (!pass) process.exitCode = 2;
 }
 
 function cmdBench(args) {
@@ -176,8 +278,9 @@ function cmdBench(args) {
 
 function printDeltaHelp() {
   console.log("Usage:");
-  console.log("  akai delta plan --old <file> --new <file>");
+  console.log("  akai delta plan --old <file> --new <file> [--out <delta.json>]");
   console.log("  akai delta bench --old <file> --new <file>");
+  console.log("  akai delta apply --old <file> --delta <delta.json> --out <file>");
 }
 
 export async function deltaCommand(args) {
@@ -191,6 +294,7 @@ export async function deltaCommand(args) {
 
   if (sub === "plan") return cmdPlan(rest);
   if (sub === "bench") return cmdBench(rest);
+  if (sub === "apply") return cmdApply(rest);
 
   throw new Error(`unknown delta subcommand '${sub}'`);
 }

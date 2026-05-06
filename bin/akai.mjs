@@ -59,7 +59,7 @@ function printHelp() {
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
   console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
-  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--oracle <none|basic>] [--dry-run]");
+  console.log("  akai weights integrity-gate --model <model.akmodel> [--proof <file.akproof>] [--sbom <file.aksbom>] [--signature <sig.json>] [--public-key <pem>] [--cas-ref <ref>] [--signature-policy <none|strict>] [--oracle <none|basic>] [--dry-run]");
   console.log("  akai weights audit-trail --model <model.akmodel> [--since <iso8601>] [--limit <N>] [--out <file.akaudit>] [--format <json>]");
   console.log("  akai weights federated-merge --nodes <node1.akmodel,node2.akmodel,...> [--algorithm <fedavg|fedprox|scaffold>] [--rounds <N>] [--dp-epsilon <eps>] [--out <file.akmodel>] [--dry-run]");
   console.log("  akai weights dp-noise --model <model.akmodel> --epsilon <eps> --delta <delta> [--mechanism <gaussian|laplace>] [--sensitivity <S>] [--out <file.akmodel>] [--dry-run]");
