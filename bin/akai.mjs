@@ -15,6 +15,10 @@ import { proofCommand } from "../src/proof-compact.mjs";
 import { mcpCommand } from "../src/mcp-distribution.mjs";
 import { blockCommand, gaugeCommand } from "../src/block.mjs";
 import { fpqxCommand } from "../src/fpqx-command.mjs";
+import { canonCommand } from "../src/canon.mjs";
+import { netCommand } from "../src/net-seal.mjs";
+import { graphCommand } from "../src/graph-ops.mjs";
+import { truthCommand, buildTruthMatrix } from "../src/truth-matrix.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -22,14 +26,26 @@ const repoRoot = dirname(__dirname);
 const NATIVE_TOP_LEVEL_COMMANDS = [
   "weights", "weightops", "memory", "cas", "pack", "fetch", "delta",
   "manifest", "bench", "proof", "mcp", "block", "gauge", "fpqx",
+  "canon", "net", "graph",
+  "runtime doctor|capabilities", "capability registry",
+  "model verify", "truth",
   "run --weightless-first",
 ];
 
 const NATIVE_CAPABILITY_COMMANDS = new Set([
-  "proof.bundle",
-  "runtime.capabilities",
-  "capability.registry",
+  "proof.bundle", "proof.compact",
+  "runtime.capabilities", "capability.registry",
   "model.verify",
+  "canon.hash", "canon.parse", "canon.diff",
+  "net.seal", "net.eval_sealed",
+  "graph.lineage", "graph.merkle", "graph.validate",
+  "block.inspect", "block.commute",
+  "fpqx.align", "fpqx.eval",
+  "release.gate", "manifest.verify", "doctor.deep",
+  "hash.merkle", "proof.export", "index.equivalence",
+  "sae.activate", "sae.gate", "kvcache.chain", "kvcache.ancestry",
+  "model.pull", "model.route", "fpq.compress", "fpq.roundtrip",
+  "quant.roundtrip", "sli.auto_run", "layer.compat", "hash.file",
 ]);
 
 function printHelp() {
@@ -49,6 +65,15 @@ function printHelp() {
   console.log("  akai runtime doctor [--deep] [--json]");
   console.log("  akai runtime capabilities [--json]");
   console.log("  akai capability registry [--json]");
+  console.log("  akai truth [--json] [--print] [--out <file>]");
+  console.log("  akai canon hash  --in <file> [--algorithm sha256] [--canonical-json] [--json]");
+  console.log("  akai canon parse --in <file> [--out <canon.json>] [--json]");
+  console.log("  akai canon diff  --a <file_a> --b <file_b> [--json]");
+  console.log("  akai net seal        --netlist <file> [--out <file.aknetlist>] [--json]");
+  console.log("  akai net eval-sealed --netlist <file.aknetlist> [--json]");
+  console.log("  akai graph lineage   --model <model> [--depth <N>] [--json]");
+  console.log("  akai graph merkle    --inputs <f1,f2,...> [--json]");
+  console.log("  akai graph validate  --merkle <file.akgraph> [--json]");
   console.log("  akai cas import|verify|materialize|stats|gc ...");
   console.log("  akai pack build|inspect|materialize|optimize|mount ...");
   console.log("  akai fetch range|multipart|resume|verify ...");
@@ -391,6 +416,30 @@ if ((command === "model" && rest[0] === "verify") || command === "model:verify")
   process.exit(process.exitCode || 0);
 }
 
+// Truth matrix — handled natively
+if (command === "truth") {
+  await truthCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Canon operations — handled natively
+if (command === "canon") {
+  await canonCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Net seal/eval — handled natively
+if (command === "net" || command === "netlist") {
+  await netCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+// Graph operations — handled natively
+if (command === "graph") {
+  await graphCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
 // Weightless-first run path — handled natively without legacy binary
 if (command === "run" && rest.includes("--weightless-first")) {
   await weightsCommand(["weightless-run", ...rest]);
@@ -487,7 +536,34 @@ if (target.bin === "bonfyre-hyper") {
 }
 
 if (!binaryReachable) {
-  console.error(`  error: command '${command}' requires the bonfyre-hyper runtime, which is not installed.`);
+  // Check if the command root is in the capability registry (declared-only)
+  // so we can give a more precise message than just "Hyper not installed".
+  let matrix = null;
+  try { matrix = buildTruthMatrix(); } catch { /* registry may not be present */ }
+
+  const commandRoot = command.replace(/:.*$/, "");
+  const matchedEntry = matrix?.commands?.find(
+    e => e.command.startsWith(commandRoot + ".") || e.command === commandRoot
+  );
+
+  if (matchedEntry) {
+    if (matchedEntry.execution_state === "declared-only") {
+      console.error(`  error: '${command}' is declared in the Aurekai capability registry but has no runnable implementation yet.`);
+      console.error(`  execution_state: declared-only  (family: ${matchedEntry.family})`);
+      console.error(`  This command requires the HyperRuntime execution layer, which is not yet shipped.`);
+      console.error(`  Run 'akai truth --print' to see the full execution state map.`);
+      process.exit(2);
+    } else if (matchedEntry.execution_state === "hyper-delegated") {
+      console.error(`  error: '${command}' requires HyperRuntime (family: ${matchedEntry.family}).`);
+      console.error(`  execution_state: hyper-delegated — HyperRuntime is not installed.`);
+    } else {
+      console.error(`  error: command '${command}' requires the bonfyre-hyper runtime, which is not installed.`);
+    }
+  } else {
+    console.error(`  error: unknown command '${command}'.`);
+    console.error(`  Run 'akai truth --print' to see all declared commands and their execution states.`);
+  }
+
   console.error("");
   console.error("  Resolution options:");
   console.error("    1. Set AKAI_HYPER=/path/to/bonfyre-hyper in your environment");
@@ -499,7 +575,7 @@ if (!binaryReachable) {
   console.error("");
   console.error("  Contract check:");
   console.error("    akai runtime doctor --json");
-  process.exit(127);
+  process.exit(matchedEntry?.execution_state === "declared-only" ? 2 : 127);
 }
 
 const proc = spawnSync(target.bin, [...target.args, ...rest], {
