@@ -37,6 +37,7 @@
     "test:fetch": "node ./scripts/validate-fetch.mjs",
     "test:hydrate-engine": "node ./scripts/validate-hydrate-engine.mjs",
     "test:serving-readiness": "node ./scripts/validate-serving-readiness.mjs",
+    "test:promotion-gates": "node ./scripts/validate-promotion-gates.mjs",
     "release": "make release",
     "release-check": "make release-check"
   },

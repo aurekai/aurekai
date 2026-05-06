@@ -125,12 +125,12 @@ function printWeightsHelp() {
   console.log("  akai weights verify-fidelity <model.akmodel>");
   console.log("  akai weights distill-feature-micro --from <model.akmodel> --feature <feature-id> [--out <file.akdistill>]");
   console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights] [--dry-run]");
-  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--quality <0-1>] [--top <N>] [--list]");
+  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--quality <0-1>] [--top <N>] [--model <model.akmodel>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--list]");
   console.log("  akai weights marketplace inspect <model-id>");
   console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--hydrate-state <file>] [--dry-run]");
   console.log("  akai weights cdn status [<model>]");
   console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--hydrate-state <file>] [--dry-run]");
-  console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
+  console.log("  akai weights arb-route --recipe <recipe> [--model <model.akmodel>] [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--dry-run]");
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
   console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
@@ -197,6 +197,35 @@ function writeJsonArtifact(outFile, payload) {
 
 function baseModelName(ref) {
   return String(ref || "model").split("@")[0].replace(/[^a-zA-Z0-9._-]/g, "-") || "model";
+}
+
+function resolveIntegrityEvidence(integrityArg, modelRef) {
+  const doc = integrityArg ? readJsonMaybe(integrityArg) : null;
+  if (!doc) {
+    return {
+      available: false,
+      gate_open: false,
+      model_match: false,
+      state: "missing",
+      notes: "No integrity proof found. Run: akai weights integrity-gate --model <model> [--proof <file>]",
+    };
+  }
+
+  const payload = doc.schema_version === "aurekai.weightops.result.v1" ? doc.payload : doc;
+  const gateOpen = payload?.gate_open === true || payload?.gate_status === "PASS";
+  const sourceModel = payload?.model_ref || payload?.model || null;
+  const modelMatch = !modelRef || !sourceModel || baseModelName(modelRef) === baseModelName(sourceModel);
+  const signatures = Array.isArray(payload?.signatures) ? payload.signatures.length : 0;
+
+  return {
+    available: true,
+    gate_open: gateOpen,
+    model_match: modelMatch,
+    state: gateOpen ? "verified" : "blocked",
+    model_ref: sourceModel,
+    signatures,
+    proof_hash: payload?.proof_hash || payload?.proof_root || null,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1287,6 +1316,9 @@ function cmdMarketplace(args) {
   const diskGb     = parseFloat(flag(args, "--disk")      || "8");
   const qualityMin = parseFloat(flag(args, "--quality")   || "0.85");
   const limitN     = parseInt(flag(args, "--top")         || "3", 10);
+  const modelArg   = flag(args, "--model") || null;
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
+  const integrityArg = flag(args, "--integrity-proof") || flag(args, "--integrity-gate") || null;
   const listAll    = hasFlag(args, "--list");
 
   const tasks = taskArg.split(",").map(t => t.trim());
@@ -1309,12 +1341,21 @@ function cmdMarketplace(args) {
     return;
   }
 
+  const hydration = resolveHydrateState(hydrateStateArg, modelArg);
+  const integrity = resolveIntegrityEvidence(integrityArg, modelArg);
+  const gatesPassed = hydration.available
+    && hydration.model_match
+    && hydration.hydrated_regions > 0
+    && integrity.available
+    && integrity.gate_open
+    && integrity.model_match;
+
   const scored = MARKETPLACE_CATALOG
     .map(m => ({ ...m, score: scoreModel(m, tasks, budgetGb, diskGb, qualityMin) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limitN);
 
-  const recommendations = scored.map((m, i) => ({
+  const recommendations = gatesPassed ? scored.map((m, i) => ({
     rank:           i + 1,
     id:             m.id,
     name:           m.name,
@@ -1328,19 +1369,34 @@ function cmdMarketplace(args) {
     ghost_ready:    m.sae_compatible || m.memory_pack_available,
     download_strategy: m.size_gb <= budgetGb ? "full-local" : "partial + remote-fallback",
     proof_hash:     proofHash(`marketplace:${m.id}:${tasks.join(",")}:${budgetGb}`),
-  }));
+  })) : [];
 
   const payload = {
     schema_version:  "aurekai.weightops.marketplace.v1",
     generated_at:    now(),
+    model_ref:       modelArg,
+    hydration_gate:  hydration,
+    integrity_gate:  integrity,
+    gates_passed:    gatesPassed,
     query: { tasks, budget_gb: budgetGb, disk_gb: diskGb, quality_min: qualityMin, top_n: limitN },
     recommendations,
-    best_match:      recommendations[0]?.id ?? null,
+    best_match:      gatesPassed ? (recommendations[0]?.id ?? null) : null,
     proof_hash:      proofHash(`marketplace-query:${tasks.join(",")}:${budgetGb}:${qualityMin}`),
   };
 
-  const result = wrapResult("marketplace", payload, { status: "PASS" });
+  const result = wrapResult("marketplace", payload, {
+    modelRef: modelArg,
+    status: gatesPassed ? "PASS" : "FAIL",
+    exitCode: gatesPassed ? 0 : 2,
+    warnings: gatesPassed ? [] : ["hydration/integrity gates not satisfied"],
+  });
   printJson(result);
+  if (!gatesPassed) {
+    console.error("\n  → marketplace selection blocked: provide valid --hydrate-state and --integrity-proof evidence");
+    process.exitCode = 2;
+    return;
+  }
+
   console.error(`\n  → top recommendation: ${recommendations[0]?.name ?? "none"}  (score: ${recommendations[0]?.recommendation_score})`);
 }
 
@@ -1623,10 +1679,57 @@ function arbScore(provider, slaLatencyMs, slaQuality, budgetCredits) {
 
 function cmdArbRoute(args) {
   const recipe        = flag(args, "--recipe")           || args[0] || "recipe.akrecipe";
+  const modelArg      = flag(args, "--model")            || null;
   const slaLatencyMs  = parseInt(flag(args, "--sla-latency-ms") || "300", 10);
   const slaQuality    = parseFloat(flag(args, "--sla-quality")  || "0.85");
   const budgetCredits = parseFloat(flag(args, "--budget-credits")|| "0.10");
+  const hydrateStateArg = flag(args, "--hydrate-state") || null;
+  const integrityArg = flag(args, "--integrity-proof") || flag(args, "--integrity-gate") || null;
   const dryRun        = hasFlag(args, "--dry-run");
+
+  const hydration = resolveHydrateState(hydrateStateArg, modelArg);
+  const integrity = resolveIntegrityEvidence(integrityArg, modelArg);
+  const gatesPassed = hydration.available
+    && hydration.model_match
+    && hydration.hydrated_regions > 0
+    && integrity.available
+    && integrity.gate_open
+    && integrity.model_match;
+
+  if (!gatesPassed) {
+    const payload = {
+      schema_version:          "aurekai.weightops.arb_route.v1",
+      generated_at:            now(),
+      model_ref:               modelArg,
+      recipe,
+      dry_run:                 dryRun,
+      hydration_gate:          hydration,
+      integrity_gate:          integrity,
+      gates_passed:            false,
+      selected_provider:       null,
+      selected_label:          null,
+      cost_credits:            null,
+      latency_ms:              null,
+      quality_score:           null,
+      arbitrage_score:         0,
+      arbitrage_saved_credits: 0,
+      full_local_avoided:      false,
+      provider_scores:         [],
+      eligible_count:          0,
+      proof_hash:              proofHash(`arb-route:blocked:${recipe}`),
+    };
+
+    const result = wrapResult("arb-route", payload, {
+      modelRef: modelArg,
+      status: "FAIL",
+      exitCode: 2,
+      warnings: ["hydration/integrity gates not satisfied"],
+    });
+    printJson(result);
+    console.error("\n  → arb-route blocked: provide valid --hydrate-state and --integrity-proof evidence");
+    process.exitCode = 2;
+    return;
+  }
 
   const scored = ARB_PROVIDERS.map(p => {
     const { eligible, score } = arbScore(p, slaLatencyMs, slaQuality, budgetCredits);
@@ -1657,8 +1760,12 @@ function cmdArbRoute(args) {
   const payload = {
     schema_version:          "aurekai.weightops.arb_route.v1",
     generated_at:            now(),
+    model_ref:               modelArg,
     recipe,
     dry_run:                 dryRun,
+    hydration_gate:          hydration,
+    integrity_gate:          integrity,
+    gates_passed:            true,
     sla: {
       latency_ms:            slaLatencyMs,
       quality:               slaQuality,

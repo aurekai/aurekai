@@ -46,12 +46,12 @@ function printHelp() {
   console.log("  akai weights verify-fidelity <model.akmodel> [--baseline <ref>]");
   console.log("  akai weights distill-feature-micro --from <model.akmodel> --feature <feature-id> [--out <file.akdistill>]");
   console.log("  akai weights ghost-infer --recipe <recipe> [--memory <file.akmemory>] [--distill <file.akdistill>] [--no-weights]");
-  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--top <N>] [--list]");
+  console.log("  akai weights marketplace [--tasks <t,...>] [--budget-gb <N>] [--top <N>] [--model <model.akmodel>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--list]");
   console.log("  akai weights marketplace inspect <model-id>");
   console.log("  akai weights serve-cdn --model <model.akmodel> [--region <id|all>] [--ttl <Nh>] [--prefetch] [--dry-run]");
   console.log("  akai weights cdn status [<model>]");
   console.log("  akai weights moq-stream --model <model.akmodel> [--relay <uri>] [--track <name>] [--chunk-ms <N>] [--dry-run]");
-  console.log("  akai weights arb-route --recipe <recipe> [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--dry-run]");
+  console.log("  akai weights arb-route --recipe <recipe> [--model <model.akmodel>] [--sla-latency-ms <N>] [--sla-quality <0-1>] [--budget-credits <N>] [--hydrate-state <file>] [--integrity-proof <file|json>] [--dry-run]");
   console.log("  akai weights sbom --model <model.akmodel> [--out <file.aksbom>] [--format <fmt>] [--dry-run]");
   console.log("  akai weights tamper-detect --model <model.akmodel> [--baseline <hash>] [--sbom <file.aksbom>] [--inject-drift] [--dry-run]");
   console.log("  akai weights proof-chain --model <model.akmodel> [--sbom <file.aksbom>] [--out <file.akproof>] [--dry-run]");
