@@ -714,8 +714,18 @@ if (!binaryReachable) {
   process.exit(matchedEntry?.execution_state === "declared-only" ? 2 : 127);
 }
 
+if (Number(process.env.AKAI_LEGACY_CHAIN_DEPTH || "0") > 0) {
+  console.error(`  error: delegated command '${command}' re-entered the akai compatibility alias.`);
+  console.error("  bonfyre-hyper is currently mapped to the akai CLI for PATH compatibility only.");
+  console.error("  Native commands run directly. Remaining non-native commands must be implemented here or handled by a real HyperRuntime binary.");
+  process.exit(126);
+}
+
 const proc = spawnSync(target.bin, [...target.args, ...rest], {
   stdio: "inherit",
-  env: detectLegacyEnv(),
+  env: {
+    ...detectLegacyEnv(),
+    AKAI_LEGACY_CHAIN_DEPTH: String(Number(process.env.AKAI_LEGACY_CHAIN_DEPTH || "0") + 1),
+  },
 });
 process.exit(proc.status ?? 1);

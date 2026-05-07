@@ -21,7 +21,9 @@
   ],
   "bin": {
     "akai": "bin/akai.mjs",
-    "aurekai": "bin/akai.mjs"
+    "aurekai": "bin/akai.mjs",
+    "bonfyre": "bin/akai.mjs",
+    "bonfyre-hyper": "bin/akai.mjs"
   },
   "publishConfig": {
     "access": "public"
