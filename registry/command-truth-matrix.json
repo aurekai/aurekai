@@ -1,0 +1,898 @@
+{
+  "schema_version": "aurekai.truth-matrix.v1",
+  "generated_at": "2026-05-07T02:11:16.200Z",
+  "totals": {
+    "commands": 111,
+    "native": 111
+  },
+  "commands": [
+    {
+      "command": "api.status",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai api status",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "auth.verify",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai auth verify --token",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "brief.generate",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai brief generate",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "canon.diff",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai canon diff",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "canon.hash",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai canon hash",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "canon.parse",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai canon parse",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "capability.registry",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai capability registry",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "clips.extract",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai clips extract",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "cms.entry.create",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai cms create",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "compress.family",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai compress --in",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "control.route",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai control --signal",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "distribute.bundle",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai distribute bundle",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "doctor.deep",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai runtime doctor",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "embed.text",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai embed --text",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "emit.artifact",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai artifact emit",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "entity.resolve",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai entity resolve",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "family.group",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai family group",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "finance.margin",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai finance margin",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "flow.branch",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai flow branch",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "fpq.compress",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights compile",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "fpq.roundtrip",
+      "family": "experimental:model_capability_qa",
+      "execution_state": "native",
+      "cli_surface": "akai weights verify-fidelity",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "fpqx.align",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai fpqx plan",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "fpqx.eval",
+      "family": "experimental:model_capability_qa",
+      "execution_state": "native",
+      "cli_surface": "akai fpqx plan",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "frame_extract.video",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai frame extract (requires ffmpeg)",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "gate.guard",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai gate guard --token",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "gate.issue",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai gate issue --subject",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "graph.lineage",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai graph lineage",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "graph.merkle",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai graph merkle",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "graph.validate",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai graph validate",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "hash.file",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai weights prove",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "hash.merkle",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai graph merkle",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "index.equivalence",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai weights proof-chain",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "ingest.file",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai ingest --in",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "invoice.generate",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai invoice generate",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "kvcache.ancestry",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai weights kv-restore",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "kvcache.chain",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights kv-compress",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "layer.compat",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai block inspect",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "learn.feedback",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai learn feedback",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "learn.tune",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai learn tune",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "ledger.export",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai ledger export",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "manifest.verify",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai manifest verify",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "media_prep.normalize",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai media normalize (requires ffmpeg)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "meter.record",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai meter record",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "model.pull",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights hydrate",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "model.route",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights arb-route",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "model.verify",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai model verify",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "moq.video_relay",
+      "family": "experimental:liveops",
+      "execution_state": "native",
+      "cli_surface": "akai moq (NEEDS_MOQ_INFRA)",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "narrate.brief",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai narrate --in",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "net.eval_sealed",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai net eval-sealed",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "net.seal",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai net seal",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "netlist.eval_sealed",
+      "family": "experimental:sealed_compute",
+      "execution_state": "native",
+      "cli_surface": "akai netlist eval-sealed (alias: akai net eval-sealed)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "netlist.seal",
+      "family": "experimental:sealed_compute",
+      "execution_state": "native",
+      "cli_surface": "akai netlist seal (alias: akai net seal)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "outreach.followup",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai outreach followup",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "pack.deliverable",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai pack deliverable",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "paragraph.reflow",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai paragraph reflow",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "pay.invoice",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai pay invoice (NEEDS_PAYMENT_PROCESSOR)",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "physics.diff",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai physics diff",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "physics.init",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai physics init",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "physics.kick",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai physics kick",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "physics.run",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai physics run",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "project.create",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai project create",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "proof.bundle",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai proof bundle",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "proof.export",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai proof bundle --out",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "quant.roundtrip",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights synth-quant",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "query.sql",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai query --from",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "queue.enqueue",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai queue enqueue",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "queue.stats",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai queue stats",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "queue.work",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai queue work",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "reason.branch",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai reason branch",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "reason.diff",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai reason diff",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "reason.rebase",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai reason rebase",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "reason.run",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai reason run",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "reason.start",
+      "family": "reason",
+      "execution_state": "native",
+      "cli_surface": "akai reason start",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "release.gate",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai weights integrity-gate",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "render.document",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai render --in",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "repurpose.content",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai repurpose --in",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "runtime.capabilities",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai runtime capabilities",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "runtime.dispatch",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai runtime dispatch",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "sae.activate",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights sae-probe",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "sae.gate",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai weights sae-probe",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "scene_detect.video",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai video scene (requires ffmpeg)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "segment.speakers",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai segment speakers (requires pyannote)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "sli.auto_run",
+      "family": "experimental:model_capability_qa",
+      "execution_state": "native",
+      "cli_surface": "akai weights ghost-infer",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "space.attach",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai space attach",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "space.open",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai space open",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "space.put",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai space put",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "speech_loop.transform",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai speech transform",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "stitch.plan",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai stitch --steps",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "surface.publish",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai surface publish",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "tel.listen",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai tel listen",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "tel.mock",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai tel mock",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "tel.send_sms",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai tel send-sms (NEEDS_SMS_PROVIDER)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "tel.sim_call",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai tel sim-call",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "tel.sim_sms",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai tel sim-sms",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "tier.route",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai tier --tier",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "time.rerun",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai time rerun",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "time.schedule",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai time schedule",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "transcribe.audio",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai transcribe --in (requires whisper)",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "transcript.clean",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai transcript clean",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "usage.report",
+      "family": "commerce",
+      "execution_state": "native",
+      "cli_surface": "akai usage report",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "vec.search",
+      "family": "memory",
+      "execution_state": "native",
+      "cli_surface": "akai vec search",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "video_demux.split",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai video demux (requires ffmpeg)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "violence.coupling_test",
+      "family": "experimental:integrity",
+      "execution_state": "native",
+      "cli_surface": "akai violence (NEEDS_EXPERIMENTAL_BACKEND)",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "watch.path",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai watch --path",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wire.doctor",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai wire doctor",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "wire.ingest_pcap",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai wire ingest-pcap (requires tshark/tcpdump)",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wire.probe",
+      "family": "experimental:liveops",
+      "execution_state": "native",
+      "cli_surface": "akai wire probe",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "wire.recipe",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai wire recipe",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wire.report",
+      "family": "experimental:liveops",
+      "execution_state": "native",
+      "cli_surface": "akai wire report",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wire.space_export",
+      "family": "wire",
+      "execution_state": "native",
+      "cli_surface": "akai wire space-export",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "workflow.run",
+      "family": "runtime",
+      "execution_state": "native",
+      "cli_surface": "akai workflow --file",
+      "in_registry": true,
+      "claimed_by_integrations": true
+    }
+  ]
+}

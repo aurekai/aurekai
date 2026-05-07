@@ -46,6 +46,7 @@ const NATIVE_COMMANDS = new Map([
   // wire
   ["wire.report",               "akai wire report"],
   ["wire.doctor",               "akai wire doctor"],
+  ["wire.probe",                "akai wire probe"],
   // graph
   ["graph.lineage",             "akai graph lineage"],
   ["graph.merkle",              "akai graph merkle"],
@@ -178,8 +179,7 @@ const NATIVE_COMMANDS = new Map([
  * unless explicitly marked declared-only.
  */
 const DECLARED_ONLY_COMMANDS = new Set([
-  // Only truly unimplemented commands remain here
-  "wire.probe",  // requires custom packet probe infrastructure
+  // No commands remain here — wire.probe is now native (akai wire probe)
 ]);
 
 function loadJson(rel) {

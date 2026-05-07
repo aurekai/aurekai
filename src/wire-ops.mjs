@@ -16,12 +16,13 @@
  *   akai wire doctor [--json]
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { createConnection } from "node:net";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function flag(args, name) {
@@ -175,6 +176,106 @@ function cmdWireDoctor(args) {
   return result;
 }
 
+// ── wire.probe ───────────────────────────────────────────────────────────────
+// Probes the local runtime surface and, if --target is given, makes a
+// non-blocking TCP reachability check against host:port.
+// All I/O is bounded: TCP probe times out in --timeout-ms (default 2000).
+async function cmdWireProbe(args) {
+  const target    = flag(args, "--target");    // optional  host:port or host
+  const timeoutMs = parseInt(flag(args, "--timeout-ms") ?? "2000", 10);
+  const asJson    = hasFlag(args, "--json");
+  const probeId   = randomBytes(6).toString("hex");
+  const startedAt = Date.now();
+
+  // ── local surface checks (always run) ──────────────────────────────────────
+  const localChecks = [
+    { name: "audit_dir",     path: join(AUREKAI_DIR, "audit"),     ok: existsSync(join(AUREKAI_DIR, "audit")) },
+    { name: "meter_dir",     path: join(AUREKAI_DIR, "meter"),     ok: existsSync(join(AUREKAI_DIR, "meter")) },
+    { name: "netlists_dir",  path: join(AUREKAI_DIR, "netlists"),  ok: existsSync(join(AUREKAI_DIR, "netlists")) },
+    { name: "space_dir",     path: join(AUREKAI_DIR, "space"),     ok: existsSync(join(AUREKAI_DIR, "space")) },
+    { name: "queue_dir",     path: join(AUREKAI_DIR, "queue"),     ok: existsSync(join(AUREKAI_DIR, "queue")) },
+    { name: "artifacts_dir", path: join(AUREKAI_DIR, "artifacts"), ok: existsSync(join(AUREKAI_DIR, "artifacts")) },
+  ];
+
+  // ── remote TCP probe (optional) ────────────────────────────────────────────
+  let remoteResult = null;
+  if (target) {
+    const [rawHost, rawPort] = target.includes(":") ? target.rsplit
+      ? [target.slice(0, target.lastIndexOf(":")), target.slice(target.lastIndexOf(":") + 1)]
+      : [target.slice(0, target.lastIndexOf(":")), target.slice(target.lastIndexOf(":") + 1)]
+      : [target, "80"];
+    const host = rawHost.replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+    const port = parseInt(rawPort, 10);
+
+    const t0 = Date.now();
+    const { ok: tcpOk, error: tcpErr } = await new Promise(resolve => {
+      const socket = createConnection({ host, port }, () => {
+        socket.destroy();
+        resolve({ ok: true, error: null });
+      });
+      socket.setTimeout(timeoutMs);
+      socket.on("error",   err => resolve({ ok: false, error: err.message }));
+      socket.on("timeout", ()  => { socket.destroy(); resolve({ ok: false, error: "timeout" }); });
+    });
+    remoteResult = {
+      target, host, port,
+      reachable: tcpOk,
+      latency_ms: tcpOk ? Date.now() - t0 : null,
+      error: tcpErr,
+      timeout_ms: timeoutMs,
+    };
+  }
+
+  const localOk  = localChecks.filter(c => c.ok).length;
+  const verdict  = remoteResult
+    ? (remoteResult.reachable ? "OK" : "REMOTE_UNREACHABLE")
+    : (localOk >= 2 ? "OK" : "LOCAL_INCOMPLETE");
+
+  const elapsed = Date.now() - startedAt;
+
+  // Persist probe record to audit log for wire.report
+  const probeRecord = {
+    schema_version: "aurekai.wire.probe.v1",
+    probe_id: probeId,
+    probed_at: new Date(startedAt).toISOString(),
+    elapsed_ms: elapsed,
+    local_checks: localChecks,
+    local_ok: localOk,
+    remote: remoteResult,
+    verdict,
+  };
+
+  try {
+    ensureDir(AUDIT_DIR);
+    const logPath = join(AUDIT_DIR, "wire.probe.jsonl");
+    writeFileSync(logPath, JSON.stringify({
+      timestamp: probeRecord.probed_at,
+      command: "wire.probe",
+      probe_id: probeId,
+      verdict,
+      target: target ?? null,
+    }) + "\n", { flag: "a" });
+  } catch { /* audit write failure is non-fatal */ }
+
+  if (asJson) {
+    printJson(probeRecord);
+  } else {
+    process.stdout.write(`wire.probe  id:${probeId}  elapsed:${elapsed}ms  verdict:${verdict}\n`);
+    for (const c of localChecks) {
+      process.stdout.write(`  ${c.ok ? "✓" : "✗"} ${c.name.padEnd(20)} ${c.path}\n`);
+    }
+    if (remoteResult) {
+      const s = remoteResult.reachable
+        ? `✓ ${remoteResult.target}  latency:${remoteResult.latency_ms}ms`
+        : `✗ ${remoteResult.target}  error:${remoteResult.error}`;
+      process.stdout.write(`  ${s}\n`);
+    }
+  }
+  return probeRecord;
+}
+
+function ensureDir(d) { if (!existsSync(d)) mkdirSync(d, { recursive: true }); }
+
 // ── dispatcher ───────────────────────────────────────────────────────────────
 export async function wireCommand(args) {
   const sub = args[0];
@@ -186,9 +287,12 @@ export async function wireCommand(args) {
     case "doctor":
       cmdWireDoctor(rest);
       break;
+    case "probe":
+      await cmdWireProbe(rest);
+      break;
     default:
       console.error(`  error: unknown wire subcommand '${sub ?? "(none)"}'.`);
-      console.error("  Available: report, doctor");
+      console.error("  Available: report, doctor, probe");
       process.exitCode = 1;
   }
 }
