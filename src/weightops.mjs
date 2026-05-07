@@ -298,7 +298,7 @@ function printWeightsHelp() {
   // Group E — P2P & Mesh
   console.log("  akai weights p2p-seed --model <model.akmodel> [--chunks <N>] [--relay <uri>] [--dry-run]");
   console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
-  console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--dry-run]");
+  console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
   console.log("  akai weights mirror-sync --model <model.akmodel> [--mirrors <m1,m2,...>] [--dry-run]");
   console.log("  akai weights escrow --model <model.akmodel> [--condition <rule>] [--recipient <id>] [--ttl-hours <N>] [--release] [--out <file.akescrow>] [--dry-run]");
 }
@@ -4464,6 +4464,8 @@ function cmdGeoPin(args) {
   const regionArg = flag(args, "--region") || "us-east-1";
   const replicasArg = parseInt(flag(args, "--replicas") || "1", 10);
   const outFile  = flag(args, "--out") || null;
+  const openingPolicy = flag(args, "--opening-policy") || "partial-open";
+  const continuityPolicy = flag(args, "--continuity-policy") || "handoff";
   const dryRun   = hasFlag(args, "--dry-run");
 
   const REGION_COORDS = {
@@ -4512,6 +4514,27 @@ function cmdGeoPin(args) {
     dry_run: dryRun,
   };
 
+  const priorState = {
+    state_type: "weights.geo_location",
+    state_commitment: `ak:commit:${hashValue({ model: modelArg, phase: "pre-geo-pin", cas_artifact_id: casBinding.artifact_id ?? "unbound" }, "")}`,
+    chart_id: "geo_runtime",
+    cell: null,
+    cell_key: `pre:${modelArg}:${casBinding.artifact_id ?? "unbound"}`,
+    residual_norm: 0,
+    residual_class: "stable",
+    witness_hash: hashValue(`witness:pre-geo-pin:${modelArg}:${casBinding.artifact_id ?? "unbound"}`),
+  };
+  const continuity = buildCommandContinuity({
+    commandName: "geo-pin",
+    payload,
+    stateType: "weights.geo_pin",
+    chartType: "geo_runtime",
+    openingPolicy,
+    policy: continuityPolicy,
+    priorState,
+    metadata: { model_ref: modelArg, region: regionArg, replicas: replicasArg, cas_bound: !!casEntry },
+  });
+
   if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
 
   const result = wrapResult("geo-pin", payload, {
@@ -4521,6 +4544,8 @@ function cmdGeoPin(args) {
     bytesRead: 4096,
     bytesWritten: outFile ? 2048 : 0,
     modelStateDelta: { pinned_region: regionArg, replicas: replicasArg, cas_bound: !!casEntry },
+    status: continuity.status,
+    continuity,
   });
   printJson(result);
   console.error(`\n  → GEO PIN: ${modelArg} → ${regionArg} (${coords.lat}°, ${coords.lon}°) × ${replicasArg} replica(s) [cas_bound=${!!casEntry}]`);

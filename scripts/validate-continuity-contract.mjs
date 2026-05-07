@@ -173,6 +173,18 @@ const relayResult = runJson([
 assertContinuityShape(relayResult, "weights.relay-handoff");
 console.log("  PASS");
 
+console.log("=== continuity contract: weights.geo-pin ===");
+const geoPinResult = runJson([
+  "weights", "geo-pin",
+  "--model", "llama-8b.q4.akmodel",
+  "--region", "us-east-1",
+  "--replicas", "2",
+  "--dry-run",
+  "--json",
+]);
+assertContinuityShape(geoPinResult, "weights.geo-pin");
+console.log("  PASS");
+
 console.log("=== continuity contract: proof.bundle ===");
 const proofResult = runJson([
   "proof", "bundle",
