@@ -15,6 +15,7 @@ import { homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { compile as compileChart, detectChart } from "./chart-compiler.mjs";
 import { e8NeighborScore } from "./e8-lattice.mjs";
+import { buildCommittedState, buildTransitionRecord, deriveCommitmentSalt, evaluateContinuityPolicy, hashValue } from "./state-continuity.mjs";
 
 const AUREKAI_DIR  = join(homedir(), ".aurekai");
 const SPACES_DIR   = join(AUREKAI_DIR, "spaces");
@@ -23,15 +24,25 @@ const RERUN_DIR    = join(AUREKAI_DIR, "rerun");
 const EMBED_DIR    = join(AUREKAI_DIR, "embeddings");
 const AUDIT_DIR    = join(AUREKAI_DIR, "audit");
 
-function writeAudit(operation, command, ref, bytesWritten = 0) {
+function writeAudit(operation, command, ref, bytesWritten = 0, metadata = {}, status = "PASS") {
   ensureDir(AUDIT_DIR);
   const safe = (ref ?? "unknown").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 64);
   const ts = new Date().toISOString();
+  const promoted = {
+    state_commitment: metadata.state_commitment ?? null,
+    prior_commitment: metadata.prior_commitment ?? null,
+    transition_type: metadata.transition_type ?? null,
+    continuity_class: metadata.continuity_class ?? null,
+    continuity_verdict: metadata.continuity_verdict ?? null,
+    opening_policy: metadata.opening_policy ?? null,
+    residual_delta: metadata.residual_delta ?? null,
+  };
   const record = JSON.stringify({
     operation, command, actor: "akai-runner", model_ref: ref,
     proof_hash: "ak:sha256:" + createHash("sha256").update(command + ref).digest("hex").slice(0, 16),
-    status: "PASS", duration_ms: 1, bytes_read: 0, bytes_written: bytesWritten,
-    timestamp: ts, created_at: ts, metadata: { trigger: "cli" },
+    status, duration_ms: 1, bytes_read: 0, bytes_written: bytesWritten,
+    ...promoted,
+    timestamp: ts, created_at: ts, metadata: { trigger: "cli", ...metadata },
   }) + "\n";
   appendFileSync(join(AUDIT_DIR, `${safe}.jsonl`), record, "utf8");
 }
@@ -41,6 +52,164 @@ function hasFlag(args, name) { return args.includes(name); }
 function now() { return new Date().toISOString(); }
 function printJson(obj) { process.stdout.write(JSON.stringify(obj, null, 2) + "\n"); }
 function ensureDir(d) { if (!existsSync(d)) mkdirSync(d, { recursive: true }); }
+
+function printSpaceHelp() {
+  process.stdout.write("Usage:\n");
+  process.stdout.write("  akai space open   --name <space> [--type <kind>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]\n");
+  process.stdout.write("  akai space put    --space <name> --key <k> --value <v> [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]\n");
+  process.stdout.write("  akai space attach --space <name> --resource <path|uri> [--label <text>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]\n");
+  process.stdout.write("  akai space schedule --task <text> [--at <iso>|--delay-seconds <N>] [--json]\n");
+  process.stdout.write("  akai space rerun --id <schedule_id> [--json]\n");
+  process.stdout.write("  akai space search --query <text> [--store <dir>] [--top-k <N>] [--json]\n");
+}
+
+function cloneJson(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+
+function createEmptySpace(name, type = "generic", openingPolicy = "commit-only", continuityPolicy = "default") {
+  const ts = now();
+  return {
+    schema_version: "aurekai.space.v1",
+    name,
+    type,
+    created_at: ts,
+    updated_at: ts,
+    keys: {},
+    attachments: [],
+    _state: {
+      schema_version: "aurekai.space.state.v1",
+      state_type: "space.state",
+      opening_policy: openingPolicy,
+      continuity_policy: continuityPolicy,
+      commitment_salt: randomBytes(16).toString("hex"),
+    },
+  };
+}
+
+function normalizeSpace(space, name, type = "generic", openingPolicy = "commit-only", continuityPolicy = "default") {
+  const normalized = space ?? createEmptySpace(name, type, openingPolicy, continuityPolicy);
+  normalized.schema_version = normalized.schema_version ?? "aurekai.space.v1";
+  normalized.name = normalized.name ?? name;
+  normalized.type = normalized.type ?? type;
+  normalized.created_at = normalized.created_at ?? now();
+  normalized.updated_at = normalized.updated_at ?? normalized.created_at;
+  normalized.keys = normalized.keys ?? {};
+  normalized.attachments = normalized.attachments ?? [];
+  normalized._state = normalized._state ?? { schema_version: "aurekai.space.state.v1" };
+  normalized._state.schema_version = normalized._state.schema_version ?? "aurekai.space.state.v1";
+  normalized._state.state_type = normalized._state.state_type ?? "space.state";
+  normalized._state.opening_policy = normalized._state.opening_policy ?? openingPolicy;
+  normalized._state.continuity_policy = normalized._state.continuity_policy ?? continuityPolicy;
+  normalized._state.commitment_salt = normalized._state.commitment_salt ?? randomBytes(16).toString("hex");
+  return normalized;
+}
+
+function describeStoredState(entry) {
+  if (!entry?._continuity) return null;
+  return {
+    state_type: entry._continuity.state_type,
+    state_commitment: entry._continuity.state_commitment,
+    chart_id: entry._continuity.chart_id,
+    cell: entry._continuity.cell,
+    cell_key: entry._continuity.cell_key,
+    residual_norm: entry._continuity.residual_norm,
+    residual_class: entry._continuity.residual_class,
+    witness_hash: entry._continuity.witness_hash,
+  };
+}
+
+function summarizeSpace(space) {
+  return {
+    name: space.name,
+    type: space.type,
+    key_count: Object.keys(space.keys ?? {}).length,
+    attachment_count: (space.attachments ?? []).length,
+    keys: Object.entries(space.keys ?? {})
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => ({
+        key,
+        state_commitment: value?._continuity?.state_commitment ?? null,
+        payload_hash: value?._continuity?.payload_hash ?? hashValue(value?.value ?? null),
+        chart_id: value?._e8?.chart_id ?? null,
+        cell_key: value?._e8?.cell_key ?? null,
+        residual_norm: value?._e8?.residual_norm ?? null,
+      })),
+    attachments: (space.attachments ?? [])
+      .slice()
+      .sort((left, right) => String(left.label ?? left.resource).localeCompare(String(right.label ?? right.resource)))
+      .map(value => ({
+        resource: value.resource,
+        label: value.label,
+        state_commitment: value?._continuity?.state_commitment ?? null,
+        payload_hash: value?._continuity?.payload_hash ?? hashValue({ resource: value.resource, label: value.label }),
+        chart_id: value?._e8?.chart_id ?? null,
+        cell_key: value?._e8?.cell_key ?? null,
+        residual_norm: value?._e8?.residual_norm ?? null,
+      })),
+  };
+}
+
+function buildSpaceDescriptor(space, openingPolicy, commitmentSalt) {
+  return buildCommittedState({
+    stateType: "space.state",
+    payload: summarizeSpace(space),
+    chartType: "generic",
+    openingPolicy,
+    commitmentSalt,
+    publicFields: { space: space.name, type: space.type },
+  });
+}
+
+function continuityStatus(verdict) {
+  if (verdict === "CONTINUITY_FAIL") return "FAIL";
+  if (verdict === "PASS_WITH_DRIFT" || verdict === "BOUNDARY_CROSSING") return "WARN";
+  return "PASS";
+}
+
+function finalizeSpaceState(space, previousSpace, transitionType, metadata = {}, continuityPolicy = null) {
+  const openingPolicy = space._state?.opening_policy ?? "commit-only";
+  const policyName = continuityPolicy ?? space._state?.continuity_policy ?? "default";
+  const commitmentSalt = space._state?.commitment_salt ?? randomBytes(16).toString("hex");
+  const nextState = buildSpaceDescriptor(space, openingPolicy, commitmentSalt);
+  const previousState = previousSpace
+    ? (previousSpace._state?.state_commitment ? describeStoredState({ _continuity: previousSpace._state }) : buildSpaceDescriptor(previousSpace, openingPolicy, commitmentSalt))
+    : null;
+  const transition = buildTransitionRecord({
+    transitionType,
+    previousState,
+    nextState,
+    openingPolicy,
+    metadata: { space: space.name, ...metadata },
+  });
+  const policyEval = evaluateContinuityPolicy(transition, policyName);
+
+  space._state = {
+    schema_version: "aurekai.space.state.v1",
+    state_type: nextState.state_type,
+    commitment_salt: commitmentSalt,
+    opening_policy: openingPolicy,
+    state_commitment: nextState.state_commitment,
+    prior_commitment: transition.prior_commitment,
+    cell_commitment: nextState.cell_commitment,
+    chart_id: nextState.chart_id,
+    cell: nextState.cell,
+    cell_key: nextState.cell_key,
+    residual_norm: nextState.residual_norm,
+    residual_class: nextState.residual_class,
+    witness_hash: nextState.witness_hash,
+    payload_hash: nextState.payload_hash,
+    transition_type: transition.transition_type,
+    residual_delta: transition.residual_delta,
+    invariants_checked: transition.invariants_checked,
+    continuity_class: transition.continuity_class,
+    continuity_policy: policyEval.policy_id,
+    continuity_verdict: policyEval.continuity_verdict,
+    continuity_violations: policyEval.violations,
+  };
+
+  return { nextState, transition, policyEval, status: continuityStatus(policyEval.continuity_verdict) };
+}
 
 function spaceFile(name) { return join(SPACES_DIR, `${name}.space.json`); }
 function readSpace(name) {
@@ -54,16 +223,27 @@ function writeSpace(space) { ensureDir(SPACES_DIR); writeFileSync(spaceFile(spac
 function cmdSpaceOpen(args) {
   const name   = flag(args, "--name") ?? args.find(a => !a.startsWith("--")) ?? `space-${randomBytes(4).toString("hex")}`;
   const type   = flag(args, "--type") ?? "generic";
+  const openingPolicy = flag(args, "--opening-policy") ?? "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") ?? "default";
   const asJson = hasFlag(args, "--json");
 
-  let space = readSpace(name);
-  if (!space) {
-    space = { schema_version: "aurekai.space.v1", name, type, created_at: now(), updated_at: now(), keys: {}, attachments: [] };
-    writeSpace(space);
-  }
+  const previousSpaceRaw = readSpace(name);
+  const previousSpace = previousSpaceRaw ? normalizeSpace(cloneJson(previousSpaceRaw), name, type, openingPolicy, continuityPolicy) : null;
+  const existed = Boolean(previousSpace);
+  const space = normalizeSpace(cloneJson(previousSpaceRaw), name, type, openingPolicy, continuityPolicy);
+  const { transition, policyEval, status } = finalizeSpaceState(space, previousSpace, existed ? "space.open" : "space.open.create", { created: !existed }, continuityPolicy);
+  writeSpace(space);
 
-  writeAudit("open", "space.open", name, 0);
-  if (asJson) printJson({ ...space, verdict: space.created_at === space.updated_at ? "CREATED" : "OPENED" });
+  writeAudit("open", "space.open", name, 0, {
+    state_commitment: space._state.state_commitment,
+    prior_commitment: space._state.prior_commitment,
+    transition_type: transition.transition_type,
+    continuity_class: transition.continuity_class,
+    continuity_verdict: policyEval.continuity_verdict,
+    opening_policy: space._state.opening_policy,
+    continuity_policy: policyEval.policy_id,
+  }, status);
+  if (asJson) printJson({ ...space, transition, continuity_policy: policyEval.policy_id, continuity_verdict: policyEval.continuity_verdict, continuity_violations: policyEval.violations, verdict: existed ? "OPENED" : "CREATED" });
   else process.stdout.write(`space: ${name}  type: ${type}  keys: ${Object.keys(space.keys).length}  attachments: ${space.attachments.length}\n`);
   return space;
 }
@@ -73,22 +253,90 @@ function cmdSpacePut(args) {
   const spaceName = flag(args, "--space") ?? "default";
   const key       = flag(args, "--key");
   const value     = flag(args, "--value");
+  const openingPolicy = flag(args, "--opening-policy") ?? "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") ?? "default";
   const asJson    = hasFlag(args, "--json");
   if (!key || value === null || value === undefined) { console.error("  error: space put requires --space <name> --key <k> --value <v>"); process.exitCode = 1; return; }
 
-  let space = readSpace(spaceName) ?? { schema_version: "aurekai.space.v1", name: spaceName, type: "generic", created_at: now(), updated_at: now(), keys: {}, attachments: [] };
+  const previousSpaceRaw = readSpace(spaceName);
+  const previousSpace = previousSpaceRaw ? normalizeSpace(cloneJson(previousSpaceRaw), spaceName, "generic", openingPolicy, continuityPolicy) : null;
+  const space = normalizeSpace(cloneJson(previousSpaceRaw), spaceName, "generic", openingPolicy, continuityPolicy);
   let parsed;
   try { parsed = JSON.parse(value); } catch { parsed = value; }
   // Compile E8 cell for this value — stored as internal metadata, never changes the value.
   const chartType = detectChart(parsed);
   const e8 = compileChart(chartType, parsed);
-  space.keys[key] = { value: parsed, set_at: now(), _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash } };
+  const priorEntry = previousSpace?.keys?.[key] ?? null;
+  const commitmentSalt = deriveCommitmentSalt(space._state.commitment_salt, `key:${key}`);
+  const nextDescriptor = buildCommittedState({
+    stateType: "space.key",
+    payload: parsed,
+    chartAnnotation: e8,
+    openingPolicy: space._state.opening_policy,
+    commitmentSalt,
+    publicFields: { space: spaceName, key },
+  });
+  const priorDescriptor = priorEntry ? describeStoredState(priorEntry) : null;
+  const entryTransition = buildTransitionRecord({
+    transitionType: priorEntry ? "space.put.update" : "space.put.create",
+    previousState: priorDescriptor,
+    nextState: nextDescriptor,
+    openingPolicy: space._state.opening_policy,
+    metadata: { space: spaceName, key },
+  });
+
+  space.keys[key] = {
+    value: parsed,
+    set_at: now(),
+    _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash },
+    _continuity: {
+      ...nextDescriptor,
+      prior_commitment: entryTransition.prior_commitment,
+      transition_type: entryTransition.transition_type,
+      residual_delta: entryTransition.residual_delta,
+      invariants_checked: entryTransition.invariants_checked,
+      continuity_class: entryTransition.continuity_class,
+    },
+  };
   space.updated_at = now();
+  const { transition, policyEval, status } = finalizeSpaceState(space, previousSpace, entryTransition.transition_type, { key }, continuityPolicy);
   writeSpace(space);
 
   const storedE8 = space.keys[key]._e8;
-  writeAudit("put", "space.put", spaceName, JSON.stringify(space).length);
-  const result = { schema_version: "aurekai.space.put.v1", space: spaceName, key, value: parsed, _e8: storedE8, verdict: "STORED" };
+  writeAudit("put", "space.put", spaceName, JSON.stringify(space).length, {
+    key,
+    state_commitment: nextDescriptor.state_commitment,
+    prior_commitment: entryTransition.prior_commitment,
+    space_commitment: space._state.state_commitment,
+    transition_type: entryTransition.transition_type,
+    continuity_class: entryTransition.continuity_class,
+    continuity_verdict: policyEval.continuity_verdict,
+    opening_policy: nextDescriptor.opening_policy,
+    continuity_policy: policyEval.policy_id,
+    residual_delta: entryTransition.residual_delta,
+  }, status);
+  const result = {
+    schema_version: "aurekai.space.put.v1",
+    space: spaceName,
+    key,
+    value: parsed,
+    _e8: storedE8,
+    state_commitment: nextDescriptor.state_commitment,
+    prior_commitment: entryTransition.prior_commitment,
+    chart_id: nextDescriptor.chart_id,
+    cell_key: nextDescriptor.cell_key,
+    residual_norm: nextDescriptor.residual_norm,
+    residual_delta: entryTransition.residual_delta,
+    continuity_class: entryTransition.continuity_class,
+    invariants_checked: entryTransition.invariants_checked,
+    transition_type: entryTransition.transition_type,
+    opening_policy: nextDescriptor.opening_policy,
+    continuity_policy: policyEval.policy_id,
+    continuity_verdict: policyEval.continuity_verdict,
+    continuity_violations: policyEval.violations,
+    transition,
+    verdict: "STORED",
+  };
   if (asJson) printJson(result);
   else process.stdout.write(`space.put  ${spaceName}.${key} = ${JSON.stringify(parsed)}\n`);
   return result;
@@ -100,19 +348,89 @@ function cmdSpaceAttach(args) {
   // Do NOT use positional fallback — it picks up flag values like the space name.
   const resource  = flag(args, "--resource");
   const label     = flag(args, "--label") ?? resource;
+  const openingPolicy = flag(args, "--opening-policy") ?? "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") ?? "default";
   const asJson    = hasFlag(args, "--json");
   if (!resource) { console.error("  error: space attach requires --resource <path|uri>"); process.exitCode = 1; return; }
 
-  let space = readSpace(spaceName) ?? { schema_version: "aurekai.space.v1", name: spaceName, type: "generic", created_at: now(), updated_at: now(), keys: {}, attachments: [] };
+  const previousSpaceRaw = readSpace(spaceName);
+  const previousSpace = previousSpaceRaw ? normalizeSpace(cloneJson(previousSpaceRaw), spaceName, "generic", openingPolicy, continuityPolicy) : null;
+  const space = normalizeSpace(cloneJson(previousSpaceRaw), spaceName, "generic", openingPolicy, continuityPolicy);
   const e8 = compileChart("text_proof", resource);
-  const attachment = { resource, label, attached_at: now(), exists_local: existsSync(resolve(process.cwd(), resource)), _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash } };
+  const priorAttachment = previousSpace?.attachments?.find(entry => entry.resource === resource) ?? null;
+  const attachmentPayload = { resource, label, exists_local: existsSync(resolve(process.cwd(), resource)) };
+  const nextDescriptor = buildCommittedState({
+    stateType: "space.attachment",
+    payload: attachmentPayload,
+    chartAnnotation: e8,
+    openingPolicy: space._state.opening_policy,
+    commitmentSalt: deriveCommitmentSalt(space._state.commitment_salt, `attachment:${resource}`),
+    publicFields: { space: spaceName, label },
+  });
+  const priorDescriptor = priorAttachment ? describeStoredState(priorAttachment) : null;
+  const attachmentTransition = buildTransitionRecord({
+    transitionType: priorAttachment ? "space.attach.update" : "space.attach.create",
+    previousState: priorDescriptor,
+    nextState: nextDescriptor,
+    openingPolicy: space._state.opening_policy,
+    metadata: { space: spaceName, resource, label },
+  });
+  const attachment = {
+    resource,
+    label,
+    attached_at: now(),
+    exists_local: attachmentPayload.exists_local,
+    _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash },
+    _continuity: {
+      ...nextDescriptor,
+      prior_commitment: attachmentTransition.prior_commitment,
+      transition_type: attachmentTransition.transition_type,
+      residual_delta: attachmentTransition.residual_delta,
+      invariants_checked: attachmentTransition.invariants_checked,
+      continuity_class: attachmentTransition.continuity_class,
+    },
+  };
   space.attachments = space.attachments.filter(a => a.resource !== resource);
   space.attachments.push(attachment);
   space.updated_at = now();
+  const { transition, policyEval, status } = finalizeSpaceState(space, previousSpace, attachmentTransition.transition_type, { resource, label }, continuityPolicy);
   writeSpace(space);
 
-  writeAudit("attach", "space.attach", spaceName, JSON.stringify(attachment).length);
-  const result = { schema_version: "aurekai.space.attach.v1", space: spaceName, resource, label, exists_local: attachment.exists_local, verdict: "ATTACHED" };
+  writeAudit("attach", "space.attach", spaceName, JSON.stringify(attachment).length, {
+    resource,
+    label,
+    state_commitment: nextDescriptor.state_commitment,
+    prior_commitment: attachmentTransition.prior_commitment,
+    space_commitment: space._state.state_commitment,
+    transition_type: attachmentTransition.transition_type,
+    continuity_class: attachmentTransition.continuity_class,
+    continuity_verdict: policyEval.continuity_verdict,
+    opening_policy: nextDescriptor.opening_policy,
+    continuity_policy: policyEval.policy_id,
+    residual_delta: attachmentTransition.residual_delta,
+  }, status);
+  const result = {
+    schema_version: "aurekai.space.attach.v1",
+    space: spaceName,
+    resource,
+    label,
+    exists_local: attachment.exists_local,
+    state_commitment: nextDescriptor.state_commitment,
+    prior_commitment: attachmentTransition.prior_commitment,
+    chart_id: nextDescriptor.chart_id,
+    cell_key: nextDescriptor.cell_key,
+    residual_norm: nextDescriptor.residual_norm,
+    residual_delta: attachmentTransition.residual_delta,
+    continuity_class: attachmentTransition.continuity_class,
+    invariants_checked: attachmentTransition.invariants_checked,
+    transition_type: attachmentTransition.transition_type,
+    opening_policy: nextDescriptor.opening_policy,
+    continuity_policy: policyEval.policy_id,
+    continuity_verdict: policyEval.continuity_verdict,
+    continuity_violations: policyEval.violations,
+    transition,
+    verdict: "ATTACHED",
+  };
   if (asJson) printJson(result);
   else process.stdout.write(`space.attach  ${spaceName} ← ${resource}  label: ${label}\n`);
   return result;
@@ -241,6 +559,10 @@ function cmdVecSearch(args) {
 
 export async function spaceCommand(args) {
   const sub = args[0]; const rest = args.slice(1);
+  if (!sub || sub === "help" || sub === "--help" || sub === "-h") {
+    printSpaceHelp();
+    return;
+  }
   switch (sub) {
     case "open":     cmdSpaceOpen(rest);    break;
     case "put":      cmdSpacePut(rest);     break;

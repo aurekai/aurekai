@@ -18,6 +18,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, append
 import { homedir } from "node:os";
 import { join, resolve, dirname, basename } from "node:path";
 import { spawnSync } from "node:child_process";
+import { projectSpaceDocument } from "./state-continuity.mjs";
 
 const AUREKAI_DIR = join(homedir(), ".aurekai");
 const TEL_DIR     = join(AUREKAI_DIR, "tel");
@@ -181,15 +182,23 @@ function cmdWireRecipe(args) {
 // ── wire.space_export ─────────────────────────────────────────────────────────
 function cmdWireSpaceExport(args) {
   const outArg = flag(args, "--out");
+  const projection = flag(args, "--projection") ?? "public";
   const asJson = hasFlag(args, "--json");
 
   const spacesDir = join(homedir(), ".aurekai", "spaces");
   const spaces = existsSync(spacesDir) ? readdirSync(spacesDir).filter(f => f.endsWith(".space.json")).map(f => { try { return JSON.parse(readFileSync(join(spacesDir, f), "utf8")); } catch { return null; } }).filter(Boolean) : [];
+  const projectedSpaces = spaces.map(space => projectSpaceDocument(space, projection));
 
-  const export_doc = { schema_version: "aurekai.wire.space.export.v1", exported_at: now(), space_count: spaces.length, spaces };
+  const export_doc = {
+    schema_version: "aurekai.wire.space.export.v1",
+    exported_at: now(),
+    projection,
+    space_count: projectedSpaces.length,
+    spaces: projectedSpaces,
+  };
   if (outArg) { ensureDir(dirname(resolve(process.cwd(), outArg))); writeFileSync(resolve(process.cwd(), outArg), JSON.stringify(export_doc, null, 2) + "\n", "utf8"); if (!asJson) process.stdout.write(`wire.space_export written: ${resolve(process.cwd(), outArg)}\n`); }
   if (asJson) printJson(export_doc);
-  else if (!outArg) process.stdout.write(`wire.space_export  spaces: ${spaces.length}\n`);
+  else if (!outArg) process.stdout.write(`wire.space_export  spaces: ${projectedSpaces.length}  projection: ${projection}\n`);
   return export_doc;
 }
 

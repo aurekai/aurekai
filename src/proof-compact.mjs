@@ -34,6 +34,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { buildCommittedState, buildTransitionRecord, deriveCommitmentSalt, evaluateContinuityPolicy } from "./state-continuity.mjs";
 
 const MAGIC = Buffer.from("AKPRF01\0", "ascii");
 const FORMAT_VERSION = 1;
@@ -374,6 +375,8 @@ async function cmdProofBundle(args) {
   const inFile = flag(args, "--in") || flag(args, "--proof") || args.find(a => !a.startsWith("-"));
   if (!inFile) throw new Error("proof bundle requires --in <proof.json>");
   const outFile = flag(args, "--out");
+  const openingPolicy = flag(args, "--opening-policy") || "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") || "strict";
   const asJson = hasFlag(args, "--json");
 
   const inPath = resolve(inFile);
@@ -395,6 +398,47 @@ async function cmdProofBundle(args) {
     metadata: graph.meta,
   };
 
+  const nextState = buildCommittedState({
+    stateType: "proof.bundle",
+    payload: bundle,
+    chartType: "text_proof",
+    openingPolicy,
+    commitmentSalt: deriveCommitmentSalt("proof.bundle", inPath),
+    publicFields: { source: inPath, node_count: bundle.node_count, edge_count: bundle.edge_count },
+  });
+  const priorState = {
+    state_type: "proof.source",
+    state_commitment: `ak:commit:${sourceHash}`,
+    chart_id: "text_proof",
+    cell: null,
+    cell_key: `src:${sourceHash.slice(0, 16)}`,
+    residual_norm: 0,
+    residual_class: "stable",
+    witness_hash: `sha256:${sourceHash}`,
+  };
+  const transition = buildTransitionRecord({
+    transitionType: "proof.bundle",
+    previousState: priorState,
+    nextState,
+    openingPolicy,
+    metadata: { source: inPath, out: outFile ?? null },
+  });
+  const policyEval = evaluateContinuityPolicy(transition, continuityPolicy);
+
+  bundle.state_commitment = nextState.state_commitment;
+  bundle.prior_commitment = transition.prior_commitment;
+  bundle.chart_id = nextState.chart_id;
+  bundle.cell_key = nextState.cell_key;
+  bundle.residual_norm = nextState.residual_norm;
+  bundle.residual_delta = transition.residual_delta;
+  bundle.continuity_class = transition.continuity_class;
+  bundle.invariants_checked = transition.invariants_checked;
+  bundle.transition_type = transition.transition_type;
+  bundle.opening_policy = openingPolicy;
+  bundle.continuity_policy = policyEval.policy_id;
+  bundle.continuity_verdict = policyEval.continuity_verdict;
+  bundle.continuity_violations = policyEval.violations;
+
   if (outFile) {
     const outPath = resolve(outFile);
     mkdirSync(dirname(outPath), { recursive: true });
@@ -410,15 +454,29 @@ async function cmdProofBundle(args) {
   printJson({
     schema_version: "aurekai.weightops.result.v1",
     command: "proof.bundle",
-    status: "PASS",
+    status: policyEval.continuity_verdict === "CONTINUITY_FAIL" ? "FAIL" : (policyEval.continuity_verdict === "PASS_WITH_DRIFT" || policyEval.continuity_verdict === "BOUNDARY_CROSSING" ? "WARN" : "PASS"),
     created_at: now(),
+    state_commitment: nextState.state_commitment,
+    prior_commitment: transition.prior_commitment,
+    chart_id: nextState.chart_id,
+    cell_key: nextState.cell_key,
+    residual_norm: nextState.residual_norm,
+    residual_delta: transition.residual_delta,
+    continuity_class: transition.continuity_class,
+    invariants_checked: transition.invariants_checked,
+    transition_type: transition.transition_type,
+    opening_policy: openingPolicy,
+    continuity_policy: policyEval.policy_id,
+    continuity_verdict: policyEval.continuity_verdict,
+    continuity_violations: policyEval.violations,
+    continuity_transition: transition,
     payload: bundle,
   });
 }
 
 function printProofHelp() {
   console.log("Usage:");
-  console.log("  akai proof bundle  --in <proof.json> [--out <aurekai-proof.akproof.json>] [--json]");
+  console.log("  akai proof bundle  --in <proof.json> [--out <aurekai-proof.akproof.json>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]");
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view    --bin <proof.akproofbin> [--json]");
   console.log("");

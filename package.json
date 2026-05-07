@@ -51,6 +51,7 @@
     "test:pipeline-contract": "node ./scripts/validate-pipeline-contract.mjs",
     "test:bench": "node ./scripts/validate-bench.mjs",
     "test:proof-compact": "node ./scripts/validate-proof-compact.mjs",
+    "test:continuity-contract": "node ./scripts/validate-continuity-contract.mjs",
     "test:pack-optimize": "node ./scripts/validate-pack-optimize.mjs",
     "test:integration-bindings": "node ./scripts/validate-integration-bindings.mjs",
     "test:block-algebra": "node ./scripts/validate-block-algebra.mjs",

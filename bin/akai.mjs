@@ -102,7 +102,7 @@ function printHelp() {
   console.log("  akai delta plan|bench ...");
   console.log("  akai manifest bin-compile|bin-verify|keygen|sign|verify-signature ...");
   console.log("  akai bench distribution|hydrate|pack-layout|proof|all [--size-mb N] [--runs N]");
-  console.log("  akai proof bundle --in <proof.json> [--out <aurekai-proof.akproof.json>] [--json]");
+  console.log("  akai proof bundle --in <proof.json> [--out <aurekai-proof.akproof.json>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]");
   console.log("  akai proof compact --in <proof.json> [--out <proof.akproofbin>]");
   console.log("  akai proof view --bin <proof.akproofbin> [--json]");
   console.log("  akai mcp start|stop|status [--host <host>] [--port <port>]");
@@ -156,7 +156,7 @@ function printHelp() {
   console.log("  akai weights sae-probe --model <model.akmodel> [--features <f1,f2,...>] [--layer <all|layer>] [--top-k <N>] [--dry-run]");
   console.log("  akai weights sae-steer --model <model.akmodel> [--feature <name>] [--direction <toward|away>] [--magnitude <N>] [--out <file.akmodel>] [--dry-run]");
   console.log("  akai weights feature-drift --model-a <model@v1> --model-b <model@v2> [--features <all|f1,f2,...>] [--top-k <N>]");
-  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--dry-run]");
+  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
   console.log("  akai weights kv-restore --cache <file.akkvcache> [--model <model.akmodel>] [--session <id>] [--dry-run]");
   console.log("  akai weights sla-monitor --model <model.akmodel> [--window-min <N>] [--latency-sla-ms <N>] [--avail-sla <0-1>] [--emit-alert]");
   console.log("  akai weights budget-alert --model <model.akmodel> [--ceiling <usd>] [--window-hours <N>] [--fallback <policy>] [--dry-run]");
@@ -164,13 +164,17 @@ function printHelp() {
   console.log("  akai weights hot-patch --model <model.akmodel> --patch <file.akdelta> [--session <id>] [--dry-run]");
   console.log("  akai weights credit-settle --model <model.akmodel> [--period <YYYY-MM>] [--out <file.akledger>] [--dry-run]");
   console.log("  akai weights p2p-seed --model <model.akmodel> [--chunks <N>] [--relay <uri>] [--dry-run]");
-  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--dry-run]");
+  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
   console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--dry-run]");
   console.log("  akai weights mirror-sync --model <model.akmodel> [--mirrors <m1,m2,...>] [--dry-run]");
   console.log("  akai weights escrow --model <model.akmodel> [--condition <rule>] [--recipient <id>] [--ttl-hours <N>] [--release] [--out <file.akescrow>] [--dry-run]");
   console.log("");
   console.log("Memory Packs (Phase 6):");
-  console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
+  console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>]");
+  console.log("  akai space open     --name <space> [--type <kind>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]");
+  console.log("  akai space put      --space <name> --key <k> --value <v> [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]");
+  console.log("  akai space attach   --space <name> --resource <path|uri> [--label <text>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--json]");
+  console.log("  akai wire space-export [--projection <public|private|commitment|witness>] [--out <file>] [--json]");
   console.log("  akai memory inspect <file.akmemory>");
   console.log("  akai memory status");
   console.log("");

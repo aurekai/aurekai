@@ -207,6 +207,41 @@ function cmdQuerySql(args) {
     else { try { const p = JSON.parse(text); entries = Array.isArray(p) ? p : [p]; } catch { console.error("  error: file is not valid JSON/JSONL"); process.exitCode = 1; return; } }
   }
 
+  function valueByPath(obj, path) {
+    if (!path) return null;
+    if (!path.includes(".")) return obj?.[path];
+    const parts = path.split(".");
+    let cur = obj;
+    for (const part of parts) {
+      if (cur == null || typeof cur !== "object") return null;
+      cur = cur[part];
+    }
+    return cur;
+  }
+
+  function normalizeContinuityFields(entry) {
+    const normalized = { ...entry };
+    const meta = (entry && typeof entry.metadata === "object" && entry.metadata) ? entry.metadata : {};
+    const promoted = [
+      "state_commitment",
+      "prior_commitment",
+      "transition_type",
+      "continuity_class",
+      "continuity_verdict",
+      "continuity_policy",
+      "opening_policy",
+      "residual_delta",
+    ];
+    for (const key of promoted) {
+      if ((normalized[key] === undefined || normalized[key] === null) && meta[key] !== undefined) {
+        normalized[key] = meta[key];
+      }
+    }
+    return normalized;
+  }
+
+  entries = entries.map(normalizeContinuityFields);
+
   // where clause can include OR predicates: "field LIKE val% OR other_field = value"
   // Processes as: split on OR (case-insensitive), apply each clause to entries
   // Result: entry passes if it matches AT LEAST ONE clause (OR semantics)
@@ -218,7 +253,7 @@ function cmdQuerySql(args) {
         const startsWild = pattern.startsWith("%");
         const endsWild   = pattern.endsWith("%");
         const inner = pattern.replace(/^%/, "").replace(/%$/, "");
-        const ev = String(entry[field] ?? "");
+        const ev = String(valueByPath(entry, field) ?? "");
         if (startsWild && endsWild) return ev.includes(inner);
         if (endsWild)   return ev.startsWith(inner);
         if (startsWild) return ev.endsWith(inner);
@@ -230,12 +265,13 @@ function cmdQuerySql(args) {
         const [, field, op, rawVal] = matchOp;
         const val = rawVal.endsWith("%") ? rawVal.slice(0, -1) : rawVal;
         const prefix = rawVal.endsWith("%");
-        const ev = String(entry[field] ?? "");
+        const evRaw = valueByPath(entry, field.trim());
+        const ev = String(evRaw ?? "");
         if (op === "=" || op === "=~" || op === "~=") return prefix ? ev.startsWith(val) : ev === val;
         if (op === "~") return ev.includes(val);
         if (op === "!=") return ev !== val;
-        if (op === ">=") return parseFloat(ev) >= parseFloat(val);
-        if (op === "<=") return parseFloat(ev) <= parseFloat(val);
+        if (op === ">=") return parseFloat(String(evRaw ?? "NaN")) >= parseFloat(val);
+        if (op === "<=") return parseFloat(String(evRaw ?? "NaN")) <= parseFloat(val);
         return ev === val;
       }
 
@@ -244,7 +280,7 @@ function cmdQuerySql(args) {
       if (field && value !== undefined) {
         const prefix = value.endsWith("%");
         const val = prefix ? value.slice(0, -1) : value;
-        const ev = String(entry[field] ?? "");
+        const ev = String(valueByPath(entry, field.trim()) ?? "");
         return prefix ? ev.startsWith(val) : ev === val;
       }
       return true; // malformed clause: pass through
@@ -261,7 +297,7 @@ function cmdQuerySql(args) {
   let results = entries.slice(0, limit);
   if (select) {
     const fields = select.split(",").map(s => s.trim()).filter(Boolean);
-    results = results.map(e => Object.fromEntries(fields.map(f => [f, e[f] ?? null])));
+    results = results.map(e => Object.fromEntries(fields.map(f => [f, valueByPath(e, f) ?? null])));
   }
 
   const output = { schema_version: "aurekai.query.v1", queried_at: now(), source: src, where: where ?? null, select: select ?? null, limit, total_matched: totalMatched, result_count: results.length, results };

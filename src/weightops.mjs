@@ -16,6 +16,13 @@ import { resolveHydrateState } from "./hydrate-state.mjs";
 import { verifySignatureForFile } from "./manifest-command.mjs";
 import { parseSafeTensors, sampleTensor, vectorStats, classifyTensorKind } from "./model-tensor.mjs";
 import {
+  buildCommittedState,
+  buildTransitionRecord,
+  deriveCommitmentSalt,
+  evaluateContinuityPolicy,
+  hashValue,
+} from "./state-continuity.mjs";
+import {
   driftBetweenRefs,
   scanRepoDriftSync,
   resolveCasChunkList,
@@ -80,6 +87,62 @@ function printJson(obj) {
 // Track command start time for duration calculation
 let _COMMAND_START_TIME = 0;
 
+function continuityStatusFromVerdict(verdict) {
+  if (verdict === "CONTINUITY_FAIL") return "FAIL";
+  if (verdict === "PASS_WITH_DRIFT" || verdict === "BOUNDARY_CROSSING") return "WARN";
+  return "PASS";
+}
+
+function buildCommandContinuity({
+  commandName,
+  payload,
+  stateType,
+  chartType,
+  openingPolicy = "commit-only",
+  policy = "default",
+  priorState = null,
+  metadata = {},
+}) {
+  const commitmentSalt = deriveCommitmentSalt("weights", `${commandName}:${hashValue(metadata)}`);
+  const nextState = buildCommittedState({
+    stateType,
+    payload,
+    chartType,
+    openingPolicy,
+    commitmentSalt,
+    publicFields: metadata,
+  });
+  const transition = buildTransitionRecord({
+    transitionType: commandName,
+    previousState: priorState,
+    nextState,
+    openingPolicy,
+    metadata,
+  });
+  const policyEval = evaluateContinuityPolicy(transition, policy);
+  return {
+    nextState,
+    transition,
+    policy: policyEval,
+    status: continuityStatusFromVerdict(policyEval.continuity_verdict),
+    fields: {
+      state_commitment: nextState.state_commitment,
+      prior_commitment: transition.prior_commitment,
+      chart_id: nextState.chart_id,
+      cell_key: nextState.cell_key,
+      residual_norm: nextState.residual_norm,
+      residual_delta: transition.residual_delta,
+      continuity_class: transition.continuity_class,
+      invariants_checked: transition.invariants_checked,
+      transition_type: transition.transition_type,
+      opening_policy: openingPolicy,
+      continuity_policy: policyEval.policy_id,
+      continuity_verdict: policyEval.continuity_verdict,
+      continuity_violations: policyEval.violations,
+    },
+  };
+}
+
 function wrapResult(commandName, payload, opts = {}) {
   const {
     modelRef = null,
@@ -92,6 +155,7 @@ function wrapResult(commandName, payload, opts = {}) {
     exitCode = 0,
     warnings = [],
     errors = [],
+    continuity = null,
   } = opts;
 
   const duration = Date.now() - _COMMAND_START_TIME;
@@ -100,20 +164,33 @@ function wrapResult(commandName, payload, opts = {}) {
 
   // Append a real audit entry so audit-trail reads back real history
   if (modelRef && commandName !== "audit-trail") {
+    const continuityFields = continuity?.fields ?? {};
     appendAuditEntry(modelRef, {
       operation: commandName,
       command: `weights.${commandName}`,
       actor: "akai-runner",
       model_ref: modelRef,
       proof_hash: proofRoot,
-      status,
+      status: continuity ? continuity.status : status,
       duration_ms: duration,
       bytes_read: bytesRead,
       bytes_written: bytesWritten,
       timestamp: createdAt,
-      metadata: { trigger: "cli" },
+      state_commitment: continuityFields.state_commitment ?? null,
+      prior_commitment: continuityFields.prior_commitment ?? null,
+      transition_type: continuityFields.transition_type ?? null,
+      continuity_class: continuityFields.continuity_class ?? null,
+      continuity_verdict: continuityFields.continuity_verdict ?? null,
+      opening_policy: continuityFields.opening_policy ?? null,
+      residual_delta: continuityFields.residual_delta ?? null,
+      metadata: {
+        trigger: "cli",
+        ...continuityFields,
+      },
     });
   }
+
+  const continuityFields = continuity?.fields ?? {};
 
   return {
     schema_version: "aurekai.weightops.result.v1",
@@ -125,12 +202,26 @@ function wrapResult(commandName, payload, opts = {}) {
     bytes_read: bytesRead,
     bytes_written: bytesWritten,
     model_state_delta: modelStateDelta,
-    status,
+    status: continuity ? continuity.status : status,
     exit_code: exitCode,
     warnings,
     errors,
     created_at: createdAt,
     duration_ms: duration,
+    state_commitment: continuityFields.state_commitment ?? null,
+    prior_commitment: continuityFields.prior_commitment ?? null,
+    chart_id: continuityFields.chart_id ?? null,
+    cell_key: continuityFields.cell_key ?? null,
+    residual_norm: continuityFields.residual_norm ?? null,
+    residual_delta: continuityFields.residual_delta ?? null,
+    continuity_class: continuityFields.continuity_class ?? null,
+    invariants_checked: continuityFields.invariants_checked ?? [],
+    transition_type: continuityFields.transition_type ?? null,
+    opening_policy: continuityFields.opening_policy ?? null,
+    continuity_policy: continuityFields.continuity_policy ?? null,
+    continuity_verdict: continuityFields.continuity_verdict ?? null,
+    continuity_violations: continuityFields.continuity_violations ?? [],
+    continuity_transition: continuity?.transition ?? null,
     payload,
   };
 }
@@ -190,7 +281,7 @@ function printWeightsHelp() {
   console.log("  akai weights sae-probe --model <model.akmodel> [--features <f1,f2,...>] [--layer <all|layer>] [--top-k <N>] [--dry-run]");
   console.log("  akai weights sae-steer --model <model.akmodel> [--feature <name>] [--direction <toward|away>] [--magnitude <N>] [--out <file.akmodel>] [--dry-run]");
   console.log("  akai weights feature-drift --model-a <model@v1> --model-b <model@v2> [--features <all|f1,f2,...>] [--top-k <N>]");
-  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--dry-run]");
+  console.log("  akai weights kv-compress --model <model.akmodel> [--context <id>] [--tokens <N>] [--out <file.akkvcache>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
   console.log("  akai weights kv-restore --cache <file.akkvcache> [--model <model.akmodel>] [--session <id>] [--dry-run]");
   // Group D — Real-Time Ops
   console.log("  akai weights sla-monitor --model <model.akmodel> [--window-min <N>] [--latency-sla-ms <N>] [--avail-sla <0-1>] [--emit-alert]");
@@ -200,7 +291,7 @@ function printWeightsHelp() {
   console.log("  akai weights credit-settle --model <model.akmodel> [--period <YYYY-MM>] [--out <file.akledger>] [--dry-run]");
   // Group E — P2P & Mesh
   console.log("  akai weights p2p-seed --model <model.akmodel> [--chunks <N>] [--relay <uri>] [--dry-run]");
-  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--dry-run]");
+  console.log("  akai weights relay-handoff --session <id> [--peer <peer-id>] [--model <model.akmodel>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>] [--dry-run]");
   console.log("  akai weights geo-pin --model <model.akmodel> [--region <id>] [--replicas <N>] [--out <file.akattest>] [--dry-run]");
   console.log("  akai weights mirror-sync --model <model.akmodel> [--mirrors <m1,m2,...>] [--dry-run]");
   console.log("  akai weights escrow --model <model.akmodel> [--condition <rule>] [--recipient <id>] [--ttl-hours <N>] [--release] [--out <file.akescrow>] [--dry-run]");
@@ -1299,6 +1390,8 @@ function cmdMemoryPack(args) {
   const fromModel = flag(args, "--from") || args[0] || "model.akmodel";
   const taskArg   = flag(args, "--tasks") || flag(args, "--task") || "default";
   const outFile   = flag(args, "--out")   || fromModel.replace(/\.akmodel$/, ".akmemory");
+  const openingPolicy = flag(args, "--opening-policy") || "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") || "default";
 
   const tasks = taskArg.split(",").map(t => t.trim());
   const profiles = tasks.map(t => MEMORY_TASK_PROFILES[t] || MEMORY_TASK_PROFILES.default);
@@ -1339,11 +1432,21 @@ function cmdMemoryPack(args) {
   };
 
   writeJsonArtifact(outFile, payload);
+  const continuity = buildCommandContinuity({
+    commandName: "memory-pack",
+    payload,
+    stateType: "weights.memory_pack",
+    chartType: "memory",
+    openingPolicy,
+    policy: continuityPolicy,
+    metadata: { model_ref: fromModel, tasks, out_file: outFile },
+  });
   const result = wrapResult("memory-pack", payload, {
     modelRef: fromModel,
     outputArtifacts: [{ type: "result", path: outFile, hash: payload.proof_hash, size_mb: sizeMb }],
     bytesWritten: Math.round(sizeMb * 1024 * 1024),
-    status: "PASS",
+    status: continuity.status,
+    continuity,
   });
   printJson(result);
   console.error(`\n  → .akmemory artifact written: ${outFile}  (${sizeMb} MB, ${tasks.length} task profile${tasks.length > 1 ? "s" : ""})`);
@@ -3882,6 +3985,8 @@ function cmdKvCompress(args) {
   const tokensArg  = parseInt(flag(args, "--tokens") || "4096", 10);
   const outFile    = flag(args, "--out") || null;
   const dryRun     = hasFlag(args, "--dry-run");
+  const openingPolicy = flag(args, "--opening-policy") || "commit-only";
+  const continuityPolicy = flag(args, "--continuity-policy") || "default";
 
   const layers = 32;
   const headsPerLayer = 32;
@@ -3914,6 +4019,27 @@ function cmdKvCompress(args) {
 
   if (!dryRun && outFile) writeJsonArtifact(outFile, payload);
 
+  const priorState = {
+    state_type: "weights.context_state",
+    state_commitment: `ak:commit:${hashValue({ model: modelArg, context: contextArg, phase: "pre-kv" }, "")}`,
+    chart_id: "memory",
+    cell: null,
+    cell_key: `pre:${contextArg}`,
+    residual_norm: 0,
+    residual_class: "stable",
+    witness_hash: hashValue(`witness:pre:${modelArg}:${contextArg}`),
+  };
+  const continuity = buildCommandContinuity({
+    commandName: "kv-compress",
+    payload,
+    stateType: "weights.kv_cache",
+    chartType: "memory",
+    openingPolicy,
+    policy: continuityPolicy,
+    priorState,
+    metadata: { model_ref: modelArg, context_id: contextArg, token_count: tokensArg },
+  });
+
   const result = wrapResult("kv-compress", payload, {
     modelRef: modelArg,
     inputArtifacts: [{ ref: modelArg, role: "model" }],
@@ -3921,6 +4047,8 @@ function cmdKvCompress(args) {
     bytesRead: rawBytes,
     bytesWritten: dryRun ? 0 : compressedBytes,
     modelStateDelta: { kv_tokens: tokensArg, kv_compression_ratio: compRatio },
+    status: continuity.status,
+    continuity,
   });
   printJson(result);
   console.error(`\n  → KV COMPRESS: ${tokensArg} tokens → ${(compressedBytes / 1e6).toFixed(1)} MB (${compRatio}× compression)`);
@@ -4269,6 +4397,8 @@ function cmdRelayHandoff(args) {
   const peerArg    = flag(args, "--peer") || "relay-peer-b";
   const modelArg   = flag(args, "--model") || "model.akmodel";
   const dryRun     = hasFlag(args, "--dry-run");
+  const openingPolicy = flag(args, "--opening-policy") || "partial-open";
+  const continuityPolicy = flag(args, "--continuity-policy") || "handoff";
 
   const handoffHash = proofHash(`relay-handoff:${sessionId}:${peerArg}`);
 
@@ -4288,6 +4418,27 @@ function cmdRelayHandoff(args) {
     dry_run: dryRun,
   };
 
+  const priorState = {
+    state_type: "weights.relay_session",
+    state_commitment: payload.prior_proof_hash.replace("ak:sha256:", "ak:commit:"),
+    chart_id: "geo_runtime",
+    cell: null,
+    cell_key: `prior:${sessionId}`,
+    residual_norm: 0,
+    residual_class: "stable",
+    witness_hash: payload.prior_proof_hash.replace("ak:sha256:", "sha256:"),
+  };
+  const continuity = buildCommandContinuity({
+    commandName: "relay-handoff",
+    payload,
+    stateType: "weights.relay_handoff",
+    chartType: "geo_runtime",
+    openingPolicy,
+    policy: continuityPolicy,
+    priorState,
+    metadata: { model_ref: modelArg, session_id: sessionId, target_peer: peerArg },
+  });
+
   const result = wrapResult("relay-handoff", payload, {
     modelRef: modelArg,
     inputArtifacts: [{ ref: modelArg, role: "model" }],
@@ -4295,6 +4446,8 @@ function cmdRelayHandoff(args) {
     bytesRead: payload.kv_cache_bytes,
     bytesWritten: payload.kv_cache_bytes,
     modelStateDelta: { session_id: sessionId, target_peer: peerArg, proof_continuity: true },
+    status: continuity.status,
+    continuity,
   });
   printJson(result);
   console.error(`\n  → RELAY HANDOFF: session ${sessionId.slice(0, 8)}… → ${peerArg} (${payload.tokens_transferred} tokens, proof continuity: ✓)`);
@@ -4478,7 +4631,7 @@ export function memoryCommand(args) {
 
   if (!sub || sub === "help" || sub === "--help" || sub === "-h") {
     console.log("Usage:");
-    console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>]");
+    console.log("  akai memory pack    --from <model.akmodel> --tasks <t1,t2,...> [--out <file.akmemory>] [--opening-policy <public|commit-only|partial-open|private>] [--continuity-policy <default|strict|handoff>]");
     console.log("  akai memory inspect <file.akmemory>");
     console.log("  akai memory status");
     return;
