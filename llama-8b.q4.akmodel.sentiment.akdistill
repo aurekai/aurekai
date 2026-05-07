@@ -1,0 +1,33 @@
+{
+  "schema_version": "aurekai.weightops.distill_micro.v1",
+  "generated_at": "2026-05-06T03:25:08.095Z",
+  "source_model": "llama-8b.q4.akmodel",
+  "feature_id": "sentiment",
+  "feature_family": "classification",
+  "target_model": "(standalone — any compatible runtime)",
+  "output_file": "llama-8b.q4.akmodel.sentiment.akdistill",
+  "distilled_artifact": {
+    "sae_cluster": "sentiment.polarity",
+    "source_layers": [
+      8
+    ],
+    "feature_dim": 32,
+    "vector_format": "fp16",
+    "routing_compatible": true,
+    "runtime_footprint_mb": 1.5
+  },
+  "deployment": {
+    "standalone": true,
+    "embed_in_pipeline": true,
+    "supports_streaming": false,
+    "min_context_tokens": 32,
+    "max_context_tokens": 4096
+  },
+  "size_mb": 1.5,
+  "full_model_avoided": true,
+  "bytes_avoided": 8588361728,
+  "first_usable_seconds": 2,
+  "capability_ready_at_percent": 100,
+  "fidelity_vs_full": 0.92,
+  "proof_hash": "ak:sha256:91fc0df2efe10e85b3dcf05e12a901c8"
+}

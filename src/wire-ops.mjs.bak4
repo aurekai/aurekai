@@ -253,7 +253,7 @@ async function cmdWireProbe(args) {
     actor: "akai-runner",
     model_ref: target ?? "local",
     proof_hash: "ak:sha256:" + createHash("sha256").update("wire.probe" + (target ?? "local")).digest("hex").slice(0, 16),
-    status: verdict === "OK" ? "PASS" : "FAIL",
+    status: verdict === "PASS" ? "PASS" : "FAIL",
     duration_ms: elapsed,
     bytes_read: 0,
     bytes_written: 0,

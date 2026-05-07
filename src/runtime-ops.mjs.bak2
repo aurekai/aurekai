@@ -11,12 +11,11 @@
  *   workflow.run     — run a local workflow definition file
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { buildTruthMatrix } from "./truth-matrix.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot  = resolve(__dirname, "..");
@@ -43,9 +42,9 @@ async function cmdApiStatus(args) {
   try {
     const regBuf = readFileSync(regPath);
     regHash = sha256(regBuf);
-    // Use buildTruthMatrix to get the authoritative command count (native only, no experimental)
-    const truthMatrix = buildTruthMatrix();
-    commandCount = truthMatrix.commands.length;
+    const reg = JSON.parse(regBuf);
+    commandCount = reg.families?.reduce((s, f) => s + (f.commands?.length ?? 0), 0) ?? 0;
+    for (const t of reg.experimental_tracks ?? []) commandCount += t.commands?.length ?? 0;
   } catch {}
 
   const dirs = {

@@ -1,0 +1,23 @@
+{
+  "schema_version": "aurekai.weightops.patch_result.v1",
+  "generated_at": "2026-05-06T03:25:07.486Z",
+  "base": "llama-8b.q4.akmodel",
+  "delta_source": "--from.akdelta",
+  "target": "v1",
+  "changed_regions_applied": [
+    "layers.10.attn.q_proj",
+    "layers.12.mlp.gate_proj",
+    "adapter.support-v2",
+    "sae.feature-family.24"
+  ],
+  "proofs": {
+    "base_root": "ak:sha256:517dca5b86340107a4c7f1f460c17298",
+    "delta_root": "ak:sha256:21c414de6a6d7521814e8e281e31e458",
+    "patched_root": "ak:sha256:75c142293feb62a48fc78c9d205f50fc"
+  },
+  "full_download_avoided": true,
+  "bytes_avoided": 7795365642,
+  "first_usable_seconds": 13,
+  "capability_ready_at_percent": 41,
+  "output_file": "llama-8b.q4.akmodel@patched.akmodel"
+}

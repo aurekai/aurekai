@@ -57,22 +57,6 @@ static inline void sha256_final(unsigned char *md, SHA256_CTX_T *c) { SHA256_Fin
 #endif
 
 /* -------------------------------------------------------------------------
- * Deterministic pseudo-float from SHA-256 digest bytes
- * ------------------------------------------------------------------------- */
-
-static double det_float(const unsigned char *digest, int offset, double lo, double hi) {
-    uint32_t raw;
-    memcpy(&raw, digest + (offset % (SHA256_DIGEST_LENGTH - 4)), 4);
-    return lo + ((double)raw / (double)0xFFFFFFFFu) * (hi - lo);
-}
-
-static uint32_t det_uint(const unsigned char *digest, int offset, uint32_t lo, uint32_t hi) {
-    uint32_t raw;
-    memcpy(&raw, digest + (offset % (SHA256_DIGEST_LENGTH - 4)), 4);
-    return lo + (raw % (hi - lo + 1));
-}
-
-/* -------------------------------------------------------------------------
  * Block kind classification from tensor name
  * ------------------------------------------------------------------------- */
 
@@ -182,20 +166,20 @@ typedef struct {
 static spectral_t compute_spectral(const uint8_t *data, size_t size,
                                    const unsigned char *digest,
                                    ak_block_kind_t kind) {
+    (void)digest;
     spectral_t sp = {0};
 
     /* Compute Frobenius estimate from sample */
     size_t n_words = size / 4;
     if (n_words == 0) {
-        /* Fall back to hash-based synthetic values */
-        sp.frob_norm          = det_float(digest, 0,  12.4,  890.0);
-        sp.spectral_gap       = det_float(digest, 4,   1.1,    8.5);
-        sp.eta_L              = det_float(digest, 8,   0.03,   0.15);
-        sp.eta_R              = 1.0 - sp.eta_L;
-        sp.effective_rank     = (int)det_uint(digest, 12, 8, 512);
-        sp.ghost_rank         = (int)det_uint(digest, 16, 0, 2);
-        sp.cosine_similarity  = det_float(digest, 20, 0.971, 0.9995);
-        sp.bpw                = det_float(digest, 24,   2.8,    8.0);
+        sp.frob_norm          = 0.0;
+        sp.spectral_gap       = 1.0;
+        sp.eta_L              = 0.0;
+        sp.eta_R              = 0.0;
+        sp.effective_rank     = 0;
+        sp.ghost_rank         = 0;
+        sp.cosine_similarity  = 0.0;
+        sp.bpw                = 0.0;
         return sp;
     }
 
@@ -230,7 +214,7 @@ static spectral_t compute_spectral(const uint8_t *data, size_t size,
     }
 
     if (n_sampled == 0) {
-        sp.frob_norm = det_float(digest, 0, 12.4, 890.0);
+        sp.frob_norm = 0.0;
     } else {
         sp.frob_norm = sqrt(sum_sq);
     }
@@ -241,11 +225,11 @@ static spectral_t compute_spectral(const uint8_t *data, size_t size,
         if (buckets[b] > top1) { top2 = top1; top1 = buckets[b]; }
         else if (buckets[b] > top2) { top2 = buckets[b]; }
     }
-    sp.spectral_gap = (top2 > 0) ? top1 / top2 : det_float(digest, 4, 1.1, 8.5);
-    if (!isfinite(sp.spectral_gap)) sp.spectral_gap = det_float(digest, 4, 1.1, 8.5);
+    sp.spectral_gap = (top2 > 0) ? top1 / top2 : 1.0;
+    if (!isfinite(sp.spectral_gap)) sp.spectral_gap = 1.0;
     /* Clamp to reasonable range */
     if (sp.spectral_gap < 1.0) sp.spectral_gap = 1.0;
-    if (sp.spectral_gap > 20.0) sp.spectral_gap = det_float(digest, 4, 1.5, 8.5);
+    if (sp.spectral_gap > 20.0) sp.spectral_gap = 20.0;
 
     /* eta_L: energy fraction in low-rank component.
      * Approximated from the top-bucket energy fraction. */
@@ -267,7 +251,7 @@ static spectral_t compute_spectral(const uint8_t *data, size_t size,
     /* Effective rank: estimated from bucket occupancy */
     int occupied = 0;
     for (int b = 0; b < N_BUCKETS; b++) if (buckets[b] > 0) occupied++;
-    sp.effective_rank = 8 + occupied * 30 + (int)det_uint(digest, 12, 0, 64);
+    sp.effective_rank = 8 + occupied * 30;
     if (sp.effective_rank > 512) sp.effective_rank = 512;
 
     /* Ghost rank: count of near-zero singular components */
@@ -281,9 +265,9 @@ static spectral_t compute_spectral(const uint8_t *data, size_t size,
 
     /* bpw from file size / estimated param count */
     sp.bpw = (size > 0)
-        ? (double)(size * 8) / (double)(sp.effective_rank * 64)
-        : det_float(digest, 24, 2.8, 8.0);
-    if (sp.bpw < 1.0) sp.bpw = det_float(digest, 24, 2.8, 8.0);
+        ? (double)(size * 8) / (double)((sp.effective_rank > 0 ? sp.effective_rank : 1) * 64)
+        : 0.0;
+    if (sp.bpw < 1.0 && size > 0) sp.bpw = 1.0;
     if (sp.bpw > 32.0) sp.bpw = 16.0;
 
     return sp;
@@ -348,7 +332,8 @@ int main(int argc, char **argv) {
     /* Open and mmap the file */
     int fd = open(path, O_RDONLY);
     if (fd < 0) {
-        /* File not found — still produce analysis from hash of path */
+        fprintf(stderr, "akai-block-inspect: file not found: %s\n", path);
+        return 1;
     }
 
     struct stat st;
@@ -360,17 +345,17 @@ int main(int argc, char **argv) {
         if (data == MAP_FAILED) { data = NULL; file_size = 0; }
     }
     if (fd >= 0) close(fd);
+    if (!data || file_size == 0) {
+        fprintf(stderr, "akai-block-inspect: failed to mmap non-empty file: %s\n", path);
+        return 1;
+    }
 
-    /* SHA-256 of file content (up to 64KB sample) or path */
+    /* SHA-256 of file content (up to 64KB sample) */
     unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256_CTX_T ctx;
     sha256_init(&ctx);
-    if (data && file_size > 0) {
-        size_t sample_len = (file_size > 65536) ? 65536 : file_size;
-        sha256_update(&ctx, data, sample_len);
-    } else {
-        sha256_update(&ctx, path, strlen(path));
-    }
+    size_t sample_len = (file_size > 65536) ? 65536 : file_size;
+    sha256_update(&ctx, data, sample_len);
     sha256_update(&ctx, tensor_name, strlen(tensor_name));
     {
         char layer_str[16];

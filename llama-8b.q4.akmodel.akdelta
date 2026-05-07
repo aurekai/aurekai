@@ -1,0 +1,35 @@
+{
+  "schema_version": "aurekai.weightops.delta.v1",
+  "generated_at": "2026-05-06T03:25:07.397Z",
+  "base": "llama-8b.q4.akmodel",
+  "target": "mistral-7b.q4.akmodel",
+  "delta_levels": [
+    "file_block",
+    "tensor",
+    "fpq",
+    "sae",
+    "adapter"
+  ],
+  "changed_regions": [
+    "layers.10.attn.q_proj",
+    "layers.12.mlp.gate_proj",
+    "adapter.support-v2",
+    "sae.feature-family.24"
+  ],
+  "summary": {
+    "changed_tensor_count": 4,
+    "unchanged_tensor_pct": 93.4,
+    "full_download_gb": 8,
+    "delta_download_gb": 0.74,
+    "bytes_avoided": 7795365642,
+    "full_download_avoided": true,
+    "first_usable_seconds": 11,
+    "capability_ready_at_percent": 35
+  },
+  "proofs": {
+    "base_root": "ak:sha256:d9b81b2636181e32d9ef07f863189794",
+    "target_root": "ak:sha256:5b3b27f31ec2ddba9a737930136dbac6",
+    "delta_root": "ak:sha256:a0cdebaea607438a358f696e10172cb4"
+  },
+  "output_file": "llama-8b.q4.akmodel.akdelta"
+}

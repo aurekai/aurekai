@@ -1,18 +1,12 @@
 {
   "schema_version": "aurekai.weightops.pull_plan.v1",
-  "generated_at": "2026-05-04T23:01:50.418Z",
-  "trace_source": "{\"model\":\"test.q4.akmodel\",\"recipe\":\"test.akrecipe\",\"hot_tensors\":[\"attn.0\",\"mlp.1\"],\"lazy_regions\":[\"ff.2\",\"attn.3\"]}",
-  "model": "test.q4.akmodel",
-  "recipe": "test.akrecipe",
+  "generated_at": "2026-05-06T03:25:07.309Z",
+  "trace_source": "{\"schema_version\":\"aurekai.weightops.weighttrace.v1\",\"model\":\"llama-8b.q4.akmodel\",\"regions\":[\"embed\",\"attn.q\"]}",
+  "model": "llama-8b.q4.akmodel",
+  "recipe": "recipe.akrecipe",
   "plan": {
-    "phase_1_hot_tensors": [
-      "attn.0",
-      "mlp.1"
-    ],
-    "phase_2_lazy_regions": [
-      "ff.2",
-      "attn.3"
-    ],
+    "phase_1_hot_tensors": [],
+    "phase_2_lazy_regions": [],
     "skipped_cold_tensors": [],
     "hydration_order": [
       "hot",
@@ -26,14 +20,14 @@
       68
     ]
   },
-  "estimated_download_gb": 0.56,
-  "bytes_avoided": 7988639171,
+  "estimated_download_gb": 0.4,
+  "bytes_avoided": 8160437862,
   "full_download_avoided": true,
   "first_usable_seconds": 9,
   "capability_ready_at_percent": 22,
   "proof_boundary": {
-    "trace_hash": "ak:sha256:d6160edfbef93e56234bf03c699222cd",
-    "plan_hash": "ak:sha256:06448294005068b13be221608f1e612c"
+    "trace_hash": "ak:sha256:20bce74b42881f9153ebe79a69ac3711",
+    "plan_hash": "ak:sha256:4f5f885c47ca3a378c7cb779e67bcf72"
   },
   "output_file": "pull-plan.akhydrate"
 }
