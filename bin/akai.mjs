@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.mjs";
@@ -252,14 +252,25 @@ function detectLegacyEnv() {
 
 function runtimeTargetFor(command) {
   const target = resolveLegacyBinary(command);
-  let reachable = false;
+  let reachable = false, selfAlias = false;
   if (target.bin === "bonfyre-hyper") {
     const which = spawnSync("which", [target.bin], { encoding: "utf8" });
-    reachable = which.status === 0;
+    if (which.status === 0) {
+      try {
+        const hyperReal = realpathSync(which.stdout.trim());
+        const selfReal = realpathSync(process.argv[1]);
+        if (hyperReal === selfReal) {
+          selfAlias = true;
+          reachable = false;
+        } else {
+          reachable = true;
+        }
+      } catch { }
+    }
   } else {
     reachable = existsSync(target.bin);
   }
-  return { target, reachable };
+  return { target, reachable, selfAlias };
 }
 
 function flattenCapabilities(capDoc) {
@@ -355,6 +366,7 @@ function cmdRuntimeCapabilities(args) {
     generated_at: new Date().toISOString(),
     source: capPath,
     hyper_runtime_reachable: check.reachable,
+    hyper_self_alias: check.selfAlias,
     totals: {
       commands: entries.length,
       ...stateCounts,
@@ -391,6 +403,7 @@ function cmdCapabilityRegistry(args) {
     family_count: families.length,
     command_count: flat.length,
     hyper_runtime_reachable: check.reachable,
+    hyper_self_alias: check.selfAlias,
     families,
     experimental_tracks: capDoc.experimental_tracks || [],
     packs: capDoc.packs || {},

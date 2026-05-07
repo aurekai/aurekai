@@ -207,48 +207,52 @@ function cmdQuerySql(args) {
     else { try { const p = JSON.parse(text); entries = Array.isArray(p) ? p : [p]; } catch { console.error("  error: file is not valid JSON/JSONL"); process.exitCode = 1; return; } }
   }
 
-  // where: "field=value" (exact), "field=value%" (prefix), "field~value" (substring)
-  // Also supports SQL-style: field LIKE 'value%' / field LIKE '%value%' (case-insensitive LIKE)
+  // where clause can include OR predicates: "field LIKE val% OR other_field = value"
+  // Processes as: split on OR (case-insensitive), apply each clause to entries
+  // Result: entry passes if it matches AT LEAST ONE clause (OR semantics)
   if (where) {
-    // SQL LIKE: 'field LIKE "pattern"' or 'field LIKE pattern' (quotes optional)
-    const likeMatch = where.match(/^(\S+)\s+like\s+['"]?([^'"]*)['"]?$/i);
-    const matchOp = !likeMatch && where.match(/^([^=~<>!]+)(=~|~=|~|>=|<=|!=|=)(.*)$/);
-    if (likeMatch) {
-      const [, field, pattern] = likeMatch;
-      const startsWild = pattern.startsWith("%");
-      const endsWild   = pattern.endsWith("%");
-      const inner = pattern.replace(/^%/, "").replace(/%$/, "");
-      entries = entries.filter(e => {
-        const ev = String(e[field] ?? "");
+    function evaluateClause(entry, clause) {
+      const likeMatch = clause.match(/^(\S+)\s+like\s+['"]?([^'"]*)['"]?$/i);
+      if (likeMatch) {
+        const [, field, pattern] = likeMatch;
+        const startsWild = pattern.startsWith("%");
+        const endsWild   = pattern.endsWith("%");
+        const inner = pattern.replace(/^%/, "").replace(/%$/, "");
+        const ev = String(entry[field] ?? "");
         if (startsWild && endsWild) return ev.includes(inner);
         if (endsWild)   return ev.startsWith(inner);
         if (startsWild) return ev.endsWith(inner);
         return ev === inner;
-      });
-    } else if (matchOp) {
-      const [, field, op, rawVal] = matchOp;
-      const val = rawVal.endsWith("%") ? rawVal.slice(0, -1) : rawVal; // strip SQL-style wildcard
-      const prefix = rawVal.endsWith("%");
-      entries = entries.filter(e => {
-        const ev = String(e[field] ?? "");
+      }
+
+      const matchOp = clause.match(/^([^=~<>!]+)(=~|~=|~|>=|<=|!=|=)(.*)$/);
+      if (matchOp) {
+        const [, field, op, rawVal] = matchOp;
+        const val = rawVal.endsWith("%") ? rawVal.slice(0, -1) : rawVal;
+        const prefix = rawVal.endsWith("%");
+        const ev = String(entry[field] ?? "");
         if (op === "=" || op === "=~" || op === "~=") return prefix ? ev.startsWith(val) : ev === val;
         if (op === "~") return ev.includes(val);
         if (op === "!=") return ev !== val;
         if (op === ">=") return parseFloat(ev) >= parseFloat(val);
         if (op === "<=") return parseFloat(ev) <= parseFloat(val);
         return ev === val;
-      });
-    } else {
-      // Legacy bare "field=value" or "field:value" split
-      const [field, value] = where.split(/[=:]/);
+      }
+
+      // Legacy bare "field=value" or "field:value"
+      const [field, value] = clause.split(/[=:]/);
       if (field && value !== undefined) {
         const prefix = value.endsWith("%");
         const val = prefix ? value.slice(0, -1) : value;
-        entries = entries.filter(e => {
-          const ev = String(e[field] ?? "");
-          return prefix ? ev.startsWith(val) : ev === val;
-        });
+        const ev = String(entry[field] ?? "");
+        return prefix ? ev.startsWith(val) : ev === val;
       }
+      return true; // malformed clause: pass through
+    }
+
+    const orClauses = where.split(/\s+or\s+/i).map(c => c.trim()).filter(Boolean);
+    if (orClauses.length > 0) {
+      entries = entries.filter(e => orClauses.some(clause => evaluateClause(e, clause)));
     }
   }
 
