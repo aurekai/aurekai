@@ -207,19 +207,47 @@ function cmdQuerySql(args) {
     else { try { const p = JSON.parse(text); entries = Array.isArray(p) ? p : [p]; } catch { console.error("  error: file is not valid JSON/JSONL"); process.exitCode = 1; return; } }
   }
 
-  // Simple where: "field=value" or "field:value"
+  // where: "field=value" (exact), "field=value%" (prefix), "field~value" (substring)
   if (where) {
-    const [field, value] = where.split(/[=:]/);
-    if (field && value !== undefined) entries = entries.filter(e => String(e[field] ?? "") === value);
+    const matchOp = where.match(/^([^=~<>!]+)(=~|~=|~|>=|<=|!=|=)(.*)$/);
+    if (matchOp) {
+      const [, field, op, rawVal] = matchOp;
+      const val = rawVal.endsWith("%") ? rawVal.slice(0, -1) : rawVal; // strip SQL-style wildcard
+      const prefix = rawVal.endsWith("%");
+      entries = entries.filter(e => {
+        const ev = String(e[field] ?? "");
+        if (op === "=" || op === "=~" || op === "~=") return prefix ? ev.startsWith(val) : ev === val;
+        if (op === "~") return ev.includes(val);
+        if (op === "!=") return ev !== val;
+        if (op === ">=") return parseFloat(ev) >= parseFloat(val);
+        if (op === "<=") return parseFloat(ev) <= parseFloat(val);
+        return ev === val;
+      });
+    } else {
+      // Legacy bare "field=value" or "field:value" split
+      const [field, value] = where.split(/[=:]/);
+      if (field && value !== undefined) {
+        const prefix = value.endsWith("%");
+        const val = prefix ? value.slice(0, -1) : value;
+        entries = entries.filter(e => {
+          const ev = String(e[field] ?? "");
+          return prefix ? ev.startsWith(val) : ev === val;
+        });
+      }
+    }
   }
 
-  // Select fields
+  // Select fields — applied on the filtered set; preserve all fields when not specified
+  const totalMatched = entries.length;
   let results = entries.slice(0, limit);
-  if (select) { const fields = select.split(",").map(s => s.trim()); results = results.map(e => Object.fromEntries(fields.map(f => [f, e[f]]))); }
+  if (select) {
+    const fields = select.split(",").map(s => s.trim()).filter(Boolean);
+    results = results.map(e => Object.fromEntries(fields.map(f => [f, e[f] ?? null])));
+  }
 
-  const output = { schema_version: "aurekai.query.v1", queried_at: now(), source: src, where: where ?? null, select: select ?? null, limit, total_matched: entries.length, result_count: results.length, results };
+  const output = { schema_version: "aurekai.query.v1", queried_at: now(), source: src, where: where ?? null, select: select ?? null, limit, total_matched: totalMatched, result_count: results.length, results };
   if (asJson) printJson(output);
-  else { process.stdout.write(`query: ${src}  matched: ${entries.length}  returned: ${results.length}\n`); for (const r of results) process.stdout.write(`  ${JSON.stringify(r)}\n`); }
+  else { process.stdout.write(`query: ${src}  matched: ${totalMatched}  returned: ${results.length}\n`); for (const r of results) process.stdout.write(`  ${JSON.stringify(r)}\n`); }
   return output;
 }
 

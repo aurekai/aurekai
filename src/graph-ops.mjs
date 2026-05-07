@@ -190,8 +190,8 @@ async function cmdGraphMerkle(args) {
 // graph validate
 // ---------------------------------------------------------------------------
 async function cmdGraphValidate(args) {
-  const merkleFile = flag(args, "--merkle") || flag(args, "--in") || args.find(a => !a.startsWith("-"));
-  if (!merkleFile) throw new Error("graph validate requires --merkle <file.akgraph>");
+  const merkleFile = flag(args, "--merkle") || flag(args, "--in") || flag(args, "--proof") || args.find(a => !a.startsWith("-"));
+  if (!merkleFile) throw new Error("graph validate requires --merkle <file.akgraph> or --proof <file.akproof> or --in <file>");
   const asJson = hasFlag(args, "--json");
 
   const path = resolve(merkleFile);
@@ -201,8 +201,37 @@ async function cmdGraphValidate(args) {
   try { doc = JSON.parse(readFileSync(path, "utf8")); } catch (e) {
     throw new Error(`graph validate: cannot parse ${merkleFile}: ${e.message}`);
   }
+
+  // Proof bundle path — file has a proof_root, hash, or schema with "proof" in it but
+  // no merkle_root + leaves. Validate structural integrity of the proof document instead.
+  const isProofDoc = !doc.merkle_root && !Array.isArray(doc.leaves) &&
+    (doc.proof_root || doc.hash || (typeof doc.schema_version === "string" && doc.schema_version.includes("proof")));
+  if (isProofDoc) {
+    const hash = "sha256:" + hashBuf(readFileSync(path));
+    const checks = [
+      { name: "parseable",       ok: true },
+      { name: "schema_present",  ok: typeof doc.schema_version === "string" },
+      { name: "identity_present",ok: !!(doc.proof_root || doc.artifact_id || doc.hash || doc.bundle_id) },
+    ];
+    const allOk = checks.every(c => c.ok);
+    const payload = {
+      schema_version: "aurekai.graph.validate.v1",
+      validated_at: now(),
+      source: path,
+      document_type: "proof",
+      document_schema: doc.schema_version ?? null,
+      file_hash: hash,
+      checks,
+      verdict: allOk ? "PASS" : "INCOMPLETE",
+    };
+    if (asJson) { process.stdout.write(JSON.stringify(payload, null, 2) + "\n"); return; }
+    printResult("graph.validate", payload.verdict, payload);
+    return;
+  }
+
+  // Merkle graph path — original behavior
   if (!doc.merkle_root || !Array.isArray(doc.leaves)) {
-    throw new Error("graph validate: document missing merkle_root or leaves array");
+    throw new Error("graph validate: document missing merkle_root and leaves array, and does not look like a proof bundle. Pass --merkle for a .akgraph file or --proof for a proof bundle.");
   }
 
   // Re-derive root from leaves and levels if files are accessible
@@ -220,6 +249,7 @@ async function cmdGraphValidate(args) {
     schema_version: "aurekai.graph.validate.v1",
     validated_at: now(),
     source: path,
+    document_type: "merkle_graph",
     stored_merkle_root: doc.merkle_root,
     leaf_count: doc.leaves.length,
     files_accessible: validatable.length,

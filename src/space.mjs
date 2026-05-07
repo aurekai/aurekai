@@ -81,7 +81,8 @@ function cmdSpacePut(args) {
 // ── space.attach ──────────────────────────────────────────────────────────────
 function cmdSpaceAttach(args) {
   const spaceName = flag(args, "--space") ?? "default";
-  const resource  = flag(args, "--resource") ?? args.find(a => !a.startsWith("--"));
+  // Do NOT use positional fallback — it picks up flag values like the space name.
+  const resource  = flag(args, "--resource");
   const label     = flag(args, "--label") ?? resource;
   const asJson    = hasFlag(args, "--json");
   if (!resource) { console.error("  error: space attach requires --resource <path|uri>"); process.exitCode = 1; return; }

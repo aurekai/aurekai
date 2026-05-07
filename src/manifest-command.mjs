@@ -374,6 +374,31 @@ export async function manifestCommand(args) {
   if (sub === "keygen") return cmdKeygen(rest);
   if (sub === "sign") return cmdSign(rest);
   if (sub === "verify-signature") return cmdVerifySignature(rest);
+  // "manifest verify" — lightweight file integrity check (hash + schema presence).
+  // If --signature is supplied, delegates to verify-signature.
+  // If only --file is supplied, verifies the file is parseable and returns its hash.
+  if (sub === "verify") {
+    const file = flag(rest, "--file") || rest.find(a => !a.startsWith("-"));
+    const signaturePath = flag(rest, "--signature");
+    if (signaturePath) return cmdVerifySignature(rest);
+    if (!file) throw new Error("manifest verify requires --file <path>");
+    const { createHash } = await import("node:crypto");
+    const { readFileSync, existsSync } = await import("node:fs");
+    const { resolve: res } = await import("node:path");
+    const absPath = res(file);
+    if (!existsSync(absPath)) throw new Error(`manifest verify: file not found: ${absPath}`);
+    const buf = readFileSync(absPath);
+    const hash = "sha256:" + createHash("sha256").update(buf).digest("hex");
+    let parsed = null, schemaOk = false, parseError = null;
+    try { parsed = JSON.parse(buf); schemaOk = typeof parsed.schema_version === "string"; } catch (e) { parseError = e.message; }
+    const asJson = rest.includes("--json");
+    const verdict = (parsed && schemaOk) ? "PASS" : "NO_SCHEMA";
+    const r = { schema_version: "aurekai.manifest.verify.v1", verified_at: new Date().toISOString(), file: absPath, bytes: buf.length, hash, parseable: !!parsed, schema_version_present: schemaOk, parse_error: parseError ?? null, verdict };
+    if (asJson) process.stdout.write(JSON.stringify(r, null, 2) + "\n");
+    else process.stdout.write(`manifest verify  ${verdict}  ${hash}  ${absPath}\n`);
+    if (verdict !== "PASS") process.exitCode = 2;
+    return;
+  }
 
   throw new Error(`unknown manifest subcommand '${sub}'`);
 }
