@@ -270,9 +270,12 @@ function flattenCapabilities(capDoc) {
   return out;
 }
 
-function classifyCapabilityCommand(command, hyperReachable) {
-  if (NATIVE_CAPABILITY_COMMANDS.has(command)) return "native";
-  return hyperReachable ? "delegated" : "unavailable";
+function classifyCapabilityCommand(command, truthEntry) {
+  if (!truthEntry) return "unknown";
+  if (truthEntry.execution_state === "native") return "native";
+  if (truthEntry.execution_state === "hyper-delegated") return "delegated";
+  if (truthEntry.execution_state === "declared-only") return "unavailable";
+  return truthEntry.execution_state;
 }
 
 function cmdRuntimeDoctor(args) {
@@ -329,17 +332,19 @@ function cmdRuntimeCapabilities(args) {
   const capDoc = JSON.parse(readFileSync(capPath, "utf8"));
   const flat = flattenCapabilities(capDoc);
   const check = runtimeTargetFor("runtime");
+  const truthMatrix = buildTruthMatrix();
+  const truthByCommand = new Map(truthMatrix.commands.map(entry => [entry.command, entry]));
 
   const entries = flat.map(item => ({
     family: item.family,
     command: item.command,
-    execution_state: classifyCapabilityCommand(item.command, check.reachable),
+    execution_state: classifyCapabilityCommand(item.command, truthByCommand.get(item.command)),
   }));
 
   const stateCounts = entries.reduce((acc, entry) => {
     acc[entry.execution_state] = (acc[entry.execution_state] || 0) + 1;
     return acc;
-  }, { native: 0, delegated: 0, unavailable: 0 });
+  }, { native: 0, delegated: 0, unavailable: 0, unknown: 0 });
 
   const payload = {
     schema_version: "aurekai.runtime.capabilities.v1",
