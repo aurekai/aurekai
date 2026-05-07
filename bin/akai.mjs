@@ -558,6 +558,7 @@ if (command === "hash" && rest[0] === "file") {
 if (command === "hash" && rest[0] === "merkle") { await graphCommand(["merkle", ...rest.slice(1)]); process.exit(process.exitCode || 0); }
 
 // "index equivalence" → structural equivalence check between two artifacts/files
+// --canonical: for JSON files, sort keys recursively before hashing (order-insensitive)
 if (command === "index" && rest[0] === "equivalence") {
   const { createHash } = await import("node:crypto");
   const { readFileSync, existsSync } = await import("node:fs");
@@ -566,18 +567,34 @@ if (command === "index" && rest[0] === "equivalence") {
   const fileA = getFlag(rest, "--a") ?? getFlag(rest, "--file-a");
   const fileB = getFlag(rest, "--b") ?? getFlag(rest, "--file-b");
   const asJson = rest.includes("--json");
+  const canonical = rest.includes("--canonical");
   if (!fileA || !fileB) { console.error("  error: index equivalence requires --a <file> --b <file>"); process.exitCode = 1; }
   else {
     const absA = res(process.cwd(), fileA), absB = res(process.cwd(), fileB);
     const missing = [absA, absB].filter(p => !existsSync(p));
     if (missing.length) { console.error(`  error: file not found: ${missing.join(", ")}`); process.exitCode = 1; }
     else {
-      const hashOf = p => "sha256:" + createHash("sha256").update(readFileSync(p)).digest("hex");
+      // Canonical mode: parse as JSON and re-serialize with sorted keys so key-reordered
+      // documents hash identically. Falls back to raw bytes if either file is not valid JSON.
+      function sortedJson(obj) {
+        if (Array.isArray(obj)) return obj.map(sortedJson);
+        if (obj !== null && typeof obj === "object") {
+          return Object.fromEntries(Object.keys(obj).sort().map(k => [k, sortedJson(obj[k])]));
+        }
+        return obj;
+      }
+      function canonicalize(buf) {
+        if (!canonical) return buf;
+        try { return Buffer.from(JSON.stringify(sortedJson(JSON.parse(buf.toString("utf8"))))); } catch { return buf; }
+      }
+      const hashOf = p => "sha256:" + createHash("sha256").update(canonicalize(readFileSync(p))).digest("hex");
       const hA = hashOf(absA), hB = hashOf(absB);
       const equivalent = hA === hB;
-      const r = { schema_version: "aurekai.index.equivalence.v1", checked_at: new Date().toISOString(), file_a: absA, file_b: absB, hash_a: hA, hash_b: hB, equivalent, verdict: equivalent ? "EQUIVALENT" : "DISTINCT" };
+      const r = { schema_version: "aurekai.index.equivalence.v1", checked_at: new Date().toISOString(),
+        file_a: absA, file_b: absB, hash_a: hA, hash_b: hB, canonical, equivalent,
+        verdict: equivalent ? "EQUIVALENT" : "DISTINCT" };
       if (asJson) process.stdout.write(JSON.stringify(r, null, 2) + "\n");
-      else process.stdout.write(`${equivalent ? "EQUIVALENT" : "DISTINCT"}  ${fileA}  ${fileB}\n`);
+      else process.stdout.write(`${equivalent ? "EQUIVALENT" : "DISTINCT"}  ${fileA}  ${fileB}${canonical ? "  [canonical]" : ""}\n`);
     }
   }
   process.exit(process.exitCode || 0);
