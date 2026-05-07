@@ -60,6 +60,16 @@ async function cmdApiStatus(args) {
   const dirsOk = Object.values(dirs).filter(Boolean).length;
   const hyperReachable = spawnSync("which", ["bonfyre-hyper"], { encoding: "utf8" }).status === 0;
 
+  // Verify the E8 + chart-compiler stack is loadable (import chain only, no I/O).
+  let e8Ok = false;
+  try {
+    const { snapE8 } = await import("./e8-lattice.mjs");
+    const { compile } = await import("./chart-compiler.mjs");
+    const snap = snapE8([0.3, 0.7, 0.2, 0.8, 0.1, 0.9, 0.4, 0.6]);
+    const cell = compile("text_proof", "probe");
+    e8Ok = Array.isArray(snap.cell) && snap.cell.length === 8 && !!cell.witness_hash;
+  } catch {}
+
   const result = {
     schema_version: "aurekai.api.status.v1",
     checked_at: now(),
@@ -69,6 +79,10 @@ async function cmdApiStatus(args) {
     hyper_reachable: hyperReachable,
     dirs,
     dirs_initialized: `${dirsOk}/${Object.keys(dirs).length}`,
+    internal: {
+      e8_lattice: e8Ok ? "active" : "unavailable",
+      normal_form: "coarse_address + E8_cell + residual + witness",
+    },
     verdict: "OK",
   };
   if (asJson) printJson(result);

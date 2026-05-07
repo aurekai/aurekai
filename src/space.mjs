@@ -13,6 +13,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
+import { compile as compileChart, detectChart } from "./chart-compiler.mjs";
+import { e8NeighborScore } from "./e8-lattice.mjs";
 
 const AUREKAI_DIR  = join(homedir(), ".aurekai");
 const SPACES_DIR   = join(AUREKAI_DIR, "spaces");
@@ -62,11 +64,15 @@ function cmdSpacePut(args) {
   let space = readSpace(spaceName) ?? { schema_version: "aurekai.space.v1", name: spaceName, type: "generic", created_at: now(), updated_at: now(), keys: {}, attachments: [] };
   let parsed;
   try { parsed = JSON.parse(value); } catch { parsed = value; }
-  space.keys[key] = { value: parsed, set_at: now() };
+  // Compile E8 cell for this value — stored as internal metadata, never changes the value.
+  const chartType = detectChart(parsed);
+  const e8 = compileChart(chartType, parsed);
+  space.keys[key] = { value: parsed, set_at: now(), _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash } };
   space.updated_at = now();
   writeSpace(space);
 
-  const result = { schema_version: "aurekai.space.put.v1", space: spaceName, key, value: parsed, verdict: "STORED" };
+  const storedE8 = space.keys[key]._e8;
+  const result = { schema_version: "aurekai.space.put.v1", space: spaceName, key, value: parsed, _e8: storedE8, verdict: "STORED" };
   if (asJson) printJson(result);
   else process.stdout.write(`space.put  ${spaceName}.${key} = ${JSON.stringify(parsed)}\n`);
   return result;
@@ -81,7 +87,8 @@ function cmdSpaceAttach(args) {
   if (!resource) { console.error("  error: space attach requires --resource <path|uri>"); process.exitCode = 1; return; }
 
   let space = readSpace(spaceName) ?? { schema_version: "aurekai.space.v1", name: spaceName, type: "generic", created_at: now(), updated_at: now(), keys: {}, attachments: [] };
-  const attachment = { resource, label, attached_at: now(), exists_local: existsSync(resolve(process.cwd(), resource)) };
+  const e8 = compileChart("text_proof", resource);
+  const attachment = { resource, label, attached_at: now(), exists_local: existsSync(resolve(process.cwd(), resource)), _e8: { chart_id: e8.chart_id, cell: e8.e8_cell, cell_key: e8.cell_key, residual_norm: e8.residual_norm, witness_hash: e8.witness_hash } };
   space.attachments = space.attachments.filter(a => a.resource !== resource);
   space.attachments.push(attachment);
   space.updated_at = now();
@@ -152,7 +159,7 @@ function cmdVecSearch(args) {
   const asJson  = hasFlag(args, "--json");
   if (!query) { console.error("  error: vec search requires --query <text>"); process.exitCode = 1; return; }
 
-  // Build query embedding
+  // Build query embedding (64D structural, unchanged)
   const base = createHash("sha256").update(query).digest();
   const queryVec = Array.from({ length: 64 }, (_, i) => {
     const salt = createHash("sha256").update(base).update(Buffer.from([i])).digest();
@@ -162,6 +169,9 @@ function cmdVecSearch(args) {
   const qNorm = Math.sqrt(queryVec.reduce((s, v) => s + v * v, 0));
   const qNormVec = qNorm === 0 ? queryVec : queryVec.map(v => v / qNorm);
 
+  // E8 cell for query — used in compatibility scoring when stored entry has a cell.
+  const qE8 = compileChart("text_proof", query);
+
   // Search embedding store
   const absStore = resolve(process.cwd(), store);
   const candidates = [];
@@ -169,16 +179,45 @@ function cmdVecSearch(args) {
     for (const f of readdirSync(absStore).filter(f => f.endsWith(".embed.json"))) {
       try {
         const e = JSON.parse(readFileSync(join(absStore, f), "utf8"));
-        if (e.vector) { const sim = cosine(qNormVec, e.vector); candidates.push({ id: e.id ?? f, label: e.label ?? e.text_hash, sim: parseFloat(sim.toFixed(6)) }); }
+        if (!e.vector) continue;
+        const cosineSim = cosine(qNormVec, e.vector);
+
+        // E8 compatibility bonus: if the stored entry has a cell, blend it in.
+        // compatibility = 0.80 * cosine + 0.15 * e8_neighbor + 0.05 * (1 - residual_penalty)
+        let score = cosineSim;
+        if (e._e8?.cell) {
+          const neighborScore = e8NeighborScore(qE8.e8_cell, e._e8.cell);
+          const residualPenalty = Math.min(1, (e._e8.residual_norm ?? 0) / 2);
+          score = 0.80 * cosineSim + 0.15 * neighborScore + 0.05 * (1 - residualPenalty);
+        }
+        candidates.push({
+          id: e.id ?? f,
+          label: e.label ?? e.text_hash,
+          cosine_sim: parseFloat(cosineSim.toFixed(6)),
+          score: parseFloat(score.toFixed(6)),
+          e8_cell_key: e._e8?.cell_key ?? null,
+        });
       } catch {}
     }
   }
-  candidates.sort((a, b) => b.sim - a.sim);
+  candidates.sort((a, b) => b.score - a.score);
   const results = candidates.slice(0, topK);
 
-  const result = { schema_version: "aurekai.vec.search.v1", searched_at: now(), query, query_hash: "sha256:" + createHash("sha256").update(query).digest("hex"), store: absStore, total_candidates: candidates.length, top_k: topK, results, verdict: results.length > 0 ? "FOUND" : "EMPTY_STORE" };
+  const result = {
+    schema_version: "aurekai.vec.search.v1",
+    searched_at: now(),
+    query,
+    query_hash: "sha256:" + createHash("sha256").update(query).digest("hex"),
+    query_e8_cell_key: qE8.cell_key,
+    store: absStore,
+    total_candidates: candidates.length,
+    top_k: topK,
+    results,
+    scoring: "0.80*cosine + 0.15*e8_neighbor + 0.05*(1-residual)",
+    verdict: results.length > 0 ? "FOUND" : "EMPTY_STORE",
+  };
   if (asJson) printJson(result);
-  else { process.stdout.write(`vec.search  candidates: ${candidates.length}  query: "${query.slice(0, 40)}"\n`); for (const r of results) process.stdout.write(`  ${r.sim.toFixed(4)}  ${r.label}\n`); }
+  else { process.stdout.write(`vec.search  candidates: ${candidates.length}  query: "${query.slice(0, 40)}"\n`); for (const r of results) process.stdout.write(`  ${r.score.toFixed(4)}  ${r.label}\n`); }
   return result;
 }
 

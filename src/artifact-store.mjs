@@ -19,6 +19,7 @@ import {
 import { homedir } from "node:os";
 import { join, resolve, dirname, basename } from "node:path";
 import { pipeline } from "node:stream/promises";
+import { compile as compileChart, detectChart } from "./chart-compiler.mjs";
 
 const AUREKAI_DIR    = join(homedir(), ".aurekai");
 const ARTIFACTS_DIR  = join(AUREKAI_DIR, "artifacts");
@@ -229,7 +230,6 @@ function cmdEmbedText(args) {
   if (!text) { console.error("  error: embed text requires --text <text> or --in <file>"); process.exitCode = 1; return; }
 
   // Structural embedding: 64-dim hash-based vector, deterministic
-  // Each dimension = sha256 of (text + dimension_salt), normalized to [-1, 1]
   const dims = 64;
   const baseHash = createHash("sha256").update(text).digest();
   const vector = Array.from({ length: dims }, (_, i) => {
@@ -241,9 +241,29 @@ function cmdEmbedText(args) {
   const norm = Math.sqrt(vector.reduce((s, v) => s + v * v, 0));
   const normalized = vector.map(v => parseFloat((v / norm).toFixed(6)));
 
-  const result = { schema_version: "aurekai.embed.v1", embedded_at: now(), text_length: text.length, text_hash: sha256(Buffer.from(text)), dims, algorithm: "sha256-structural-64d", vector: normalized, note: "deterministic structural embedding — not a learned embedding" };
+  // E8 cell for this text — same content always maps to the same cell.
+  const e8 = compileChart("text_proof", text);
+  const textHash = sha256(Buffer.from(text));
+
+  const result = {
+    schema_version: "aurekai.embed.v1",
+    embedded_at: now(),
+    text_length: text.length,
+    text_hash: textHash,
+    dims,
+    algorithm: "sha256-structural-64d",
+    vector: normalized,
+    _e8: {
+      chart_id: e8.chart_id,
+      cell: e8.e8_cell,
+      cell_key: e8.cell_key,
+      residual_norm: e8.residual_norm,
+      witness_hash: e8.witness_hash,
+    },
+    note: "deterministic structural embedding — not a learned embedding",
+  };
   if (asJson) printJson(result);
-  else process.stdout.write(`embed.text  dims:${dims}  text_hash:${result.text_hash}\n  vector: [${normalized.slice(0, 6).join(", ")} ...]\n`);
+  else process.stdout.write(`embed.text  dims:${dims}  text_hash:${result.text_hash}  e8_cell:${e8.cell_key}\n  vector: [${normalized.slice(0, 6).join(", ")} ...]\n`);
   return result;
 }
 
