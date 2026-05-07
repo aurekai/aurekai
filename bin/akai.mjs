@@ -22,6 +22,15 @@ import { truthCommand, buildTruthMatrix } from "../src/truth-matrix.mjs";
 import { wireCommand } from "../src/wire-ops.mjs";
 import { briefCommand } from "../src/brief-gen.mjs";
 import { meterCommand } from "../src/meter.mjs";
+import { queueCommand } from "../src/queue.mjs";
+import { apiStatusCommand as cmdApiStatus, runtimeDispatchCommand as cmdRuntimeDispatch, controlRouteCommand as cmdControlRoute, tierRouteCommand as cmdTierRoute, stitchPlanCommand as cmdStitchPlan, watchPathCommand as cmdWatchPath, workflowRunCommand as cmdWorkflowRun } from "../src/runtime-ops.mjs";
+import { cmdUsageReport, cmdLedgerExport, cmdGateIssue, cmdGateGuard, cmdAuthVerify, cmdFinanceMargin, cmdInvoiceGenerate, cmdPayInvoice, cmdProjectCreate, cmdCmsEntryCreate, cmdOutreachFollowup } from "../src/ledger.mjs";
+import { cmdEmitArtifact, cmdDistributeBundle, cmdEntityResolve, cmdFamilyGroup, cmdCompressFamily, cmdQuerySql, cmdEmbedText } from "../src/artifact-store.mjs";
+import { cmdNarrateBrief, cmdRenderDocument, cmdPackDeliverable, cmdSurfacePublish, cmdClipsExtract, cmdRepurposeContent } from "../src/publish-ops.mjs";
+import { cmdSpaceOpen, cmdSpacePut, cmdSpaceAttach, cmdTimeSchedule, cmdTimeRerun, cmdVecSearch, spaceCommand } from "../src/space.mjs";
+import { intakeCommand } from "../src/intake-ops.mjs";
+import { reasonCommand, flowCommand, learnCommand, physicsCommand } from "../src/reason-ops.mjs";
+import { telCommand, cmdWireRecipe, cmdWireSpaceExport, cmdWireIngestPcap, cmdMoqVideoRelay } from "../src/tel-ops.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -455,7 +464,10 @@ if (command === "graph") {
 
 // Wire diagnostics / reporting — handled natively
 if (command === "wire") {
-  await wireCommand(rest);
+  if (rest[0] === "recipe") { await cmdWireRecipe(rest.slice(1)); }
+  else if (rest[0] === "space-export") { await cmdWireSpaceExport(rest.slice(1)); }
+  else if (rest[0] === "ingest-pcap") { await cmdWireIngestPcap(rest.slice(1)); }
+  else { await wireCommand(rest); }
   process.exit(process.exitCode || 0);
 }
 
@@ -469,6 +481,94 @@ if (command === "brief") {
 if (command === "meter") {
   await meterCommand(rest);
   process.exit(process.exitCode || 0);
+}
+
+// ── New native dispatch blocks ─────────────────────────────────────────────
+
+// Queue operations
+if (command === "queue") { await queueCommand(rest); process.exit(process.exitCode || 0); }
+
+// API status
+if (command === "api") { await cmdApiStatus(rest); process.exit(process.exitCode || 0); }
+
+// Runtime ops
+if (command === "runtime" && rest[0] === "dispatch") { await cmdRuntimeDispatch(rest.slice(1)); process.exit(process.exitCode || 0); }
+if (command === "control") { await cmdControlRoute(rest); process.exit(process.exitCode || 0); }
+if (command === "tier") { await cmdTierRoute(rest); process.exit(process.exitCode || 0); }
+if (command === "stitch") { await cmdStitchPlan(rest); process.exit(process.exitCode || 0); }
+if (command === "watch") { await cmdWatchPath(rest); process.exit(process.exitCode || 0); }
+if (command === "workflow") { await cmdWorkflowRun(rest); process.exit(process.exitCode || 0); }
+
+// Ledger / finance / auth
+if (command === "usage") { await cmdUsageReport(rest); process.exit(process.exitCode || 0); }
+if (command === "ledger") { await cmdLedgerExport(rest); process.exit(process.exitCode || 0); }
+if (command === "gate" && rest[0] === "issue") { await cmdGateIssue(rest.slice(1)); process.exit(process.exitCode || 0); }
+if (command === "gate" && rest[0] === "guard") { await cmdGateGuard(rest.slice(1)); process.exit(process.exitCode || 0); }
+if (command === "auth") { await cmdAuthVerify(rest); process.exit(process.exitCode || 0); }
+if (command === "finance") { await cmdFinanceMargin(rest); process.exit(process.exitCode || 0); }
+if (command === "invoice") { await cmdInvoiceGenerate(rest); process.exit(process.exitCode || 0); }
+if (command === "pay") { await cmdPayInvoice(rest); process.exit(process.exitCode || 0); }
+if (command === "project") { await cmdProjectCreate(rest); process.exit(process.exitCode || 0); }
+if (command === "cms") { await cmdCmsEntryCreate(rest); process.exit(process.exitCode || 0); }
+if (command === "outreach") { await cmdOutreachFollowup(rest); process.exit(process.exitCode || 0); }
+
+// Artifact store
+if (command === "artifact") { await cmdEmitArtifact(rest); process.exit(process.exitCode || 0); }
+if (command === "distribute") { await cmdDistributeBundle(rest); process.exit(process.exitCode || 0); }
+if (command === "entity") { await cmdEntityResolve(rest); process.exit(process.exitCode || 0); }
+if (command === "family") { await cmdFamilyGroup(rest); process.exit(process.exitCode || 0); }
+if (command === "compress") { await cmdCompressFamily(rest); process.exit(process.exitCode || 0); }
+if (command === "query") { await cmdQuerySql(rest); process.exit(process.exitCode || 0); }
+if (command === "embed") { await cmdEmbedText(rest); process.exit(process.exitCode || 0); }
+
+// Publish ops
+if (command === "narrate") { await cmdNarrateBrief(rest); process.exit(process.exitCode || 0); }
+if (command === "render") { await cmdRenderDocument(rest); process.exit(process.exitCode || 0); }
+if (command === "pack" && rest[0] === "deliverable") { await cmdPackDeliverable(rest.slice(1)); process.exit(process.exitCode || 0); }
+if (command === "surface") { await cmdSurfacePublish(rest); process.exit(process.exitCode || 0); }
+if (command === "clips") { await cmdClipsExtract(rest); process.exit(process.exitCode || 0); }
+if (command === "repurpose") { await cmdRepurposeContent(rest); process.exit(process.exitCode || 0); }
+
+// Space / time / vec
+if (command === "space") { await spaceCommand(rest); process.exit(process.exitCode || 0); }
+if (command === "time") {
+  if (rest[0] === "rerun") { await cmdTimeRerun(rest.slice(1)); } else { await cmdTimeSchedule(rest); }
+  process.exit(process.exitCode || 0);
+}
+if (command === "vec") { await cmdVecSearch(rest); process.exit(process.exitCode || 0); }
+
+// Intake operations
+if (command === "ingest") { await intakeCommand(["ingest", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "paragraph") { await intakeCommand(["reflow", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "transcript") { await intakeCommand(["clean", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "speech") { await intakeCommand(["transform", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "media") { await intakeCommand(["normalize", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "transcribe") { await intakeCommand(["transcribe", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "frame") { await intakeCommand(["frames", ...rest]); process.exit(process.exitCode || 0); }
+if (command === "video") {
+  if (rest[0] === "demux") await intakeCommand(["demux", ...rest.slice(1)]);
+  else if (rest[0] === "scene") await intakeCommand(["scene-detect", ...rest.slice(1)]);
+  else await intakeCommand([rest[0], ...rest.slice(1)]);
+  process.exit(process.exitCode || 0);
+}
+if (command === "segment") { await intakeCommand(["segment", ...rest]); process.exit(process.exitCode || 0); }
+
+// Reason / learn / physics / flow
+if (command === "reason") { await reasonCommand(rest); process.exit(process.exitCode || 0); }
+if (command === "flow") { await flowCommand(rest); process.exit(process.exitCode || 0); }
+if (command === "learn") { await learnCommand(rest); process.exit(process.exitCode || 0); }
+if (command === "physics") { await physicsCommand(rest); process.exit(process.exitCode || 0); }
+
+// Tel / wire extensions
+if (command === "tel") { await telCommand(rest); process.exit(process.exitCode || 0); }
+if (command === "moq") { await cmdMoqVideoRelay(rest); process.exit(process.exitCode || 0); }
+
+// Violence coupling test (honest stub — experimental integrity only)
+if (command === "violence") {
+  const asJson = rest.includes("--json");
+  const r = { schema_version: "aurekai.violence.coupling_test.v1", requested_at: new Date().toISOString(), verdict: "NEEDS_EXTERNAL", requires: ["EXPERIMENTAL_INTEGRITY_BACKEND"], note: "violence.coupling_test is an experimental integrity coupling test requiring an external validation backend." };
+  if (asJson) process.stdout.write(JSON.stringify(r, null, 2) + "\n"); else { console.error(`  violence.coupling_test: NEEDS_EXTERNAL`); console.error(`  ${r.note}`); }
+  process.exit(2);
 }
 
 // Weightless-first run path — handled natively without legacy binary
