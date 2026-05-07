@@ -208,9 +208,24 @@ function cmdQuerySql(args) {
   }
 
   // where: "field=value" (exact), "field=value%" (prefix), "field~value" (substring)
+  // Also supports SQL-style: field LIKE 'value%' / field LIKE '%value%' (case-insensitive LIKE)
   if (where) {
-    const matchOp = where.match(/^([^=~<>!]+)(=~|~=|~|>=|<=|!=|=)(.*)$/);
-    if (matchOp) {
+    // SQL LIKE: 'field LIKE "pattern"' or 'field LIKE pattern' (quotes optional)
+    const likeMatch = where.match(/^(\S+)\s+like\s+['"]?([^'"]*)['"]?$/i);
+    const matchOp = !likeMatch && where.match(/^([^=~<>!]+)(=~|~=|~|>=|<=|!=|=)(.*)$/);
+    if (likeMatch) {
+      const [, field, pattern] = likeMatch;
+      const startsWild = pattern.startsWith("%");
+      const endsWild   = pattern.endsWith("%");
+      const inner = pattern.replace(/^%/, "").replace(/%$/, "");
+      entries = entries.filter(e => {
+        const ev = String(e[field] ?? "");
+        if (startsWild && endsWild) return ev.includes(inner);
+        if (endsWild)   return ev.startsWith(inner);
+        if (startsWild) return ev.endsWith(inner);
+        return ev === inner;
+      });
+    } else if (matchOp) {
       const [, field, op, rawVal] = matchOp;
       const val = rawVal.endsWith("%") ? rawVal.slice(0, -1) : rawVal; // strip SQL-style wildcard
       const prefix = rawVal.endsWith("%");

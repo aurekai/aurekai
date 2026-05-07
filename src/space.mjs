@@ -26,11 +26,12 @@ const AUDIT_DIR    = join(AUREKAI_DIR, "audit");
 function writeAudit(operation, command, ref, bytesWritten = 0) {
   ensureDir(AUDIT_DIR);
   const safe = (ref ?? "unknown").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 64);
+  const ts = new Date().toISOString();
   const record = JSON.stringify({
     operation, command, actor: "akai-runner", model_ref: ref,
     proof_hash: "ak:sha256:" + createHash("sha256").update(command + ref).digest("hex").slice(0, 16),
     status: "PASS", duration_ms: 1, bytes_read: 0, bytes_written: bytesWritten,
-    timestamp: new Date().toISOString(), metadata: { trigger: "cli" },
+    timestamp: ts, created_at: ts, metadata: { trigger: "cli" },
   }) + "\n";
   appendFileSync(join(AUDIT_DIR, `${safe}.jsonl`), record, "utf8");
 }
