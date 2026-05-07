@@ -11,7 +11,7 @@
  *   workflow.run     — run a local workflow definition file
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,7 +58,25 @@ async function cmdApiStatus(args) {
     reason:   existsSync(join(AUREKAI_DIR, "reason")),
   };
   const dirsOk = Object.values(dirs).filter(Boolean).length;
-  const hyperReachable = spawnSync("which", ["bonfyre-hyper"], { encoding: "utf8" }).status === 0;
+  // hyper_reachable must distinguish a genuine external runtime from the bonfyre-hyper
+  // self-alias (all bin entries in package.json currently point to bin/akai.mjs).
+  // Strategy: resolve both bonfyre-hyper and process.argv[1] to their real paths.
+  // If they are the same file, it's a self-alias — not a real external execution layer.
+  let hyperReachable = false;
+  let hyperSelfAlias = false;
+  const whichHyper = spawnSync("which", ["bonfyre-hyper"], { encoding: "utf8" });
+  if (whichHyper.status === 0) {
+    try {
+      const hyperReal = realpathSync(whichHyper.stdout.trim());
+      const selfReal  = realpathSync(process.argv[1]);
+      if (hyperReal === selfReal) {
+        hyperSelfAlias = true; // on PATH but is us — alias loop, not a real runtime
+        hyperReachable = false;
+      } else {
+        hyperReachable = true;
+      }
+    } catch { /* realpath failed — treat as not reachable */ }
+  }
 
   // Verify the E8 + chart-compiler stack is loadable (import chain only, no I/O).
   let e8Ok = false;
@@ -77,6 +95,7 @@ async function cmdApiStatus(args) {
     registry_hash: regHash,
     declared_commands: commandCount,
     hyper_reachable: hyperReachable,
+    hyper_self_alias: hyperSelfAlias,
     dirs,
     dirs_initialized: `${dirsOk}/${Object.keys(dirs).length}`,
     internal: {
@@ -87,8 +106,9 @@ async function cmdApiStatus(args) {
   };
   if (asJson) printJson(result);
   else {
+    const hyperLabel = hyperReachable ? "reachable" : hyperSelfAlias ? "self-alias (not external)" : "NOT REACHABLE";
     process.stdout.write(`aurekai v${version}  registry: ${commandCount} commands\n`);
-    process.stdout.write(`hyper: ${hyperReachable ? "reachable" : "NOT REACHABLE"}  dirs: ${dirsOk}/${Object.keys(dirs).length} initialized\n`);
+    process.stdout.write(`hyper: ${hyperLabel}  dirs: ${dirsOk}/${Object.keys(dirs).length} initialized\n`);
   }
   return result;
 }

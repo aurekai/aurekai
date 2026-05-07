@@ -195,7 +195,11 @@ function resolveDefaultDict(modelMemoryRoot) {
 }
 
 function normalizeArgs(argv) {
-  if (argv.length >= 2 && ["sae", "model", "fpqx", "query", "family", "cache"].includes(argv[0])) {
+  // Only apply colon-join for sub-namespaces that genuinely use the "ns:sub" dispatch pattern.
+  // "family" and "query" are top-level native commands — including them here rewrites
+  // "family group" → "family:group" and "query --from" → "query:--from", which bypasses
+  // the native dispatch blocks below and falls through to the Hyper alias path.
+  if (argv.length >= 2 && ["sae", "model", "fpqx", "cache"].includes(argv[0])) {
     return [`${argv[0]}:${argv[1]}`, ...argv.slice(2)];
   }
   return argv;
