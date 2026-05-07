@@ -142,6 +142,28 @@ async function cmdGraphLineage(args) {
         continuity_class: continuityClass,
         continuity_verdict: continuityVerdict,
         residual_delta: residualDelta,
+        source: "commitment-link",
+      });
+    } else if (priorCommitment) {
+      continuityEdges.push({
+        from: null,
+        to: idx,
+        relation: transitionType,
+        continuity_class: continuityClass,
+        continuity_verdict: continuityVerdict,
+        residual_delta: residualDelta,
+        external_prior_commitment: priorCommitment,
+        source: "external-prior",
+      });
+    } else if (prevIdx !== null && (stateCommitment || transitionType !== "event")) {
+      continuityEdges.push({
+        from: prevIdx,
+        to: idx,
+        relation: transitionType,
+        continuity_class: continuityClass,
+        continuity_verdict: continuityVerdict,
+        residual_delta: residualDelta,
+        source: "chronological-fallback",
       });
     }
 

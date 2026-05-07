@@ -288,6 +288,8 @@ function cmdSpacePut(args) {
     openingPolicy: space._state.opening_policy,
     metadata: { space: spaceName, key },
   });
+  const entryPolicyEval = evaluateContinuityPolicy(entryTransition, continuityPolicy);
+  const entryStatus = continuityStatus(entryPolicyEval.continuity_verdict);
 
   space.keys[key] = {
     value: parsed,
@@ -303,7 +305,7 @@ function cmdSpacePut(args) {
     },
   };
   space.updated_at = now();
-  const { transition, policyEval, status } = finalizeSpaceState(space, previousSpace, entryTransition.transition_type, { key }, continuityPolicy);
+  const { transition: spaceTransition } = finalizeSpaceState(space, previousSpace, entryTransition.transition_type, { key }, continuityPolicy);
   writeSpace(space);
 
   const storedE8 = space.keys[key]._e8;
@@ -315,12 +317,12 @@ function cmdSpacePut(args) {
     transition_type: entryTransition.transition_type,
     continuity_relation: entryTransition.continuity_relation,
     continuity_class: entryTransition.continuity_class,
-    continuity_verdict: policyEval.continuity_verdict,
+    continuity_verdict: entryPolicyEval.continuity_verdict,
     opening_policy: nextDescriptor.opening_policy,
-    continuity_policy: policyEval.policy_id,
+    continuity_policy: entryPolicyEval.policy_id,
     residual_delta: entryTransition.residual_delta,
     transition_witness: entryTransition.transition_witness,
-  }, status);
+  }, entryStatus);
   const result = {
     schema_version: "aurekai.space.put.v1",
     space: spaceName,
@@ -340,10 +342,16 @@ function cmdSpacePut(args) {
     transition_witness: entryTransition.transition_witness,
     witnesses: entryTransition.witnesses,
     opening_policy: nextDescriptor.opening_policy,
-    continuity_policy: policyEval.policy_id,
-    continuity_verdict: policyEval.continuity_verdict,
-    continuity_violations: policyEval.violations,
-    transition,
+    continuity_policy: entryPolicyEval.policy_id,
+    continuity_verdict: entryPolicyEval.continuity_verdict,
+    continuity_violations: entryPolicyEval.violations,
+    transition: {
+      ...entryTransition,
+      continuity_policy: entryPolicyEval.policy_id,
+      continuity_verdict: entryPolicyEval.continuity_verdict,
+      continuity_violations: entryPolicyEval.violations,
+    },
+    space_transition: spaceTransition,
     verdict: "STORED",
   };
   if (asJson) printJson(result);
@@ -384,6 +392,8 @@ function cmdSpaceAttach(args) {
     openingPolicy: space._state.opening_policy,
     metadata: { space: spaceName, resource, label },
   });
+  const attachmentPolicyEval = evaluateContinuityPolicy(attachmentTransition, continuityPolicy);
+  const attachmentStatus = continuityStatus(attachmentPolicyEval.continuity_verdict);
   const attachment = {
     resource,
     label,
@@ -402,7 +412,7 @@ function cmdSpaceAttach(args) {
   space.attachments = space.attachments.filter(a => a.resource !== resource);
   space.attachments.push(attachment);
   space.updated_at = now();
-  const { transition, policyEval, status } = finalizeSpaceState(space, previousSpace, attachmentTransition.transition_type, { resource, label }, continuityPolicy);
+  const { transition: spaceTransition } = finalizeSpaceState(space, previousSpace, attachmentTransition.transition_type, { resource, label }, continuityPolicy);
   writeSpace(space);
 
   writeAudit("attach", "space.attach", spaceName, JSON.stringify(attachment).length, {
@@ -414,12 +424,12 @@ function cmdSpaceAttach(args) {
     transition_type: attachmentTransition.transition_type,
     continuity_relation: attachmentTransition.continuity_relation,
     continuity_class: attachmentTransition.continuity_class,
-    continuity_verdict: policyEval.continuity_verdict,
+    continuity_verdict: attachmentPolicyEval.continuity_verdict,
     opening_policy: nextDescriptor.opening_policy,
-    continuity_policy: policyEval.policy_id,
+    continuity_policy: attachmentPolicyEval.policy_id,
     residual_delta: attachmentTransition.residual_delta,
     transition_witness: attachmentTransition.transition_witness,
-  }, status);
+  }, attachmentStatus);
   const result = {
     schema_version: "aurekai.space.attach.v1",
     space: spaceName,
@@ -439,10 +449,16 @@ function cmdSpaceAttach(args) {
     transition_witness: attachmentTransition.transition_witness,
     witnesses: attachmentTransition.witnesses,
     opening_policy: nextDescriptor.opening_policy,
-    continuity_policy: policyEval.policy_id,
-    continuity_verdict: policyEval.continuity_verdict,
-    continuity_violations: policyEval.violations,
-    transition,
+    continuity_policy: attachmentPolicyEval.policy_id,
+    continuity_verdict: attachmentPolicyEval.continuity_verdict,
+    continuity_violations: attachmentPolicyEval.violations,
+    transition: {
+      ...attachmentTransition,
+      continuity_policy: attachmentPolicyEval.policy_id,
+      continuity_verdict: attachmentPolicyEval.continuity_verdict,
+      continuity_violations: attachmentPolicyEval.violations,
+    },
+    space_transition: spaceTransition,
     verdict: "ATTACHED",
   };
   if (asJson) printJson(result);
