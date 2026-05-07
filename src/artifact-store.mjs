@@ -226,11 +226,13 @@ function cmdQuerySql(args) {
       "state_commitment",
       "prior_commitment",
       "transition_type",
+      "continuity_relation",
       "continuity_class",
       "continuity_verdict",
       "continuity_policy",
       "opening_policy",
       "residual_delta",
+      "transition_witness",
     ];
     for (const key of promoted) {
       if ((normalized[key] === undefined || normalized[key] === null) && meta[key] !== undefined) {

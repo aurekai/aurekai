@@ -432,8 +432,11 @@ async function cmdProofBundle(args) {
   bundle.residual_norm = nextState.residual_norm;
   bundle.residual_delta = transition.residual_delta;
   bundle.continuity_class = transition.continuity_class;
+  bundle.continuity_relation = transition.continuity_relation;
   bundle.invariants_checked = transition.invariants_checked;
   bundle.transition_type = transition.transition_type;
+  bundle.transition_witness = transition.transition_witness;
+  bundle.witnesses = transition.witnesses;
   bundle.opening_policy = openingPolicy;
   bundle.continuity_policy = policyEval.policy_id;
   bundle.continuity_verdict = policyEval.continuity_verdict;
@@ -463,8 +466,11 @@ async function cmdProofBundle(args) {
     residual_norm: nextState.residual_norm,
     residual_delta: transition.residual_delta,
     continuity_class: transition.continuity_class,
+    continuity_relation: transition.continuity_relation,
     invariants_checked: transition.invariants_checked,
     transition_type: transition.transition_type,
+    transition_witness: transition.transition_witness,
+    witnesses: transition.witnesses,
     opening_policy: openingPolicy,
     continuity_policy: policyEval.policy_id,
     continuity_verdict: policyEval.continuity_verdict,

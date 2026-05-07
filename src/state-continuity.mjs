@@ -13,6 +13,14 @@ const CONTINUITY_POLICY_REGISTRY = {
     allow_boundary_crossing: true,
     require_invariants: ["commitment_bound", "witness_bound", "residual_bounded"],
     fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness"],
+    chart_transition_map: {
+      generic: ["generic", "text_proof", "geo_runtime", "memory", "model_block"],
+      text_proof: ["text_proof", "generic", "memory"],
+      memory: ["memory", "generic", "text_proof", "geo_runtime"],
+      geo_runtime: ["geo_runtime", "generic", "memory"],
+      model_block: ["model_block", "generic", "memory"],
+    },
   },
   strict: {
     id: "strict",
@@ -21,6 +29,14 @@ const CONTINUITY_POLICY_REGISTRY = {
     allow_boundary_crossing: false,
     require_invariants: ["commitment_bound", "witness_bound", "residual_bounded", "neighborhood_preserved"],
     fail_on_invariant: ["commitment_bound", "witness_bound", "residual_bounded", "neighborhood_preserved", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      generic: ["generic"],
+      text_proof: ["text_proof"],
+      memory: ["memory"],
+      geo_runtime: ["geo_runtime"],
+      model_block: ["model_block"],
+    },
   },
   handoff: {
     id: "handoff",
@@ -29,6 +45,14 @@ const CONTINUITY_POLICY_REGISTRY = {
     allow_boundary_crossing: true,
     require_invariants: ["commitment_bound", "witness_bound", "residual_bounded", "prior_commitment_present"],
     fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      generic: ["generic", "geo_runtime", "memory"],
+      geo_runtime: ["geo_runtime", "memory", "generic"],
+      memory: ["memory", "geo_runtime", "generic"],
+      text_proof: ["text_proof", "generic"],
+      model_block: ["model_block", "generic", "memory"],
+    },
   },
 };
 
@@ -178,10 +202,23 @@ export function buildTransitionRecord({
   const residualDelta = previousState ? round((nextState?.residual_norm ?? 0) - (previousState?.residual_norm ?? 0)) : null;
   const invariantsChecked = buildInvariantResults({ previousState, nextState });
   const continuityClass = classifyContinuity({ previousState, nextState, residualDelta, invariantsChecked });
+  const witnesses = [
+    { name: "next_state_witness", hash: nextState?.witness_hash ?? null },
+    { name: "prior_state_witness", hash: previousState?.witness_hash ?? null },
+  ].filter(w => w.hash);
+  const transitionWitness = hashValue({
+    transition_type: transitionType,
+    prior_commitment: previousState?.state_commitment ?? null,
+    next_commitment: nextState?.state_commitment ?? null,
+    residual_delta: residualDelta,
+    continuity_class: continuityClass,
+    witnesses,
+  });
 
   return {
     schema_version: TRANSITION_SCHEMA,
     transition_type: transitionType,
+    continuity_relation: `${previousState?.chart_id ?? "null"}->${nextState?.chart_id ?? "null"}`,
     prior_commitment: previousState?.state_commitment ?? null,
     next_commitment: nextState?.state_commitment ?? null,
     chart_transition: {
@@ -189,11 +226,92 @@ export function buildTransitionRecord({
       to: nextState?.chart_id ?? null,
     },
     residual_delta: residualDelta,
+    transition_witness: transitionWitness,
+    witnesses,
     invariants_checked: invariantsChecked,
     continuity_class: continuityClass,
     opening_policy: openingPolicy,
     metadata,
   };
+}
+
+export function verifyCommittedState({
+  committedState,
+  payload,
+  chartType = null,
+  chartAnnotation = null,
+  commitmentSalt = "",
+  publicFields = {},
+  openingPolicy = null,
+  stateType = null,
+}) {
+  if (!committedState || typeof committedState !== "object") {
+    return { ok: false, reason: "missing_committed_state" };
+  }
+
+  const expected = buildCommittedState({
+    stateType: stateType ?? committedState.state_type,
+    payload,
+    chartType,
+    chartAnnotation,
+    openingPolicy: openingPolicy ?? committedState.opening_policy ?? "commit-only",
+    commitmentSalt,
+    publicFields,
+  });
+
+  const checks = {
+    state_commitment: expected.state_commitment === committedState.state_commitment,
+    cell_commitment: expected.cell_commitment === committedState.cell_commitment,
+    witness_hash: expected.witness_hash === committedState.witness_hash,
+    payload_hash: expected.payload_hash === committedState.payload_hash,
+    chart_id: expected.chart_id === committedState.chart_id,
+    cell_key: expected.cell_key === committedState.cell_key,
+  };
+  const failures = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);
+  return {
+    ok: failures.length === 0,
+    checks,
+    failures,
+    expected,
+  };
+}
+
+export function verifyTransitionRecord({
+  transition,
+  previousState = null,
+  nextState,
+  openingPolicy = "commit-only",
+  metadata = {},
+}) {
+  if (!transition || typeof transition !== "object") return { ok: false, reason: "missing_transition" };
+  const expected = buildTransitionRecord({
+    transitionType: transition.transition_type,
+    previousState,
+    nextState,
+    openingPolicy,
+    metadata,
+  });
+  const checks = {
+    prior_commitment: expected.prior_commitment === transition.prior_commitment,
+    next_commitment: expected.next_commitment === transition.next_commitment,
+    residual_delta: expected.residual_delta === transition.residual_delta,
+    continuity_class: expected.continuity_class === transition.continuity_class,
+    transition_witness: expected.transition_witness === transition.transition_witness,
+  };
+  const failures = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);
+  return {
+    ok: failures.length === 0,
+    checks,
+    failures,
+    expected,
+  };
+}
+
+function isChartTransitionAllowed(chartMap, fromChart, toChart) {
+  if (!fromChart || !toChart || fromChart === toChart) return true;
+  const allowed = chartMap?.[fromChart];
+  if (!Array.isArray(allowed) || allowed.length === 0) return true;
+  return allowed.includes(toChart);
 }
 
 export function resolveContinuityPolicy(policy = "default") {
@@ -207,6 +325,8 @@ export function resolveContinuityPolicy(policy = "default") {
     id: policy.id ?? base.id,
     require_invariants: Array.isArray(policy.require_invariants) ? policy.require_invariants : base.require_invariants,
     fail_on_invariant: Array.isArray(policy.fail_on_invariant) ? policy.fail_on_invariant : base.fail_on_invariant,
+    required_witnesses: Array.isArray(policy.required_witnesses) ? policy.required_witnesses : base.required_witnesses,
+    chart_transition_map: policy.chart_transition_map ?? base.chart_transition_map,
   };
 }
 
@@ -223,12 +343,23 @@ export function evaluateContinuityPolicy(transition, policy = "default") {
     if (invMap.get(name) === false) violations.push({ type: "failed_invariant", name });
   }
 
+  const witnessSet = new Set((transition?.witnesses ?? []).map(w => w.name));
+  for (const required of resolved.required_witnesses ?? []) {
+    if (!witnessSet.has(required)) violations.push({ type: "missing_witness", name: required });
+  }
+
   if (typeof transition?.residual_delta === "number" && transition.residual_delta > resolved.max_residual_delta) {
     violations.push({ type: "residual_delta_exceeded", value: transition.residual_delta, max: resolved.max_residual_delta });
   }
 
   if (!resolved.allow_boundary_crossing && transition?.continuity_class === "BOUNDARY_CROSSING") {
     violations.push({ type: "boundary_crossing_disallowed" });
+  }
+
+  const fromChart = transition?.chart_transition?.from ?? null;
+  const toChart = transition?.chart_transition?.to ?? null;
+  if (!isChartTransitionAllowed(resolved.chart_transition_map, fromChart, toChart)) {
+    violations.push({ type: "chart_transition_disallowed", from: fromChart, to: toChart });
   }
 
   let verdict = "PASS";

@@ -31,8 +31,19 @@ function printResult(command, status, payload) {
 }
 
 function auditLogPath(model) {
-  const name = basename(model).replace(/\.[^.]+$/, "");
-  return join(homedir(), ".aurekai", "audit", `${name}.jsonl`);
+  const raw = basename(String(model || "unknown"));
+  const sanitized = raw.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const fullRef = join(homedir(), ".aurekai", "audit", `${sanitized}.jsonl`);
+  if (existsSync(fullRef)) return fullRef;
+  const legacy = join(homedir(), ".aurekai", "audit", `${sanitized.replace(/\.[^.]+$/, "")}.jsonl`);
+  return legacy;
+}
+
+function continuityStatus(verdict) {
+  if (verdict === "CONTINUITY_FAIL") return "FAIL";
+  if (verdict === "PASS_WITH_DRIFT" || verdict === "BOUNDARY_CROSSING") return "WARN";
+  if (verdict === "INITIALIZED") return "INFO";
+  return "PASS";
 }
 
 // ---------------------------------------------------------------------------
@@ -78,7 +89,10 @@ async function cmdGraphLineage(args) {
   // Build nodes and edges from audit entries
   const nodes = [];
   const edges = [];
+  const continuityEdges = [];
   const nodeByHash = new Map();
+  const commitmentIndex = new Map();
+  const stepInclusions = [];
 
   function addNode(hash, type, label, metadata) {
     if (!nodeByHash.has(hash)) {
@@ -90,7 +104,15 @@ async function cmdGraphLineage(args) {
   }
 
   let prevIdx = null;
+  let accumulator = "seed";
   for (const entry of recent) {
+    const stateCommitment = entry.state_commitment ?? entry.metadata?.state_commitment ?? null;
+    const priorCommitment = entry.prior_commitment ?? entry.metadata?.prior_commitment ?? null;
+    const transitionType = entry.transition_type ?? entry.metadata?.transition_type ?? entry.command ?? "event";
+    const continuityClass = entry.continuity_class ?? entry.metadata?.continuity_class ?? null;
+    const continuityVerdict = entry.continuity_verdict ?? entry.metadata?.continuity_verdict ?? continuityClass;
+    const residualDelta = entry.residual_delta ?? entry.metadata?.residual_delta ?? null;
+
     const hash =
       entry.proof_hash ||
       hashBuf(Buffer.from(JSON.stringify(entry))).slice(0, 16);
@@ -102,14 +124,54 @@ async function cmdGraphLineage(args) {
       duration_ms: entry.duration_ms,
       bytes_read: entry.bytes_read,
       bytes_written: entry.bytes_written,
+      state_commitment: stateCommitment,
+      prior_commitment: priorCommitment,
+      transition_type: transitionType,
+      continuity_class: continuityClass,
+      continuity_verdict: continuityVerdict,
+      residual_delta: residualDelta,
     });
     if (prevIdx !== null) edges.push({ from: prevIdx, to: idx });
+
+    if (stateCommitment) commitmentIndex.set(stateCommitment, idx);
+    if (priorCommitment && commitmentIndex.has(priorCommitment)) {
+      continuityEdges.push({
+        from: commitmentIndex.get(priorCommitment),
+        to: idx,
+        relation: transitionType,
+        continuity_class: continuityClass,
+        continuity_verdict: continuityVerdict,
+        residual_delta: residualDelta,
+      });
+    }
+
+    accumulator = hashBuf(Buffer.from(`${accumulator}|${hash}|${stateCommitment ?? "none"}|${priorCommitment ?? "none"}|${transitionType}`));
+    stepInclusions.push({
+      step: stepInclusions.length,
+      proof_hash: hash,
+      state_commitment: stateCommitment,
+      prior_commitment: priorCommitment,
+      accumulator_after: `sha256:${accumulator}`,
+      transition_type: transitionType,
+      continuity_verdict: continuityVerdict,
+      status: continuityStatus(continuityVerdict),
+    });
+
     prevIdx = idx;
   }
 
   // Lineage root = hash of all node hashes in DAG order
   const lineageRoot = nodes.length > 0
     ? hashBuf(Buffer.from(nodes.map(n => n.hash).join("|")))
+    : null;
+  const trajectoryRoot = stepInclusions.length > 0
+    ? hashBuf(Buffer.from(stepInclusions.map(s => `${s.proof_hash}|${s.state_commitment ?? "none"}|${s.prior_commitment ?? "none"}`).join("|")))
+    : null;
+  const transitionWitnesses = stepInclusions
+    .filter(s => s.state_commitment || s.prior_commitment)
+    .map(s => `sha256:${hashBuf(Buffer.from(`${s.transition_type}|${s.proof_hash}|${s.state_commitment ?? "none"}|${s.prior_commitment ?? "none"}`))}`);
+  const foldedProof = transitionWitnesses.length
+    ? `sha256:${hashBuf(Buffer.from(transitionWitnesses.join("|")))}`
     : null;
 
   const payload = {
@@ -123,9 +185,28 @@ async function cmdGraphLineage(args) {
     depth,
     node_count: nodes.length,
     edge_count: edges.length,
+    continuity_edge_count: continuityEdges.length,
     lineage_root: lineageRoot ? `sha256:${lineageRoot}` : null,
+    trajectory_root: trajectoryRoot ? `sha256:${trajectoryRoot}` : null,
+    history_accumulator: stepInclusions.length > 0 ? stepInclusions[stepInclusions.length - 1].accumulator_after : null,
+    continuity_summary: {
+      pass: stepInclusions.filter(s => s.status === "PASS").length,
+      warn: stepInclusions.filter(s => s.status === "WARN").length,
+      fail: stepInclusions.filter(s => s.status === "FAIL").length,
+      info: stepInclusions.filter(s => s.status === "INFO").length,
+    },
+    folded_witness: {
+      schema_version: "aurekai.graph.folded_witness.v1",
+      fold_ready: true,
+      available: foldedProof !== null,
+      folded_proof: foldedProof,
+      transition_witness_count: transitionWitnesses.length,
+      verify_cost: "small",
+    },
+    step_inclusions: stepInclusions,
     nodes,
     edges,
+    continuity_edges: continuityEdges,
   };
 
   if (asJson) { process.stdout.write(JSON.stringify(payload, null, 2) + "\n"); return; }

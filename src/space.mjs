@@ -32,10 +32,12 @@ function writeAudit(operation, command, ref, bytesWritten = 0, metadata = {}, st
     state_commitment: metadata.state_commitment ?? null,
     prior_commitment: metadata.prior_commitment ?? null,
     transition_type: metadata.transition_type ?? null,
+    continuity_relation: metadata.continuity_relation ?? null,
     continuity_class: metadata.continuity_class ?? null,
     continuity_verdict: metadata.continuity_verdict ?? null,
     opening_policy: metadata.opening_policy ?? null,
     residual_delta: metadata.residual_delta ?? null,
+    transition_witness: metadata.transition_witness ?? null,
   };
   const record = JSON.stringify({
     operation, command, actor: "akai-runner", model_ref: ref,
@@ -238,10 +240,12 @@ function cmdSpaceOpen(args) {
     state_commitment: space._state.state_commitment,
     prior_commitment: space._state.prior_commitment,
     transition_type: transition.transition_type,
+    continuity_relation: transition.continuity_relation,
     continuity_class: transition.continuity_class,
     continuity_verdict: policyEval.continuity_verdict,
     opening_policy: space._state.opening_policy,
     continuity_policy: policyEval.policy_id,
+    transition_witness: transition.transition_witness,
   }, status);
   if (asJson) printJson({ ...space, transition, continuity_policy: policyEval.policy_id, continuity_verdict: policyEval.continuity_verdict, continuity_violations: policyEval.violations, verdict: existed ? "OPENED" : "CREATED" });
   else process.stdout.write(`space: ${name}  type: ${type}  keys: ${Object.keys(space.keys).length}  attachments: ${space.attachments.length}\n`);
@@ -309,11 +313,13 @@ function cmdSpacePut(args) {
     prior_commitment: entryTransition.prior_commitment,
     space_commitment: space._state.state_commitment,
     transition_type: entryTransition.transition_type,
+    continuity_relation: entryTransition.continuity_relation,
     continuity_class: entryTransition.continuity_class,
     continuity_verdict: policyEval.continuity_verdict,
     opening_policy: nextDescriptor.opening_policy,
     continuity_policy: policyEval.policy_id,
     residual_delta: entryTransition.residual_delta,
+    transition_witness: entryTransition.transition_witness,
   }, status);
   const result = {
     schema_version: "aurekai.space.put.v1",
@@ -328,8 +334,11 @@ function cmdSpacePut(args) {
     residual_norm: nextDescriptor.residual_norm,
     residual_delta: entryTransition.residual_delta,
     continuity_class: entryTransition.continuity_class,
+    continuity_relation: entryTransition.continuity_relation,
     invariants_checked: entryTransition.invariants_checked,
     transition_type: entryTransition.transition_type,
+    transition_witness: entryTransition.transition_witness,
+    witnesses: entryTransition.witnesses,
     opening_policy: nextDescriptor.opening_policy,
     continuity_policy: policyEval.policy_id,
     continuity_verdict: policyEval.continuity_verdict,
@@ -403,11 +412,13 @@ function cmdSpaceAttach(args) {
     prior_commitment: attachmentTransition.prior_commitment,
     space_commitment: space._state.state_commitment,
     transition_type: attachmentTransition.transition_type,
+    continuity_relation: attachmentTransition.continuity_relation,
     continuity_class: attachmentTransition.continuity_class,
     continuity_verdict: policyEval.continuity_verdict,
     opening_policy: nextDescriptor.opening_policy,
     continuity_policy: policyEval.policy_id,
     residual_delta: attachmentTransition.residual_delta,
+    transition_witness: attachmentTransition.transition_witness,
   }, status);
   const result = {
     schema_version: "aurekai.space.attach.v1",
@@ -422,8 +433,11 @@ function cmdSpaceAttach(args) {
     residual_norm: nextDescriptor.residual_norm,
     residual_delta: attachmentTransition.residual_delta,
     continuity_class: attachmentTransition.continuity_class,
+    continuity_relation: attachmentTransition.continuity_relation,
     invariants_checked: attachmentTransition.invariants_checked,
     transition_type: attachmentTransition.transition_type,
+    transition_witness: attachmentTransition.transition_witness,
+    witnesses: attachmentTransition.witnesses,
     opening_policy: nextDescriptor.opening_policy,
     continuity_policy: policyEval.policy_id,
     continuity_verdict: policyEval.continuity_verdict,

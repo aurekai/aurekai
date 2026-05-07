@@ -2,6 +2,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { buildCommittedState, buildTransitionRecord, verifyCommittedState, verifyTransitionRecord } from "../src/state-continuity.mjs";
 
 const AKAI = join(process.cwd(), "bin", "akai.mjs");
 const TMP = "/tmp/akai-continuity-contract";
@@ -46,8 +47,11 @@ function assertContinuityShape(doc, label) {
     "residual_norm",
     "residual_delta",
     "continuity_class",
+    "continuity_relation",
     "invariants_checked",
     "transition_type",
+    "transition_witness",
+    "witnesses",
     "opening_policy",
     "continuity_policy",
     "continuity_verdict",
@@ -58,8 +62,45 @@ function assertContinuityShape(doc, label) {
     assert(Object.prototype.hasOwnProperty.call(doc, key), `${label}: missing '${key}'`);
   }
   assert(Array.isArray(doc.invariants_checked), `${label}: invariants_checked must be an array`);
+  assert(Array.isArray(doc.witnesses), `${label}: witnesses must be an array`);
   assert(Array.isArray(doc.continuity_violations), `${label}: continuity_violations must be an array`);
 }
+
+console.log("=== continuity contract: core verifier helpers ===");
+const verifierPayload = { a: 1, b: "x", nested: { y: true } };
+const verifierState = buildCommittedState({
+  stateType: "test.state",
+  payload: verifierPayload,
+  chartType: "generic",
+  openingPolicy: "commit-only",
+  commitmentSalt: "test-salt",
+  publicFields: { scope: "test" },
+});
+const stateVerification = verifyCommittedState({
+  committedState: verifierState,
+  payload: verifierPayload,
+  chartType: "generic",
+  openingPolicy: "commit-only",
+  commitmentSalt: "test-salt",
+  publicFields: { scope: "test" },
+});
+assert(stateVerification.ok, "verifyCommittedState should pass for matching state");
+const transition = buildTransitionRecord({
+  transitionType: "test.transition",
+  previousState: null,
+  nextState: verifierState,
+  openingPolicy: "commit-only",
+  metadata: { scope: "test" },
+});
+const transitionVerification = verifyTransitionRecord({
+  transition,
+  previousState: null,
+  nextState: verifierState,
+  openingPolicy: "commit-only",
+  metadata: { scope: "test" },
+});
+assert(transitionVerification.ok, "verifyTransitionRecord should pass for matching transition");
+console.log("  PASS");
 
 const stamp = Date.now();
 const spaceName = `continuity-contract-${stamp}`;
@@ -152,6 +193,23 @@ const thisSpace = (exportResult.spaces || []).find(s => s.name === spaceName);
 assert(Boolean(thisSpace), "wire.space-export: expected test space in export");
 assert(Boolean(thisSpace.keys?.sample?._continuity?.state_commitment), "wire.space-export: commitment projection missing state commitment");
 assert(!Object.prototype.hasOwnProperty.call(thisSpace.keys?.sample || {}, "value"), "wire.space-export: commitment projection leaked key value");
+console.log("  PASS");
+
+console.log("=== continuity contract: graph.lineage trajectory ===");
+const lineageResult = runJson([
+  "graph", "lineage",
+  "--model", "llama-8b.q4.akmodel",
+  "--depth", "25",
+  "--json",
+]);
+assert(Boolean(lineageResult.trajectory_root), "graph.lineage: trajectory_root missing");
+assert(Boolean(lineageResult.history_accumulator), "graph.lineage: history_accumulator missing");
+assert(Boolean(lineageResult.folded_witness), "graph.lineage: folded_witness missing");
+assert(lineageResult.folded_witness.fold_ready === true, "graph.lineage: folded_witness should be fold_ready");
+assert(Array.isArray(lineageResult.step_inclusions), "graph.lineage: step_inclusions should be array");
+if (lineageResult.step_inclusions.length > 0) {
+  assert(typeof lineageResult.step_inclusions[0].status === "string", "graph.lineage: step inclusion status missing");
+}
 console.log("  PASS");
 
 console.log("\nAll continuity contract validations passed.");
