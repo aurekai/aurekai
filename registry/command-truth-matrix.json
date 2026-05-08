@@ -1,10 +1,10 @@
 {
   "schema_version": "aurekai.truth-matrix.v1",
-  "generated_at": "2026-05-08T14:10:54.669Z",
+  "generated_at": "2026-05-08T14:40:00.000Z",
   "totals": {
-    "commands": 225,
+    "commands": 226,
     "integration-only": 109,
-    "native": 116
+    "native": 117
   },
   "commands": [
     {
@@ -356,6 +356,14 @@
       "family": "substrate",
       "execution_state": "native",
       "cli_surface": "akai context plan",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "context.selector_smoke",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai context selector-smoke",
       "in_registry": true,
       "claimed_by_integrations": false
     },

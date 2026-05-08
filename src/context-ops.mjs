@@ -5,6 +5,7 @@ import { join } from "node:path";
 const BRIDGE_SUBCOMMANDS = new Map([
   ["plan", "context-plan"],
   ["kv-registry", "context-kv-registry"],
+  ["selector-smoke", "context-selector-smoke"],
 ]);
 
 function resolveBridgeCandidates() {
@@ -26,7 +27,7 @@ export async function contextCommand(args) {
 
   if (!BRIDGE_SUBCOMMANDS.has(sub)) {
     console.error(`  error: unknown context subcommand '${sub ?? "(none)"}'.`);
-    console.error("  available: plan, kv-registry");
+    console.error("  available: plan, kv-registry, selector-smoke");
     process.exitCode = 1;
     return;
   }
