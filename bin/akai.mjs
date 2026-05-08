@@ -110,7 +110,7 @@ function printHelp() {
   console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--stem <name>|--source-label <label>] [--json]");
   console.log("  akai continuity validate-fail-vectors --in <file.json> [--strict|--no-strict] [--json]");
   console.log("  akai context plan [--mode dense|compressed|membrane|state|hybrid] [--dense-window N] [--sq-token-blocks N] [--sq-kv-mb N] [--compressed-kv-mb N] [--state-atoms N] [--required-witnesses N] [--residual-delta X] [--residual-threshold X] [--continuity-fails N] [--continuity-drifts N]");
-  console.log("  akai context kv-registry [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1]");
+  console.log("  akai context kv-registry [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--hot-budget-blocks N] [--membrane-budget-blocks N] [--compress-budget-blocks N] [--evict-budget-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1]");
   console.log("  akai context selector-smoke [--mode dense|compressed|membrane|state|hybrid] [--required-witnesses N] [--residual-delta X] [--residual-threshold X] [--buried-fail 0|1] [--proof-hash 0|1] [--high-residual 0|1] [--low-risk 0|1]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
