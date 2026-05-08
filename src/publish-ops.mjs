@@ -16,6 +16,7 @@ import { join, resolve, dirname, basename, extname } from "node:path";
 import { generateBriefArtifact } from "./brief-gen.mjs";
 
 const AUREKAI_DIR = join(homedir(), ".aurekai");
+const INTAKE_DIR = join(AUREKAI_DIR, "intake");
 const SURFACES_DIR = join(AUREKAI_DIR, "surfaces");
 
 function flag(args, name) { const i = args.indexOf(name); return i === -1 ? null : args[i + 1] ?? null; }
@@ -24,6 +25,32 @@ function now() { return new Date().toISOString(); }
 function printJson(obj) { process.stdout.write(JSON.stringify(obj, null, 2) + "\n"); }
 function ensureDir(d) { if (!existsSync(d)) mkdirSync(d, { recursive: true }); }
 function sha256(buf) { return "sha256:" + createHash("sha256").update(buf).digest("hex"); }
+
+function slugifyLabel(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function deriveSourceLabel(absIn) {
+  const metaPath = `${absIn}.meta.json`;
+  if (!absIn.startsWith(INTAKE_DIR) || !existsSync(metaPath)) return null;
+
+  try {
+    const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+    const source = String(meta.source || "");
+    const fileBase = basename(source, extname(source));
+    const parentBase = basename(dirname(source));
+    const genericFile = /^(readme|index|main|document)$/i.test(fileBase);
+    const rawLabel = genericFile && parentBase ? `${parentBase}-${fileBase}` : fileBase;
+    return slugifyLabel(rawLabel) || null;
+  } catch {
+    return null;
+  }
+}
 
 function resolveOutputPath(outArg, sourceBaseName) {
   const absOut = resolve(outArg);
@@ -187,6 +214,7 @@ function cmdPublishChain(args) {
   const outDir = flag(args, "--out-dir") ?? process.cwd();
   const surface = flag(args, "--surface") ?? "local";
   const stemArg = flag(args, "--stem");
+  const sourceLabelArg = flag(args, "--source-label");
   const briefOutArg = flag(args, "--brief-out");
   const narrationOutArg = flag(args, "--narration-out");
   const renderOutArg = flag(args, "--render-out");
@@ -206,7 +234,9 @@ function cmdPublishChain(args) {
     return;
   }
 
-  const stem = stemArg || basename(absIn, extname(absIn));
+  const derivedLabel = deriveSourceLabel(absIn);
+  const requestedStem = slugifyLabel(sourceLabelArg || stemArg || "");
+  const stem = requestedStem || derivedLabel || basename(absIn, extname(absIn));
   const absOutDir = resolve(process.cwd(), outDir);
   const briefOut = briefOutArg ? resolve(process.cwd(), briefOutArg) : join(absOutDir, `${stem}-brief.json`);
   const narrationOut = narrationOutArg ? resolve(process.cwd(), narrationOutArg) : join(absOutDir, `${stem}-narration.json`);
@@ -240,6 +270,8 @@ function cmdPublishChain(args) {
     chained_at: now(),
     input: absIn,
     surface,
+    stem,
+    source_label: sourceLabelArg || derivedLabel || null,
     outputs: {
       brief: briefOut,
       narration: narrationOut,

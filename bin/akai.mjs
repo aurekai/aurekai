@@ -102,7 +102,7 @@ function printHelp() {
   console.log("  akai narrate brief   --in <brief.json> [--out <file>] [--json]");
   console.log("  akai render document --in <file> [--format md|html|json] [--out <file>] [--json]");
   console.log("  akai surface publish --in <file> [--surface <name>] [--out <file-or-dir>] [--json]");
-  console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--json]");
+  console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--stem <name>|--source-label <label>] [--json]");
   console.log("  akai continuity validate-fail-vectors --in <file.json> [--strict|--no-strict] [--json]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
