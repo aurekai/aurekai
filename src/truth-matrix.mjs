@@ -87,6 +87,7 @@ const NATIVE_COMMANDS = new Map([
   ["context.kv_compare",       "akai context kv-compare"],
   ["context.kv_verify",        "akai context kv-verify"],
   ["context.compile",          "akai context compile"],
+  ["context.compile_smoke",    "akai context compile-smoke"],
   // brief / publish
   ["brief.generate",            "akai brief generate"],
   ["publish.chain",             "akai publish chain --in"],
