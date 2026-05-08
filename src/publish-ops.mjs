@@ -10,9 +10,10 @@
  *   repurpose.content — transform content between formats (json→md, md→json, etc.)
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname, basename, extname } from "node:path";
+import { generateBriefArtifact } from "./brief-gen.mjs";
 
 const AUREKAI_DIR = join(homedir(), ".aurekai");
 const SURFACES_DIR = join(AUREKAI_DIR, "surfaces");
@@ -24,11 +25,26 @@ function printJson(obj) { process.stdout.write(JSON.stringify(obj, null, 2) + "\
 function ensureDir(d) { if (!existsSync(d)) mkdirSync(d, { recursive: true }); }
 function sha256(buf) { return "sha256:" + createHash("sha256").update(buf).digest("hex"); }
 
+function resolveOutputPath(outArg, sourceBaseName) {
+  const absOut = resolve(outArg);
+  const asDirHint = outArg.endsWith("/");
+
+  if (existsSync(absOut)) {
+    if (statSync(absOut).isDirectory()) return join(absOut, sourceBaseName);
+    return absOut;
+  }
+
+  if (asDirHint) return join(absOut, sourceBaseName);
+  if (extname(absOut)) return absOut;
+  return join(absOut, sourceBaseName);
+}
+
 // ── narrate.brief ─────────────────────────────────────────────────────────────
 function cmdNarrateBrief(args) {
   const inPath = flag(args, "--in") ?? flag(args, "--input");
   const outArg = flag(args, "--out");
   const asJson = hasFlag(args, "--json");
+  const silent = hasFlag(args, "--silent");
   if (!inPath) { console.error("  error: narrate brief requires --in <brief.json>"); process.exitCode = 1; return; }
 
   const absIn = resolve(process.cwd(), inPath);
@@ -54,8 +70,13 @@ function cmdNarrateBrief(args) {
   const narration = lines.join(" ");
   const result = { schema_version: "aurekai.narration.v1", narrated_at: now(), source: absIn, title, narration };
 
-  if (outArg) { ensureDir(dirname(resolve(outArg))); writeFileSync(resolve(outArg), asJson ? JSON.stringify(result, null, 2) + "\n" : narration + "\n", "utf8"); if (!asJson) process.stdout.write(`narration written: ${resolve(outArg)}\n`); }
-  if (asJson) printJson(result);
+  if (outArg) {
+    const absOut = resolve(outArg);
+    ensureDir(dirname(absOut));
+    writeFileSync(absOut, asJson ? JSON.stringify(result, null, 2) + "\n" : narration + "\n", "utf8");
+    if (!asJson && !silent) process.stderr.write(`narration written: ${absOut}\n`);
+  }
+  if (asJson && !silent) printJson(result);
   else if (!outArg) process.stdout.write(narration + "\n");
   return result;
 }
@@ -66,6 +87,7 @@ function cmdRenderDocument(args) {
   const format = flag(args, "--format") ?? "md";
   const outArg = flag(args, "--out");
   const asJson = hasFlag(args, "--json");
+  const silent = hasFlag(args, "--silent");
   if (!inPath) { console.error("  error: render document requires --in <file>"); process.exitCode = 1; return; }
 
   const absIn = resolve(process.cwd(), inPath);
@@ -93,8 +115,14 @@ function cmdRenderDocument(args) {
   }
 
   const result = { schema_version: "aurekai.render.v1", rendered_at: now(), source: absIn, format, output_bytes: rendered.length };
-  if (outArg) { ensureDir(dirname(resolve(outArg))); writeFileSync(resolve(outArg), rendered, "utf8"); result.output = resolve(outArg); if (!asJson) process.stdout.write(`document rendered: ${resolve(outArg)}  (${format})\n`); }
-  if (asJson) printJson(result);
+  if (outArg) {
+    const absOut = resolve(outArg);
+    ensureDir(dirname(absOut));
+    writeFileSync(absOut, rendered, "utf8");
+    result.output = absOut;
+    if (!asJson && !silent) process.stderr.write(`document rendered: ${absOut}  (${format})\n`);
+  }
+  if (asJson && !silent) printJson(result);
   else if (!outArg) process.stdout.write(rendered);
   return result;
 }
@@ -129,21 +157,109 @@ function cmdPackDeliverable(args) {
 function cmdSurfacePublish(args) {
   const inPath  = flag(args, "--in") ?? flag(args, "--input");
   const surface = flag(args, "--surface") ?? "local";
-  const outDir  = flag(args, "--out") ?? join(SURFACES_DIR, surface);
+  const outArg  = flag(args, "--out");
   const asJson  = hasFlag(args, "--json");
+  const silent = hasFlag(args, "--silent");
   if (!inPath) { console.error("  error: surface publish requires --in <file>"); process.exitCode = 1; return; }
 
   const absIn = resolve(process.cwd(), inPath);
   if (!existsSync(absIn)) { console.error(`  error: file not found: ${absIn}`); process.exitCode = 1; return; }
 
-  ensureDir(outDir);
-  const dest = join(outDir, basename(absIn));
-  copyFileSync(absIn, dest);
+  const defaultDir = join(SURFACES_DIR, surface);
+  const dest = outArg
+    ? resolveOutputPath(outArg, basename(absIn))
+    : join(defaultDir, basename(absIn));
+
+  ensureDir(dirname(dest));
+  if (resolve(absIn) !== resolve(dest)) {
+    copyFileSync(absIn, dest);
+  }
   const buf = readFileSync(dest);
 
   const result = { schema_version: "aurekai.surface.publish.v1", published_at: now(), surface, source: absIn, dest, size: buf.length, hash: sha256(buf), verdict: "PUBLISHED" };
+  if (asJson && !silent) printJson(result);
+  else if (!silent) process.stderr.write(`published: ${basename(absIn)}  surface: ${surface}  dest: ${dest}\n`);
+  return result;
+}
+
+function cmdPublishChain(args) {
+  const inPath = flag(args, "--in") ?? flag(args, "--input");
+  const outDir = flag(args, "--out-dir") ?? process.cwd();
+  const surface = flag(args, "--surface") ?? "local";
+  const stemArg = flag(args, "--stem");
+  const briefOutArg = flag(args, "--brief-out");
+  const narrationOutArg = flag(args, "--narration-out");
+  const renderOutArg = flag(args, "--render-out");
+  const publishOutArg = flag(args, "--publish-out");
+  const asJson = hasFlag(args, "--json");
+
+  if (!inPath) {
+    console.error("  error: publish chain requires --in <file>");
+    process.exitCode = 1;
+    return;
+  }
+
+  const absIn = resolve(process.cwd(), inPath);
+  if (!existsSync(absIn)) {
+    console.error(`  error: file not found: ${absIn}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const stem = stemArg || basename(absIn, extname(absIn));
+  const absOutDir = resolve(process.cwd(), outDir);
+  const briefOut = briefOutArg ? resolve(process.cwd(), briefOutArg) : join(absOutDir, `${stem}-brief.json`);
+  const narrationOut = narrationOutArg ? resolve(process.cwd(), narrationOutArg) : join(absOutDir, `${stem}-narration.json`);
+  const renderOut = renderOutArg ? resolve(process.cwd(), renderOutArg) : join(absOutDir, `${stem}-render.md`);
+  const publishOut = publishOutArg ? resolve(process.cwd(), publishOutArg) : join(SURFACES_DIR, surface, `${stem}-render.md`);
+
+  let briefArtifact;
+  try {
+    briefArtifact = generateBriefArtifact({ inputPath: absIn, format: "json", outPath: briefOut });
+  } catch (err) {
+    console.error(`  error: ${err?.message || err}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const narration = cmdNarrateBrief(["--in", briefOut, "--out", narrationOut, "--json", "--silent"]);
+  const rendered = cmdRenderDocument(["--in", narrationOut, "--format", "md", "--out", renderOut, "--silent"]);
+  const published = cmdSurfacePublish(["--in", renderOut, "--surface", surface, "--out", publishOut, "--json", "--silent"]);
+
+  const checks = [
+    { code: "brief_written", ok: existsSync(briefOut) && statSync(briefOut).size > 0, path: briefOut },
+    { code: "narration_written", ok: existsSync(narrationOut) && statSync(narrationOut).size > 0, path: narrationOut },
+    { code: "render_written", ok: existsSync(renderOut) && statSync(renderOut).size > 0, path: renderOut },
+    { code: "publish_written", ok: existsSync(publishOut) && statSync(publishOut).size > 0, path: publishOut },
+    { code: "publish_matches_render", ok: existsSync(renderOut) && existsSync(publishOut) && statSync(renderOut).size === statSync(publishOut).size, render_bytes: existsSync(renderOut) ? statSync(renderOut).size : null, publish_bytes: existsSync(publishOut) ? statSync(publishOut).size : null },
+  ];
+  const verdict = checks.every(item => item.ok) ? "PASS" : "FAIL";
+
+  const result = {
+    schema_version: "aurekai.publish.chain.v1",
+    chained_at: now(),
+    input: absIn,
+    surface,
+    outputs: {
+      brief: briefOut,
+      narration: narrationOut,
+      render: renderOut,
+      publish: publishOut,
+    },
+    artifacts: {
+      brief: briefArtifact.brief,
+      narration,
+      render: rendered,
+      publish: published,
+    },
+    checks,
+    verdict,
+  };
+
   if (asJson) printJson(result);
-  else process.stdout.write(`published: ${basename(absIn)}  surface: ${surface}  dest: ${dest}\n`);
+  else process.stdout.write(`publish.chain  verdict:${verdict}  render:${renderOut}  publish:${publishOut}\n`);
+
+  if (verdict !== "PASS") process.exitCode = 2;
   return result;
 }
 
@@ -218,6 +334,7 @@ function cmdRepurposeContent(args) {
 export async function publishCommand(args) {
   const sub = args[0]; const rest = args.slice(1);
   switch (sub) {
+    case "chain":     cmdPublishChain(rest);       break;
     case "narrate":   cmdNarrateBrief(rest);     break;
     case "render":    cmdRenderDocument(rest);    break;
     case "pack":      cmdPackDeliverable(rest);   break;
@@ -231,4 +348,4 @@ export async function publishCommand(args) {
 }
 
 export { cmdNarrateBrief, cmdRenderDocument, cmdPackDeliverable, cmdSurfacePublish,
-         cmdClipsExtract, cmdRepurposeContent };
+         cmdClipsExtract, cmdRepurposeContent, cmdPublishChain };

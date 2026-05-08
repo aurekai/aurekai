@@ -119,34 +119,10 @@ function briefMarkdown(brief) {
   return lines.join("\n") + "\n";
 }
 
-// ── brief.generate ───────────────────────────────────────────────────────────
-export async function briefCommand(args) {
-  const sub = args[0];
-  if (sub !== "generate") {
-    console.error(`  error: unknown brief subcommand '${sub ?? "(none)"}'.`);
-    console.error("  Available: generate");
-    process.exitCode = 1;
-    return;
-  }
-
-  const rest     = args.slice(1);
-  const inputPath = flag(rest, "--input") ?? flag(rest, "--in");
-  const titleArg  = flag(rest, "--title");
-  const format    = flag(rest, "--format") ?? "json";   // "json" | "md"
-  const outPath   = flag(rest, "--out");
-  const asJson    = hasFlag(rest, "--json");
-
-  if (!inputPath) {
-    console.error("  error: brief generate requires --input <file>");
-    process.exitCode = 1;
-    return;
-  }
-
+export function generateBriefArtifact({ inputPath, titleArg = null, format = "json", outPath = null }) {
   const absInput = resolve(process.cwd(), inputPath);
   if (!existsSync(absInput)) {
-    console.error(`  error: input file not found: ${absInput}`);
-    process.exitCode = 1;
-    return;
+    throw new Error(`input file not found: ${absInput}`);
   }
 
   const rawBytes = readFileSync(absInput);
@@ -163,7 +139,6 @@ export async function briefCommand(args) {
       inputType = "markdown";
       structure = analyzeText(text);
     } else {
-      // Try JSON parse even for unknown extensions
       try {
         JSON.parse(text);
         inputType = "json";
@@ -173,7 +148,7 @@ export async function briefCommand(args) {
         structure = analyzeText(text);
       }
     }
-  } catch (e) {
+  } catch {
     inputType = "binary";
     structure = { byte_count: rawBytes.length, note: "binary content — structural analysis skipped" };
   }
@@ -200,12 +175,52 @@ export async function briefCommand(args) {
   };
 
   const rendered = format === "md" ? briefMarkdown(brief) : JSON.stringify(brief, null, 2);
-
+  let absOut = null;
   if (outPath) {
-    const absOut = resolve(process.cwd(), outPath);
+    absOut = resolve(process.cwd(), outPath);
     mkdirSync(dirname(absOut), { recursive: true });
     writeFileSync(absOut, rendered + (format === "md" ? "" : "\n"), "utf8");
-    if (!asJson) process.stdout.write(`brief written: ${absOut}\n`);
+  }
+
+  return { brief, rendered, absInput, absOut };
+}
+
+// ── brief.generate ───────────────────────────────────────────────────────────
+export async function briefCommand(args) {
+  const sub = args[0];
+  if (sub !== "generate") {
+    console.error(`  error: unknown brief subcommand '${sub ?? "(none)"}'.`);
+    console.error("  Available: generate");
+    process.exitCode = 1;
+    return;
+  }
+
+  const rest     = args.slice(1);
+  const inputPath = flag(rest, "--input") ?? flag(rest, "--in");
+  const titleArg  = flag(rest, "--title");
+  const format    = flag(rest, "--format") ?? "json";   // "json" | "md"
+  const outPath   = flag(rest, "--out");
+  const asJson    = hasFlag(rest, "--json");
+
+  if (!inputPath) {
+    console.error("  error: brief generate requires --input <file>");
+    process.exitCode = 1;
+    return;
+  }
+
+  let artifact;
+  try {
+    artifact = generateBriefArtifact({ inputPath, titleArg, format, outPath });
+  } catch (err) {
+    console.error(`  error: ${err?.message || err}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { brief, rendered, absOut } = artifact;
+
+  if (absOut && !asJson) {
+    process.stdout.write(`brief written: ${absOut}\n`);
   }
 
   if (format === "json" || asJson) {
@@ -213,4 +228,6 @@ export async function briefCommand(args) {
   } else if (format === "md" && !outPath) {
     process.stdout.write(rendered);
   }
+
+  return brief;
 }

@@ -26,11 +26,13 @@ import { queueCommand } from "../src/queue.mjs";
 import { apiStatusCommand as cmdApiStatus, runtimeDispatchCommand as cmdRuntimeDispatch, controlRouteCommand as cmdControlRoute, tierRouteCommand as cmdTierRoute, stitchPlanCommand as cmdStitchPlan, watchPathCommand as cmdWatchPath, workflowRunCommand as cmdWorkflowRun } from "../src/runtime-ops.mjs";
 import { cmdUsageReport, cmdLedgerExport, cmdGateIssue, cmdGateGuard, cmdAuthVerify, cmdFinanceMargin, cmdInvoiceGenerate, cmdPayInvoice, cmdProjectCreate, cmdCmsEntryCreate, cmdOutreachFollowup } from "../src/ledger.mjs";
 import { cmdEmitArtifact, cmdDistributeBundle, cmdEntityResolve, cmdFamilyGroup, cmdCompressFamily, cmdQuerySql, cmdEmbedText } from "../src/artifact-store.mjs";
-import { cmdNarrateBrief, cmdRenderDocument, cmdPackDeliverable, cmdSurfacePublish, cmdClipsExtract, cmdRepurposeContent } from "../src/publish-ops.mjs";
+import { publishCommand, cmdNarrateBrief, cmdRenderDocument, cmdPackDeliverable, cmdSurfacePublish, cmdClipsExtract, cmdRepurposeContent } from "../src/publish-ops.mjs";
 import { cmdSpaceOpen, cmdSpacePut, cmdSpaceAttach, cmdTimeSchedule, cmdTimeRerun, cmdVecSearch, spaceCommand } from "../src/space.mjs";
 import { intakeCommand } from "../src/intake-ops.mjs";
 import { reasonCommand, flowCommand, learnCommand, physicsCommand } from "../src/reason-ops.mjs";
 import { telCommand, cmdWireRecipe, cmdWireSpaceExport, cmdWireIngestPcap, cmdMoqVideoRelay } from "../src/tel-ops.mjs";
+import { protocolCommand } from "../src/protocols/index.mjs";
+import { continuityCommand } from "../src/continuity-ops.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -43,6 +45,8 @@ const NATIVE_TOP_LEVEL_COMMANDS = [
   "runtime doctor|capabilities", "capability registry",
   "model verify", "truth",
   "run --weightless-first",
+  "protocol",
+  "continuity",
 ];
 
 const NATIVE_CAPABILITY_COMMANDS = new Set([
@@ -62,6 +66,7 @@ const NATIVE_CAPABILITY_COMMANDS = new Set([
   "sae.activate", "sae.gate", "kvcache.chain", "kvcache.ancestry",
   "model.pull", "model.route", "fpq.compress", "fpq.roundtrip",
   "quant.roundtrip", "sli.auto_run", "layer.compat", "hash.file",
+  "continuity.validate_fail_vectors",
 ]);
 
 function printHelp() {
@@ -82,6 +87,7 @@ function printHelp() {
   console.log("  akai runtime capabilities [--json]");
   console.log("  akai capability registry [--json]");
   console.log("  akai truth [--json] [--print] [--out <file>]");
+  console.log("  akai intake resolve --source-match <text>|--hash <prefix> [--latest] [--json]");
   console.log("  akai canon hash  --in <file> [--algorithm sha256] [--canonical-json] [--json]");
   console.log("  akai canon parse --in <file> [--out <canon.json>] [--json]");
   console.log("  akai canon diff  --a <file_a> --b <file_b> [--json]");
@@ -93,6 +99,11 @@ function printHelp() {
   console.log("  akai wire report     [--model <name>] [--since <iso>] [--out <file>] [--json]");
   console.log("  akai wire doctor     [--json]");
   console.log("  akai brief generate  --input <file> [--title <text>] [--format json|md] [--out <file>] [--json]");
+  console.log("  akai narrate brief   --in <brief.json> [--out <file>] [--json]");
+  console.log("  akai render document --in <file> [--format md|html|json] [--out <file>] [--json]");
+  console.log("  akai surface publish --in <file> [--surface <name>] [--out <file-or-dir>] [--json]");
+  console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--json]");
+  console.log("  akai continuity validate-fail-vectors --in <file.json> [--strict|--no-strict] [--json]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
   console.log("  akai meter summary   [--model <name>] [--since <iso>] [--json]");
@@ -470,6 +481,11 @@ if (command === "truth") {
   process.exit(process.exitCode || 0);
 }
 
+if (command === "continuity") {
+  await continuityCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
 // Canon operations — handled natively
 if (command === "canon") {
   await canonCommand(rest);
@@ -503,6 +519,11 @@ if (command === "brief") {
   process.exit(process.exitCode || 0);
 }
 
+if (command === "publish") {
+  await publishCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
 // Meter (usage event recording) — handled natively
 if (command === "meter") {
   await meterCommand(rest);
@@ -513,6 +534,9 @@ if (command === "meter") {
 
 // Queue operations
 if (command === "queue") { await queueCommand(rest); process.exit(process.exitCode || 0); }
+
+// Protocol adapters (transport / execution / rollup / financial / availability / privacy)
+if (command === "protocol") { await protocolCommand(rest); process.exit(process.exitCode || 0); }
 
 // API status
 if (command === "api") { await cmdApiStatus(rest); process.exit(process.exitCode || 0); }
@@ -650,10 +674,22 @@ if (command === "release" && rest[0] === "gate") {
 }
 
 // Publish ops
-if (command === "narrate") { await cmdNarrateBrief(rest); process.exit(process.exitCode || 0); }
-if (command === "render") { await cmdRenderDocument(rest); process.exit(process.exitCode || 0); }
+if (command === "narrate") {
+  const args = rest[0] === "brief" ? rest.slice(1) : rest;
+  await cmdNarrateBrief(args);
+  process.exit(process.exitCode || 0);
+}
+if (command === "render") {
+  const args = rest[0] === "document" ? rest.slice(1) : rest;
+  await cmdRenderDocument(args);
+  process.exit(process.exitCode || 0);
+}
 if (command === "pack" && rest[0] === "deliverable") { await cmdPackDeliverable(rest.slice(1)); process.exit(process.exitCode || 0); }
-if (command === "surface") { await cmdSurfacePublish(rest); process.exit(process.exitCode || 0); }
+if (command === "surface") {
+  const args = rest[0] === "publish" ? rest.slice(1) : rest;
+  await cmdSurfacePublish(args);
+  process.exit(process.exitCode || 0);
+}
 if (command === "clips") { await cmdClipsExtract(rest); process.exit(process.exitCode || 0); }
 if (command === "repurpose") { await cmdRepurposeContent(rest); process.exit(process.exitCode || 0); }
 
@@ -666,6 +702,7 @@ if (command === "time") {
 if (command === "vec") { await cmdVecSearch(rest); process.exit(process.exitCode || 0); }
 
 // Intake operations
+if (command === "intake") { await intakeCommand(rest); process.exit(process.exitCode || 0); }
 if (command === "ingest") { await intakeCommand(["ingest", ...rest]); process.exit(process.exitCode || 0); }
 if (command === "paragraph") { await intakeCommand(["reflow", ...rest]); process.exit(process.exitCode || 0); }
 if (command === "transcript") { await intakeCommand(["clean", ...rest]); process.exit(process.exitCode || 0); }

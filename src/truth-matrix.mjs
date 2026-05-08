@@ -80,8 +80,10 @@ const NATIVE_COMMANDS = new Map([
   ["release.gate",              "akai weights integrity-gate"],
   ["manifest.verify",           "akai manifest verify"],
   ["doctor.deep",               "akai runtime doctor"],
+  ["continuity.validate_fail_vectors", "akai continuity validate-fail-vectors"],
   // brief / publish
   ["brief.generate",            "akai brief generate"],
+  ["publish.chain",             "akai publish chain --in"],
   // metering / commerce
   ["meter.record",              "akai meter record"],
   ["meter.list",                "akai meter list"],
@@ -119,12 +121,12 @@ const NATIVE_COMMANDS = new Map([
   ["query.sql",                 "akai query --from"],
   ["embed.text",                "akai embed --text"],
   // publish ops
-  ["narrate.brief",             "akai narrate --in"],
-  ["render.document",           "akai render --in"],
+  ["narrate.brief",             "akai narrate brief --in"],
+  ["render.document",           "akai render document --in"],
   ["pack.deliverable",          "akai pack deliverable"],
-  ["surface.publish",           "akai surface publish"],
-  ["clips.extract",             "akai clips extract"],
-  ["repurpose.content",         "akai repurpose --in"],
+  ["surface.publish",           "akai surface publish --in"],
+  ["clips.extract",             "akai clips extract --in"],
+  ["repurpose.content",         "akai repurpose content --in"],
   // space / time / vec
   ["space.open",                "akai space open"],
   ["space.put",                 "akai space put"],
@@ -133,6 +135,7 @@ const NATIVE_COMMANDS = new Map([
   ["time.rerun",                "akai time rerun"],
   ["vec.search",                "akai vec search"],
   // intake
+  ["intake.resolve",            "akai intake resolve"],
   ["ingest.file",               "akai ingest --in"],
   ["paragraph.reflow",          "akai paragraph reflow"],
   ["transcript.clean",          "akai transcript clean"],

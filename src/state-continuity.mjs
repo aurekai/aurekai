@@ -4,6 +4,45 @@ import { e8SquaredDist } from "./e8-lattice.mjs";
 
 const COMMITMENT_SCHEMA = "aurekai.state.commitment.v1";
 const TRANSITION_SCHEMA = "aurekai.state.transition.v1";
+const COMMITTED_STATE_SCHEMA = "akai.committed_state.v1";
+const TRANSITION_OBJECT_SCHEMA = "akai.transition.v1";
+const TRAJECTORY_SCHEMA = "akai.trajectory.v1";
+const LINEAGE_EDGE_SCHEMA = "akai.lineage_edge.v1";
+
+const CHART_FAMILY_REGISTRY = {
+  generic: { id: "generic", domain: "general" },
+  text_proof: { id: "text_proof", domain: "proof" },
+  geo_runtime: { id: "geo_runtime", domain: "runtime" },
+  memory: { id: "memory", domain: "memory" },
+  model_block: { id: "model_block", domain: "model" },
+  liquidity_topology: { id: "liquidity_topology", domain: "finance" },
+  collateral_graph: { id: "collateral_graph", domain: "finance" },
+  oracle_round: { id: "oracle_round", domain: "oracle" },
+  bridge_packet: { id: "bridge_packet", domain: "transport" },
+  execution_batch: { id: "execution_batch", domain: "execution" },
+  availability_root: { id: "availability_root", domain: "data-availability" },
+  trust_topology: { id: "trust_topology", domain: "trust" },
+  governance_state: { id: "governance_state", domain: "governance" },
+  identity_claim: { id: "identity_claim", domain: "identity" },
+  media_pipeline: { id: "media_pipeline", domain: "media" },
+  workflow_state: { id: "workflow_state", domain: "workflow" },
+};
+
+const LINEAGE_EDGE_TYPES = [
+  "transport-edge",
+  "execution-edge",
+  "settlement-edge",
+  "liquidity-edge",
+  "collateral-edge",
+  "oracle-edge",
+  "availability-edge",
+  "trust-edge",
+  "identity-edge",
+  "fulfillment-edge",
+  "generic-edge",
+];
+
+const ALL_CHARTS = Object.keys(CHART_FAMILY_REGISTRY);
 
 const CONTINUITY_POLICY_REGISTRY = {
   default: {
@@ -14,29 +53,17 @@ const CONTINUITY_POLICY_REGISTRY = {
     require_invariants: ["commitment_bound", "witness_bound", "residual_bounded"],
     fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
     required_witnesses: ["next_state_witness"],
-    chart_transition_map: {
-      generic: ["generic", "text_proof", "geo_runtime", "memory", "model_block"],
-      text_proof: ["text_proof", "generic", "memory"],
-      memory: ["memory", "generic", "text_proof", "geo_runtime"],
-      geo_runtime: ["geo_runtime", "generic", "memory"],
-      model_block: ["model_block", "generic", "memory"],
-    },
+    chart_transition_map: Object.fromEntries(ALL_CHARTS.map(chart => [chart, ALL_CHARTS])),
   },
   strict: {
     id: "strict",
     description: "Strict continuity policy",
-    max_residual_delta: 0.8,
+    max_residual_delta: 0.9,
     allow_boundary_crossing: false,
     require_invariants: ["commitment_bound", "witness_bound", "residual_bounded", "neighborhood_preserved"],
     fail_on_invariant: ["commitment_bound", "witness_bound", "residual_bounded", "neighborhood_preserved", "prior_commitment_present"],
     required_witnesses: ["next_state_witness", "prior_state_witness"],
-    chart_transition_map: {
-      generic: ["generic"],
-      text_proof: ["text_proof"],
-      memory: ["memory"],
-      geo_runtime: ["geo_runtime"],
-      model_block: ["model_block"],
-    },
+    chart_transition_map: Object.fromEntries(ALL_CHARTS.map(chart => [chart, [chart]])),
   },
   handoff: {
     id: "handoff",
@@ -52,6 +79,136 @@ const CONTINUITY_POLICY_REGISTRY = {
       memory: ["memory", "geo_runtime", "generic"],
       text_proof: ["text_proof", "generic"],
       model_block: ["model_block", "generic", "memory"],
+      bridge_packet: ["bridge_packet", "geo_runtime", "execution_batch", "trust_topology"],
+      execution_batch: ["execution_batch", "bridge_packet", "availability_root", "generic"],
+      availability_root: ["availability_root", "execution_batch", "generic"],
+      trust_topology: ["trust_topology", "bridge_packet", "identity_claim", "generic"],
+      identity_claim: ["identity_claim", "trust_topology", "generic"],
+    },
+  },
+  finality: {
+    id: "finality",
+    description: "Finality-sensitive continuity policy",
+    max_residual_delta: 0.55,
+    allow_boundary_crossing: false,
+    require_invariants: ["commitment_bound", "witness_bound", "prior_commitment_present", "neighborhood_preserved"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present", "neighborhood_preserved"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      execution_batch: ["execution_batch"],
+      availability_root: ["availability_root"],
+      generic: ["generic", "execution_batch", "availability_root"],
+    },
+  },
+  settlement: {
+    id: "settlement",
+    description: "Settlement continuity with conservative drift budget",
+    max_residual_delta: 0.7,
+    allow_boundary_crossing: false,
+    require_invariants: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      liquidity_topology: ["liquidity_topology", "collateral_graph"],
+      collateral_graph: ["collateral_graph", "liquidity_topology"],
+      generic: ["generic", "liquidity_topology", "collateral_graph"],
+    },
+  },
+  liquidity: {
+    id: "liquidity",
+    description: "Liquidity topology continuity policy",
+    max_residual_delta: 1.0,
+    allow_boundary_crossing: true,
+    require_invariants: ["commitment_bound", "witness_bound", "residual_bounded"],
+    fail_on_invariant: ["commitment_bound", "witness_bound"],
+    required_witnesses: ["next_state_witness"],
+    chart_transition_map: {
+      liquidity_topology: ["liquidity_topology", "collateral_graph", "generic"],
+      collateral_graph: ["collateral_graph", "liquidity_topology", "generic"],
+      generic: ["generic", "liquidity_topology", "collateral_graph"],
+    },
+  },
+  collateral: {
+    id: "collateral",
+    description: "Collateral continuity policy",
+    max_residual_delta: 0.85,
+    allow_boundary_crossing: false,
+    require_invariants: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      collateral_graph: ["collateral_graph"],
+      generic: ["generic", "collateral_graph"],
+    },
+  },
+  oracle: {
+    id: "oracle",
+    description: "Oracle round continuity policy",
+    max_residual_delta: 0.95,
+    allow_boundary_crossing: true,
+    require_invariants: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      oracle_round: ["oracle_round", "generic"],
+      generic: ["generic", "oracle_round"],
+    },
+  },
+  availability: {
+    id: "availability",
+    description: "Availability root continuity policy",
+    max_residual_delta: 0.9,
+    allow_boundary_crossing: false,
+    require_invariants: ["commitment_bound", "witness_bound", "residual_bounded"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "residual_bounded"],
+    required_witnesses: ["next_state_witness"],
+    chart_transition_map: {
+      availability_root: ["availability_root"],
+      generic: ["generic", "availability_root"],
+    },
+  },
+  privacy: {
+    id: "privacy",
+    description: "Privacy-preserving continuity policy",
+    max_residual_delta: 1.05,
+    allow_boundary_crossing: true,
+    require_invariants: ["commitment_bound", "witness_bound"],
+    fail_on_invariant: ["commitment_bound", "witness_bound"],
+    required_witnesses: ["next_state_witness"],
+    chart_transition_map: {
+      identity_claim: ["identity_claim", "trust_topology", "generic"],
+      trust_topology: ["trust_topology", "identity_claim", "generic"],
+      generic: ["generic", "identity_claim", "trust_topology"],
+    },
+  },
+  restaking: {
+    id: "restaking",
+    description: "Trust export/restaking continuity policy",
+    max_residual_delta: 0.75,
+    allow_boundary_crossing: false,
+    require_invariants: ["commitment_bound", "witness_bound", "prior_commitment_present", "neighborhood_preserved"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present", "neighborhood_preserved"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      trust_topology: ["trust_topology", "collateral_graph"],
+      collateral_graph: ["collateral_graph", "trust_topology"],
+      generic: ["generic", "trust_topology", "collateral_graph"],
+    },
+  },
+  execution_pipeline: {
+    id: "execution_pipeline",
+    description: "Execution pipeline continuity policy",
+    max_residual_delta: 0.82,
+    allow_boundary_crossing: true,
+    require_invariants: ["commitment_bound", "witness_bound", "residual_bounded", "prior_commitment_present"],
+    fail_on_invariant: ["commitment_bound", "witness_bound", "prior_commitment_present"],
+    required_witnesses: ["next_state_witness", "prior_state_witness"],
+    chart_transition_map: {
+      execution_batch: ["execution_batch", "bridge_packet", "availability_root", "generic"],
+      bridge_packet: ["bridge_packet", "execution_batch", "generic"],
+      availability_root: ["availability_root", "execution_batch", "generic"],
+      workflow_state: ["workflow_state", "execution_batch", "generic"],
+      generic: ["generic", "execution_batch", "bridge_packet", "availability_root", "workflow_state"],
     },
   },
 };
@@ -332,19 +489,24 @@ export function resolveContinuityPolicy(policy = "default") {
 
 export function evaluateContinuityPolicy(transition, policy = "default") {
   const resolved = resolveContinuityPolicy(policy);
+  const isInitializedTransition = transition?.continuity_class === "INITIALIZED" || !transition?.prior_commitment;
+  const skipForInitialized = new Set(["prior_commitment_present", "neighborhood_preserved", "prior_state_witness"]);
+  const requiredInvariants = (resolved.require_invariants ?? []).filter(name => !isInitializedTransition || !skipForInitialized.has(name));
+  const failOnInvariants = (resolved.fail_on_invariant ?? []).filter(name => !isInitializedTransition || !skipForInitialized.has(name));
+  const requiredWitnesses = (resolved.required_witnesses ?? []).filter(name => !isInitializedTransition || !skipForInitialized.has(name));
   const invMap = new Map((transition?.invariants_checked ?? []).map(item => [item.name, item.ok]));
   const violations = [];
 
-  for (const name of resolved.require_invariants) {
+  for (const name of requiredInvariants) {
     if (!invMap.has(name)) violations.push({ type: "missing_invariant", name });
   }
 
-  for (const name of resolved.fail_on_invariant) {
+  for (const name of failOnInvariants) {
     if (invMap.get(name) === false) violations.push({ type: "failed_invariant", name });
   }
 
   const witnessSet = new Set((transition?.witnesses ?? []).map(w => w.name));
-  for (const required of resolved.required_witnesses ?? []) {
+  for (const required of requiredWitnesses) {
     if (!witnessSet.has(required)) violations.push({ type: "missing_witness", name: required });
   }
 
@@ -368,10 +530,43 @@ export function evaluateContinuityPolicy(transition, policy = "default") {
   else if (transition?.continuity_class === "BOUNDARY_CROSSING") verdict = "BOUNDARY_CROSSING";
   else if (transition?.continuity_class === "INITIALIZED") verdict = "INITIALIZED";
 
+  const failConditionFields = {
+    failed_invariants: violations.filter(v => v.type === "failed_invariant").map(v => v.name),
+    missing_invariants: violations.filter(v => v.type === "missing_invariant").map(v => v.name),
+    missing_witnesses: violations.filter(v => v.type === "missing_witness").map(v => v.name),
+    residual_delta_exceeded: violations.some(v => v.type === "residual_delta_exceeded"),
+    boundary_crossing_disallowed: violations.some(v => v.type === "boundary_crossing_disallowed"),
+    chart_transition_disallowed: violations.some(v => v.type === "chart_transition_disallowed"),
+  };
+
+  const triggeredFailConditions = [
+    ...failConditionFields.failed_invariants,
+    ...failConditionFields.missing_invariants.map(name => `missing_invariant:${name}`),
+    ...failConditionFields.missing_witnesses.map(name => `missing_witness:${name}`),
+    ...(failConditionFields.residual_delta_exceeded ? ["residual_delta_exceeded"] : []),
+    ...(failConditionFields.boundary_crossing_disallowed ? ["boundary_crossing_disallowed"] : []),
+    ...(failConditionFields.chart_transition_disallowed ? ["chart_transition_disallowed"] : []),
+  ];
+
+  let riskScore = 0;
+  if (failConditionFields.failed_invariants.length) riskScore += 0.35;
+  if (failConditionFields.missing_witnesses.length) riskScore += 0.25;
+  if (failConditionFields.residual_delta_exceeded) riskScore += 0.2;
+  if (failConditionFields.boundary_crossing_disallowed) riskScore += 0.15;
+  if (failConditionFields.chart_transition_disallowed) riskScore += 0.15;
+  if (failConditionFields.missing_invariants.length) riskScore += 0.1;
+  if (transition?.continuity_class === "PASS_WITH_DRIFT") riskScore = Math.max(riskScore, 0.25);
+  if (transition?.continuity_class === "BOUNDARY_CROSSING") riskScore = Math.max(riskScore, 0.3);
+  if (verdict === "PASS" || verdict === "INITIALIZED") riskScore = Math.min(riskScore, 0.1);
+  riskScore = round(Math.max(0, Math.min(1, riskScore)));
+
   return {
     policy_id: resolved.id,
     continuity_verdict: verdict,
     violations,
+    fail_condition_fields: failConditionFields,
+    triggered_fail_conditions: triggeredFailConditions,
+    risk_score: riskScore,
     enforced: true,
     policy: resolved,
   };
@@ -489,3 +684,96 @@ export function projectSpaceDocument(space, projection = "public") {
     attachments,
   };
 }
+
+export function buildCommittedStateObject(committedState, publicProjection = null) {
+  return {
+    schema_version: COMMITTED_STATE_SCHEMA,
+    state_type: committedState?.state_type ?? null,
+    chart_id: committedState?.chart_id ?? null,
+    cell: committedState?.cell ?? null,
+    cell_key: committedState?.cell_key ?? null,
+    residual_norm: committedState?.residual_norm ?? null,
+    residual_class: committedState?.residual_class ?? null,
+    payload_hash: committedState?.payload_hash ?? null,
+    witness_hash: committedState?.witness_hash ?? null,
+    cell_commitment: committedState?.cell_commitment ?? null,
+    state_commitment: committedState?.state_commitment ?? null,
+    opening_policy: committedState?.opening_policy ?? null,
+    public_projection: publicProjection,
+  };
+}
+
+export function buildTransitionObject(transition, deformationScore = null) {
+  return {
+    schema_version: TRANSITION_OBJECT_SCHEMA,
+    transition_type: transition?.transition_type ?? null,
+    continuity_relation: transition?.continuity_relation ?? null,
+    prior_commitment: transition?.prior_commitment ?? null,
+    next_commitment: transition?.next_commitment ?? null,
+    chart_transition: transition?.chart_transition ?? null,
+    residual_delta: transition?.residual_delta ?? null,
+    transition_witness: transition?.transition_witness ?? null,
+    continuity_class: transition?.continuity_class ?? null,
+    continuity_verdict: transition?.continuity_verdict ?? null,
+    invariants_checked: transition?.invariants_checked ?? [],
+    continuity_policy: transition?.continuity_policy ?? null,
+    witnesses: transition?.witnesses ?? [],
+    deformation_score: deformationScore ?? transition?.residual_delta ?? null,
+  };
+}
+
+export function buildTrajectoryObject({
+  trajectoryRoot = null,
+  historyAccumulator = null,
+  foldedWitness = null,
+  stepCount = 0,
+  continuityEdgeCount = 0,
+  continuitySummary = null,
+  openingPolicy = null,
+  projectionMode = "public",
+}) {
+  return {
+    schema_version: TRAJECTORY_SCHEMA,
+    trajectory_root: trajectoryRoot,
+    history_accumulator: historyAccumulator,
+    folded_witness: foldedWitness,
+    step_count: stepCount,
+    continuity_edge_count: continuityEdgeCount,
+    continuity_summary: continuitySummary,
+    opening_policy: openingPolicy,
+    projection_mode: projectionMode,
+  };
+}
+
+export function buildLineageEdgeObject({
+  edgeType = "generic-edge",
+  fromCommitment = null,
+  toCommitment = null,
+  transitionType = null,
+  relation = null,
+  residualDelta = null,
+  continuityVerdict = null,
+  witnessRef = null,
+}) {
+  return {
+    schema_version: LINEAGE_EDGE_SCHEMA,
+    edge_type: LINEAGE_EDGE_TYPES.includes(edgeType) ? edgeType : "generic-edge",
+    from_commitment: fromCommitment,
+    to_commitment: toCommitment,
+    transition_type: transitionType,
+    relation,
+    residual_delta: residualDelta,
+    continuity_verdict: continuityVerdict,
+    witness_ref: witnessRef,
+  };
+}
+
+export {
+  COMMITTED_STATE_SCHEMA,
+  TRANSITION_OBJECT_SCHEMA,
+  TRAJECTORY_SCHEMA,
+  LINEAGE_EDGE_SCHEMA,
+  CHART_FAMILY_REGISTRY,
+  LINEAGE_EDGE_TYPES,
+  CONTINUITY_POLICY_REGISTRY,
+};

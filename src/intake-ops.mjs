@@ -14,7 +14,7 @@
  *   segment.speakers     — speaker segmentation stub (requires pyannote)
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve, dirname, basename, extname } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -29,6 +29,16 @@ function printJson(obj) { process.stdout.write(JSON.stringify(obj, null, 2) + "\
 function ensureDir(d) { if (!existsSync(d)) mkdirSync(d, { recursive: true }); }
 function sha256(buf) { return "sha256:" + createHash("sha256").update(buf).digest("hex"); }
 function hasBin(name) { return spawnSync("which", [name], { encoding: "utf8" }).status === 0; }
+
+function walkFiles(dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) walkFiles(fullPath, out);
+    else out.push(fullPath);
+  }
+  return out;
+}
 
 // ── ingest.file ───────────────────────────────────────────────────────────────
 function cmdIngestFile(args) {
@@ -55,6 +65,68 @@ function cmdIngestFile(args) {
   const result = { ...manifest, verdict: "INGESTED" };
   if (asJson) printJson(result);
   else process.stdout.write(`ingested: ${absIn}  hash: ${hashHex.slice(0, 12)}  dest: ${destFile}\n`);
+  return result;
+}
+
+// ── intake.resolve ───────────────────────────────────────────────────────────
+function cmdIntakeResolve(args) {
+  const sourceMatch = flag(args, "--source-match") ?? flag(args, "--match") ?? args.find(a => !a.startsWith("--")) ?? null;
+  const hashPrefix = flag(args, "--hash") ?? null;
+  const latest = hasFlag(args, "--latest");
+  const asJson = hasFlag(args, "--json");
+
+  if (!sourceMatch && !hashPrefix) {
+    console.error("  error: intake resolve requires --source-match <text> or --hash <prefix>");
+    process.exitCode = 1;
+    return;
+  }
+
+  const metaFiles = walkFiles(INTAKE_DIR).filter(path => path.endsWith(".meta.json"));
+  const query = String(sourceMatch || "").toLowerCase();
+  const hashQuery = String(hashPrefix || "").toLowerCase();
+  const matches = [];
+
+  for (const metaPath of metaFiles) {
+    try {
+      const doc = JSON.parse(readFileSync(metaPath, "utf8"));
+      const source = String(doc.source || "");
+      const dest = String(doc.dest || "");
+      const hash = String(doc.hash || "").replace(/^sha256:/, "");
+      const haystacks = [source, dest, basename(source), basename(dest), hash].map(value => value.toLowerCase());
+      const sourceOk = !query || haystacks.some(value => value.includes(query));
+      const hashOk = !hashQuery || hash.startsWith(hashQuery.replace(/^sha256:/, ""));
+      if (!sourceOk || !hashOk) continue;
+
+      matches.push({
+        schema_version: "aurekai.intake.resolve.match.v1",
+        ingested_at: doc.ingested_at || null,
+        source,
+        dest,
+        hash: doc.hash || null,
+        size: doc.size || null,
+        ext: doc.ext || null,
+        meta: metaPath,
+      });
+    } catch {
+      // skip malformed meta files
+    }
+  }
+
+  matches.sort((a, b) => String(b.ingested_at || "").localeCompare(String(a.ingested_at || "")));
+  const resultMatches = latest ? matches.slice(0, 1) : matches;
+  const result = {
+    schema_version: "aurekai.intake.resolve.v1",
+    resolved_at: now(),
+    query: sourceMatch,
+    hash_prefix: hashPrefix,
+    count: resultMatches.length,
+    matches: resultMatches,
+    verdict: resultMatches.length > 0 ? "RESOLVED" : "NOT_FOUND",
+  };
+
+  if (asJson) printJson(result);
+  else if (resultMatches.length > 0) resultMatches.forEach(match => process.stdout.write(`${match.dest}\n`));
+  else process.stdout.write("\n");
   return result;
 }
 
@@ -275,6 +347,7 @@ export async function intakeCommand(args) {
   const sub = args[0]; const rest = args.slice(1);
   switch (sub) {
     case "ingest":       cmdIngestFile(rest);          break;
+    case "resolve":      cmdIntakeResolve(rest);       break;
     case "reflow":       cmdParagraphReflow(rest);      break;
     case "clean":        cmdTranscriptClean(rest);      break;
     case "transform":    cmdSpeechLoopTransform(rest);  break;
@@ -292,4 +365,4 @@ export async function intakeCommand(args) {
 
 export { cmdIngestFile, cmdParagraphReflow, cmdTranscriptClean, cmdSpeechLoopTransform,
          cmdMediaPrepNormalize, cmdTranscribeAudio, cmdFrameExtract, cmdVideoDemux,
-         cmdSceneDetect, cmdSegmentSpeakers };
+         cmdSceneDetect, cmdSegmentSpeakers, cmdIntakeResolve };

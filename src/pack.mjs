@@ -34,6 +34,10 @@ function hasFlag(args, name) {
   return args.includes(name);
 }
 
+function resolvePackPathArg(args) {
+  return flag(args, "--in") || flag(args, "--pack") || args.find(a => !a.startsWith("--")) || null;
+}
+
 function readU64LE(buf, offset) {
   return Number(buf.readBigUInt64LE(offset));
 }
@@ -346,7 +350,7 @@ export function readPackIndex(packPath) {
 }
 
 async function inspectPack(args) {
-  const packPath = args[0];
+  const packPath = resolvePackPathArg(args);
   if (!packPath) throw new Error("pack inspect requires <file.akpack>");
 
   const idx = readPackIndex(packPath);
@@ -383,7 +387,7 @@ function readPackBytes(packPath, start, length) {
 }
 
 async function materializePack(args) {
-  const packPath = args[0];
+  const packPath = resolvePackPathArg(args);
   if (!packPath) throw new Error("pack materialize requires <file.akpack>");
 
   const outDir = resolve(flag(args, "--out-dir") || ".");
@@ -482,7 +486,7 @@ function printPackHelp() {
  * The output is a new valid AKPACK v2 file with chunks reordered on disk.
  */
 async function optimizePack(args) {
-  const packPath = args[0];
+  const packPath = resolvePackPathArg(args);
   if (!packPath) throw new Error("pack optimize requires <file.akpack>");
   const out = flag(args, "--out");
   if (!out) throw new Error("pack optimize requires --out <file.akpack>");
@@ -675,7 +679,7 @@ async function optimizePack(args) {
  *   HEAD /region/<name>    → Content-Length + X-AK-SHA256 headers
  */
 async function mountPack(args) {
-  const packPath = args[0];
+  const packPath = resolvePackPathArg(args);
   if (!packPath) throw new Error("pack mount requires <file.akpack>");
   const port = parseInt(flag(args, "--port") || "0", 10);
   const host = flag(args, "--host") || "127.0.0.1";

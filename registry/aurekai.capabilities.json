@@ -51,8 +51,9 @@
     {
       "id": "intake",
       "label": "Aurekai Intake",
-      "description": "File ingest, media normalization, transcription, cleaning, segmentation, frame extraction, video demux, and speech loop.",
+      "description": "File ingest, intake resolution, media normalization, transcription, cleaning, segmentation, frame extraction, video demux, and speech loop.",
       "commands": [
+        "intake.resolve",
         "ingest.file",
         "media_prep.normalize",
         "transcribe.audio",
@@ -90,7 +91,7 @@
     {
       "id": "proof",
       "label": "Aurekai Proof",
-      "description": "Canonical hashing, diffing, Merkle graph, lineage, equivalence indexing, and proof bundle assembly.",
+      "description": "Canonical hashing, diffing, Merkle graph, lineage, equivalence indexing, proof bundle assembly, and continuity fail-vector validation.",
       "commands": [
         "canon.parse",
         "canon.hash",
@@ -105,7 +106,8 @@
         "query.sql",
         "proof.bundle",
         "proof.export",
-        "family.group"
+        "family.group",
+        "continuity.validate_fail_vectors"
       ]
     },
     {
@@ -151,9 +153,10 @@
     {
       "id": "publish",
       "label": "Aurekai Publish",
-      "description": "Brief generation, narration, document rendering, deliverable packing, artifact emission, distribution, clip extraction, content repurposing, and surface publishing.",
+      "description": "Brief generation, publish-chain orchestration, narration, document rendering, deliverable packing, artifact emission, distribution, clip extraction, content repurposing, and surface publishing.",
       "commands": [
         "brief.generate",
+        "publish.chain",
         "narrate.brief",
         "render.document",
         "pack.deliverable",
@@ -224,7 +227,7 @@
     },
     "D": {
       "label": "Intake / Media / Publish",
-      "commands": ["ingest.file", "media_prep.normalize", "transcribe.audio", "transcript.clean", "segment.speakers", "paragraph.reflow", "frame_extract.video", "scene_detect.video", "brief.generate", "narrate.brief", "pack.deliverable", "clips.extract", "repurpose.content", "distribute.bundle"]
+      "commands": ["intake.resolve", "ingest.file", "media_prep.normalize", "transcribe.audio", "transcript.clean", "segment.speakers", "paragraph.reflow", "frame_extract.video", "scene_detect.video", "brief.generate", "publish.chain", "narrate.brief", "pack.deliverable", "clips.extract", "repurpose.content", "distribute.bundle"]
     },
     "E": {
       "label": "Memory / Model Intelligence",
@@ -232,7 +235,7 @@
     },
     "F": {
       "label": "Proof / Graph / Equivalence",
-      "commands": ["canon.parse", "canon.hash", "canon.diff", "hash.file", "hash.merkle", "graph.lineage", "graph.merkle", "graph.validate", "index.equivalence", "entity.resolve", "query.sql", "proof.bundle", "family.group"]
+      "commands": ["canon.parse", "canon.hash", "canon.diff", "hash.file", "hash.merkle", "graph.lineage", "graph.merkle", "graph.validate", "index.equivalence", "entity.resolve", "query.sql", "proof.bundle", "family.group", "continuity.validate_fail_vectors"]
     },
     "G": {
       "label": "Reason / Physics / Learning",

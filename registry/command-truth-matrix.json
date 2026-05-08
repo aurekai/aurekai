@@ -1,11 +1,28 @@
 {
   "schema_version": "aurekai.truth-matrix.v1",
-  "generated_at": "2026-05-07T03:06:43.375Z",
+  "generated_at": "2026-05-08T02:09:28.683Z",
   "totals": {
-    "commands": 111,
-    "native": 111
+    "commands": 223,
+    "integration-only": 109,
+    "native": 114
   },
   "commands": [
+    {
+      "command": "aa.paymaster_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "aa.userop_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
     {
       "command": "api.status",
       "family": "runtime",
@@ -20,6 +37,38 @@
       "execution_state": "native",
       "cli_surface": "akai auth verify --token",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "automation.relay_execute",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "automation.task_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "axelar.gateway_call",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "axelar.gmp_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -63,10 +112,178 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "chain.account_delta",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.block_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.c_chain_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.cairo_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.market_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.move_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.object_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.order_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.orderbook_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.parallel_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.pob_validator",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.receipt_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.shard_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.slot_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.state_diff",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.subnet_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.svm_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.sway_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.tx_confirm",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.tx_effects",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "chain.tx_receipt",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "clips.extract",
       "family": "publish",
       "execution_state": "native",
-      "cli_surface": "akai clips extract",
+      "cli_surface": "akai clips extract --in",
       "in_registry": true,
       "claimed_by_integrations": false
     },
@@ -79,6 +296,14 @@
       "claimed_by_integrations": true
     },
     {
+      "command": "collateral.topology",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "compress.family",
       "family": "substrate",
       "execution_state": "native",
@@ -87,11 +312,147 @@
       "claimed_by_integrations": true
     },
     {
+      "command": "compute.deployment_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "compute.lease_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "compute.node_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "compute.render_job",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "continuity.validate_fail_vectors",
+      "family": "proof",
+      "execution_state": "native",
+      "cli_surface": "akai continuity validate-fail-vectors",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
       "command": "control.route",
       "family": "runtime",
       "execution_state": "native",
       "cli_surface": "akai control --signal",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "da.availability_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "da.blob_submit",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "da.kzg_commitment",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "da.namespace_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.cross_chain_swap",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.gauge_topology",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.liquidity_topology",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.pool_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.rfq_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.route_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.swap_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "dex.vault_topology",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -255,11 +616,75 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "hyperlane.ism_verify",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "hyperlane.message_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "ibc.channel_open",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "ibc.packet_flow",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "identity.credential_verify",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "identity.merkle_inclusion",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "index.equivalence",
       "family": "proof",
       "execution_state": "native",
       "cli_surface": "akai weights proof-chain",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "indexer.allocation_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "indexer.subgraph_snapshot",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -269,6 +694,14 @@
       "cli_surface": "akai ingest --in",
       "in_registry": true,
       "claimed_by_integrations": true
+    },
+    {
+      "command": "intake.resolve",
+      "family": "intake",
+      "execution_state": "native",
+      "cli_surface": "akai intake resolve",
+      "in_registry": true,
+      "claimed_by_integrations": false
     },
     {
       "command": "invoice.generate",
@@ -327,6 +760,54 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "lending.liquidation_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "lending.market_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "lending.position_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "lending.vault_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "lz.dvn_verify",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "lz.packet_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "manifest.verify",
       "family": "runtime",
       "execution_state": "native",
@@ -343,11 +824,35 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "media.orchestrator_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "media.transcode_job",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "meter.record",
       "family": "commerce",
       "execution_state": "native",
       "cli_surface": "akai meter record",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "mev.bundle_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -383,10 +888,26 @@
       "claimed_by_integrations": true
     },
     {
+      "command": "multisig.signer_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "multisig.tx_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "narrate.brief",
       "family": "publish",
       "execution_state": "native",
-      "cli_surface": "akai narrate --in",
+      "cli_surface": "akai narrate brief --in",
       "in_registry": true,
       "claimed_by_integrations": true
     },
@@ -423,6 +944,38 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "oracle.aggregator_read",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "oracle.confidence_interval",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "oracle.price_feed",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "oracle.round_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "outreach.followup",
       "family": "commerce",
       "execution_state": "native",
@@ -452,6 +1005,30 @@
       "execution_state": "native",
       "cli_surface": "akai pay invoice (NEEDS_PAYMENT_PROCESSOR)",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "perp.liquidation_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "perp.orderbook_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "perp.position_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -487,6 +1064,70 @@
       "claimed_by_integrations": true
     },
     {
+      "command": "privacy.contract_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.nullifier_set",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.program_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.proof_verify",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.recursive_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.shielded_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.tee_attestation",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "privacy.zkapp_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "project.create",
       "family": "commerce",
       "execution_state": "native",
@@ -509,6 +1150,14 @@
       "cli_surface": "akai proof bundle --out",
       "in_registry": true,
       "claimed_by_integrations": true
+    },
+    {
+      "command": "publish.chain",
+      "family": "publish",
+      "execution_state": "native",
+      "cli_surface": "akai publish chain --in",
+      "in_registry": true,
+      "claimed_by_integrations": false
     },
     {
       "command": "quant.roundtrip",
@@ -602,7 +1251,7 @@
       "command": "render.document",
       "family": "publish",
       "execution_state": "native",
-      "cli_surface": "akai render --in",
+      "cli_surface": "akai render document --in",
       "in_registry": true,
       "claimed_by_integrations": false
     },
@@ -610,8 +1259,88 @@
       "command": "repurpose.content",
       "family": "publish",
       "execution_state": "native",
-      "cli_surface": "akai repurpose --in",
+      "cli_surface": "akai repurpose content --in",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "restaking.avs_registration",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "restaking.operator_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "restaking.slashing_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rollup.batch_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rollup.fault_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rollup.fraud_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rollup.restaked_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rollup.validity_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rpc.node_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rpc.relay_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -628,6 +1357,22 @@
       "execution_state": "native",
       "cli_surface": "akai runtime dispatch",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rwa.nav_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "rwa.position_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     },
     {
@@ -703,6 +1448,78 @@
       "claimed_by_integrations": true
     },
     {
+      "command": "stablecoin.backing_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "stablecoin.delta_hedge",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "staking.frxeth_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "staking.minipool_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "staking.stake_pool_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "staking.validator_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "staking.withdrawal_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "stargate.pool_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "stargate.transfer_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "stitch.plan",
       "family": "runtime",
       "execution_state": "native",
@@ -711,10 +1528,42 @@
       "claimed_by_integrations": false
     },
     {
+      "command": "storage.bundle_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "storage.deal_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "storage.sector_proof",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "storage.tx_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
       "command": "surface.publish",
       "family": "publish",
       "execution_state": "native",
-      "cli_surface": "akai surface publish",
+      "cli_surface": "akai surface publish --in",
       "in_registry": true,
       "claimed_by_integrations": false
     },
@@ -892,6 +1741,54 @@
       "execution_state": "native",
       "cli_surface": "akai workflow --file",
       "in_registry": true,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wormhole.guardian_set",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "wormhole.vaa_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "xcm.message_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "xcm.teleport",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "yield.market_trace",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
+      "claimed_by_integrations": true
+    },
+    {
+      "command": "yield.pt_yt_state",
+      "family": "integration-only",
+      "execution_state": "integration-only",
+      "cli_surface": null,
+      "in_registry": false,
       "claimed_by_integrations": true
     }
   ]
