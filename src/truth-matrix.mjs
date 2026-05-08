@@ -82,6 +82,7 @@ const NATIVE_COMMANDS = new Map([
   ["doctor.deep",               "akai runtime doctor"],
   ["continuity.validate_fail_vectors", "akai continuity validate-fail-vectors"],
   ["context.plan",             "akai context plan"],
+  ["context.kv_registry",      "akai context kv-registry"],
   // brief / publish
   ["brief.generate",            "akai brief generate"],
   ["publish.chain",             "akai publish chain --in"],

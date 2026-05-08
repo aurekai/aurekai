@@ -1,10 +1,10 @@
 {
   "schema_version": "aurekai.truth-matrix.v1",
-  "generated_at": "2026-05-08T14:04:59.943Z",
+  "generated_at": "2026-05-08T14:10:54.669Z",
   "totals": {
-    "commands": 224,
+    "commands": 225,
     "integration-only": 109,
-    "native": 115
+    "native": 116
   },
   "commands": [
     {
@@ -342,6 +342,14 @@
       "cli_surface": null,
       "in_registry": false,
       "claimed_by_integrations": true
+    },
+    {
+      "command": "context.kv_registry",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai context kv-registry",
+      "in_registry": true,
+      "claimed_by_integrations": false
     },
     {
       "command": "context.plan",

@@ -70,6 +70,7 @@ const NATIVE_CAPABILITY_COMMANDS = new Set([
   "quant.roundtrip", "sli.auto_run", "layer.compat", "hash.file",
   "continuity.validate_fail_vectors",
   "context.plan",
+  "context.kv_registry",
 ]);
 
 function printHelp() {
@@ -108,6 +109,7 @@ function printHelp() {
   console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--stem <name>|--source-label <label>] [--json]");
   console.log("  akai continuity validate-fail-vectors --in <file.json> [--strict|--no-strict] [--json]");
   console.log("  akai context plan [--mode dense|compressed|membrane|state|hybrid] [--dense-window N] [--sq-token-blocks N] [--sq-kv-mb N] [--compressed-kv-mb N] [--state-atoms N] [--required-witnesses N] [--residual-delta X] [--residual-threshold X] [--continuity-fails N] [--continuity-drifts N]");
+  console.log("  akai context kv-registry [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
   console.log("  akai meter summary   [--model <name>] [--since <iso>] [--json]");

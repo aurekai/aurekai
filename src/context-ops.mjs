@@ -2,6 +2,11 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
+const BRIDGE_SUBCOMMANDS = new Map([
+  ["plan", "context-plan"],
+  ["kv-registry", "context-kv-registry"],
+]);
+
 function resolveBridgeCandidates() {
   const out = [];
   if (process.env.AKAI_CONTEXT_PLAN_BIN) out.push(process.env.AKAI_CONTEXT_PLAN_BIN);
@@ -19,17 +24,20 @@ export async function contextCommand(args) {
   const sub = args[0];
   const rest = args.slice(1);
 
-  if (sub !== "plan") {
+  if (!BRIDGE_SUBCOMMANDS.has(sub)) {
     console.error(`  error: unknown context subcommand '${sub ?? "(none)"}'.`);
+    console.error("  available: plan, kv-registry");
     process.exitCode = 1;
     return;
   }
+
+  const bridgeSubcommand = BRIDGE_SUBCOMMANDS.get(sub);
 
   const candidates = resolveBridgeCandidates();
   let lastError = null;
 
   for (const bridgeBin of candidates) {
-    const child = spawnSync(bridgeBin, ["context-plan", ...rest], {
+    const child = spawnSync(bridgeBin, [bridgeSubcommand, ...rest], {
       encoding: "utf8",
       stdio: ["inherit", "pipe", "pipe"],
     });
@@ -53,8 +61,8 @@ export async function contextCommand(args) {
       return;
     }
 
-    if (combined.includes("Unknown command: context-plan")) {
-      lastError = new Error(`bridge binary does not support context-plan: ${bridgeBin}`);
+    if (combined.includes(`Unknown command: ${bridgeSubcommand}`)) {
+      lastError = new Error(`bridge binary does not support ${bridgeSubcommand}: ${bridgeBin}`);
       continue;
     }
 
@@ -66,7 +74,7 @@ export async function contextCommand(args) {
 
   const hint = lastError?.message ? ` (${lastError.message})` : "";
   console.error(
-    `  error: no compatible bonfyre-kvcache with context-plan found${hint}. Set AKAI_CONTEXT_PLAN_BIN or BONFYRE_KVCACHE_BIN to a freshly built binary.`
+    `  error: no compatible bonfyre-kvcache with ${bridgeSubcommand} found${hint}. Set AKAI_CONTEXT_PLAN_BIN or BONFYRE_KVCACHE_BIN to a freshly built binary.`
   );
   process.exitCode = 1;
 }
