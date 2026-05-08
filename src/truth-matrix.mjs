@@ -81,6 +81,7 @@ const NATIVE_COMMANDS = new Map([
   ["manifest.verify",           "akai manifest verify"],
   ["doctor.deep",               "akai runtime doctor"],
   ["continuity.validate_fail_vectors", "akai continuity validate-fail-vectors"],
+  ["context.plan",             "akai context plan"],
   // brief / publish
   ["brief.generate",            "akai brief generate"],
   ["publish.chain",             "akai publish chain --in"],

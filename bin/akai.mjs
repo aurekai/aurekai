@@ -33,6 +33,7 @@ import { reasonCommand, flowCommand, learnCommand, physicsCommand } from "../src
 import { telCommand, cmdWireRecipe, cmdWireSpaceExport, cmdWireIngestPcap, cmdMoqVideoRelay } from "../src/tel-ops.mjs";
 import { protocolCommand } from "../src/protocols/index.mjs";
 import { continuityCommand } from "../src/continuity-ops.mjs";
+import { contextCommand } from "../src/context-ops.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(__dirname);
@@ -47,6 +48,7 @@ const NATIVE_TOP_LEVEL_COMMANDS = [
   "run --weightless-first",
   "protocol",
   "continuity",
+  "context",
 ];
 
 const NATIVE_CAPABILITY_COMMANDS = new Set([
@@ -67,6 +69,7 @@ const NATIVE_CAPABILITY_COMMANDS = new Set([
   "model.pull", "model.route", "fpq.compress", "fpq.roundtrip",
   "quant.roundtrip", "sli.auto_run", "layer.compat", "hash.file",
   "continuity.validate_fail_vectors",
+  "context.plan",
 ]);
 
 function printHelp() {
@@ -104,6 +107,7 @@ function printHelp() {
   console.log("  akai surface publish --in <file> [--surface <name>] [--out <file-or-dir>] [--json]");
   console.log("  akai publish chain   --in <file> [--out-dir <dir>] [--surface <name>] [--stem <name>|--source-label <label>] [--json]");
   console.log("  akai continuity validate-fail-vectors --in <file.json> [--strict|--no-strict] [--json]");
+  console.log("  akai context plan [--mode dense|compressed|membrane|state|hybrid] [--dense-window N] [--sq-token-blocks N] [--sq-kv-mb N] [--compressed-kv-mb N] [--state-atoms N] [--required-witnesses N] [--residual-delta X] [--residual-threshold X] [--continuity-fails N] [--continuity-drifts N]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
   console.log("  akai meter summary   [--model <name>] [--since <iso>] [--json]");
@@ -483,6 +487,11 @@ if (command === "truth") {
 
 if (command === "continuity") {
   await continuityCommand(rest);
+  process.exit(process.exitCode || 0);
+}
+
+if (command === "context") {
+  await contextCommand(rest);
   process.exit(process.exitCode || 0);
 }
 
