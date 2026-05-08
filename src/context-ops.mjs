@@ -10,6 +10,7 @@ const BRIDGE_SUBCOMMANDS = new Map([
   ["kv-verify", "context-kv-verify"],
   ["compile", "context-compile"],
   ["compile-smoke", "context-compile-smoke"],
+  ["compile-smoke-compare", "context-compile-smoke-compare"],
 ]);
 
 function resolveBridgeCandidates() {
@@ -31,7 +32,7 @@ export async function contextCommand(args) {
 
   if (!BRIDGE_SUBCOMMANDS.has(sub)) {
     console.error(`  error: unknown context subcommand '${sub ?? "(none)"}'.`);
-    console.error("  available: plan, kv-registry, selector-smoke, kv-compare, kv-verify, compile, compile-smoke");
+    console.error("  available: plan, kv-registry, selector-smoke, kv-compare, kv-verify, compile, compile-smoke, compile-smoke-compare");
     process.exitCode = 1;
     return;
   }
