@@ -2,9 +2,9 @@
   "schema_version": "aurekai.truth-matrix.v1",
   "generated_at": "2026-05-08T14:40:00.000Z",
   "totals": {
-    "commands": 227,
+    "commands": 228,
     "integration-only": 109,
-    "native": 118
+    "native": 119
   },
   "commands": [
     {
@@ -372,6 +372,14 @@
       "family": "substrate",
       "execution_state": "native",
       "cli_surface": "akai context kv-compare",
+      "in_registry": true,
+      "claimed_by_integrations": false
+    },
+    {
+      "command": "context.kv_verify",
+      "family": "substrate",
+      "execution_state": "native",
+      "cli_surface": "akai context kv-verify",
       "in_registry": true,
       "claimed_by_integrations": false
     },

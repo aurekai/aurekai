@@ -195,63 +195,201 @@
       "id": "integrity",
       "label": "Aurekai Integrity",
       "description": "CI coupling tests and weekly stress proofs via AkaiViolence.",
-      "commands": ["violence.coupling_test"]
+      "commands": [
+        "violence.coupling_test"
+      ]
     },
     {
       "id": "sealed_compute",
       "label": "Aurekai Sealed Compute",
       "description": "AkaiNet sealed netlists for tamper-evident, third-party-verifiable computation.",
-      "commands": ["netlist.seal", "netlist.eval_sealed"]
+      "commands": [
+        "netlist.seal",
+        "netlist.eval_sealed"
+      ]
     },
     {
       "id": "model_capability_qa",
       "label": "Aurekai Model Capability QA",
       "description": "AkaiFlashQLA post-FPQ attention capability verification.",
-      "commands": ["fpq.roundtrip", "fpqx.eval", "sli.auto_run"]
+      "commands": [
+        "fpq.roundtrip",
+        "fpqx.eval",
+        "sli.auto_run"
+      ]
     },
     {
       "id": "liveops",
       "label": "Aurekai LiveOps",
       "description": "AkaiMoQ real-time collaborative proof and pipeline event stream.",
-      "commands": ["moq.video_relay", "wire.probe", "wire.report"]
+      "commands": [
+        "moq.video_relay",
+        "wire.probe",
+        "wire.report"
+      ]
     }
   ],
   "packs": {
     "A": {
       "label": "Release / Proof Baseline",
-      "commands": ["doctor.deep", "manifest.verify", "model.verify", "sae.activate", "vec.search", "proof.bundle", "proof.export", "release.gate"]
+      "commands": [
+        "doctor.deep",
+        "manifest.verify",
+        "model.verify",
+        "sae.activate",
+        "vec.search",
+        "proof.bundle",
+        "proof.export",
+        "release.gate"
+      ]
     },
     "B": {
       "label": "Runtime / Control",
-      "commands": ["runtime.capabilities", "api.status", "control.route", "queue.enqueue", "queue.stats", "queue.work", "tier.route", "workflow.run", "stitch.plan", "watch.path"]
+      "commands": [
+        "runtime.capabilities",
+        "api.status",
+        "control.route",
+        "queue.enqueue",
+        "queue.stats",
+        "queue.work",
+        "tier.route",
+        "workflow.run",
+        "stitch.plan",
+        "watch.path"
+      ]
     },
     "C": {
       "label": "Commerce / Business Ops",
-      "commands": ["auth.verify", "gate.issue", "gate.guard", "meter.record", "usage.report", "ledger.export", "invoice.generate", "finance.margin", "project.create", "outreach.followup", "cms.entry.create"]
+      "commands": [
+        "auth.verify",
+        "gate.issue",
+        "gate.guard",
+        "meter.record",
+        "usage.report",
+        "ledger.export",
+        "invoice.generate",
+        "finance.margin",
+        "project.create",
+        "outreach.followup",
+        "cms.entry.create"
+      ]
     },
     "D": {
       "label": "Intake / Media / Publish",
-      "commands": ["intake.resolve", "ingest.file", "media_prep.normalize", "transcribe.audio", "transcript.clean", "segment.speakers", "paragraph.reflow", "frame_extract.video", "scene_detect.video", "brief.generate", "publish.chain", "narrate.brief", "pack.deliverable", "clips.extract", "repurpose.content", "distribute.bundle"]
+      "commands": [
+        "intake.resolve",
+        "ingest.file",
+        "media_prep.normalize",
+        "transcribe.audio",
+        "transcript.clean",
+        "segment.speakers",
+        "paragraph.reflow",
+        "frame_extract.video",
+        "scene_detect.video",
+        "brief.generate",
+        "publish.chain",
+        "narrate.brief",
+        "pack.deliverable",
+        "clips.extract",
+        "repurpose.content",
+        "distribute.bundle"
+      ]
     },
     "E": {
       "label": "Memory / Model Intelligence",
-      "commands": ["model.pull", "model.route", "model.verify", "fpq.compress", "fpq.roundtrip", "fpqx.align", "fpqx.eval", "quant.roundtrip", "sli.auto_run", "layer.compat", "embed.text", "vec.search", "sae.activate", "sae.gate", "kvcache.chain"]
+      "commands": [
+        "model.pull",
+        "model.route",
+        "model.verify",
+        "fpq.compress",
+        "fpq.roundtrip",
+        "fpqx.align",
+        "fpqx.eval",
+        "quant.roundtrip",
+        "sli.auto_run",
+        "layer.compat",
+        "embed.text",
+        "vec.search",
+        "sae.activate",
+        "sae.gate",
+        "kvcache.chain"
+      ]
     },
     "F": {
       "label": "Proof / Graph / Equivalence",
-      "commands": ["canon.parse", "canon.hash", "canon.diff", "hash.file", "hash.merkle", "graph.lineage", "graph.merkle", "graph.validate", "index.equivalence", "entity.resolve", "query.sql", "proof.bundle", "family.group", "continuity.validate_fail_vectors"]
+      "commands": [
+        "canon.parse",
+        "canon.hash",
+        "canon.diff",
+        "hash.file",
+        "hash.merkle",
+        "graph.lineage",
+        "graph.merkle",
+        "graph.validate",
+        "index.equivalence",
+        "entity.resolve",
+        "query.sql",
+        "proof.bundle",
+        "family.group",
+        "continuity.validate_fail_vectors"
+      ]
     },
     "G": {
       "label": "Reason / Physics / Learning",
-      "commands": ["reason.start", "reason.branch", "reason.run", "reason.diff", "reason.rebase", "physics.init", "physics.kick", "physics.run", "physics.diff", "flow.branch", "learn.feedback", "learn.tune"]
+      "commands": [
+        "reason.start",
+        "reason.branch",
+        "reason.run",
+        "reason.diff",
+        "reason.rebase",
+        "physics.init",
+        "physics.kick",
+        "physics.run",
+        "physics.diff",
+        "flow.branch",
+        "learn.feedback",
+        "learn.tune"
+      ]
     },
     "H": {
       "label": "Wire / Telephony / Events",
-      "commands": ["tel.listen", "tel.mock", "tel.sim_call", "tel.sim_sms", "tel.send_sms", "wire.doctor", "wire.ingest_pcap", "wire.probe", "wire.report", "wire.recipe", "wire.space_export", "moq.video_relay", "net.seal", "net.eval_sealed"]
+      "commands": [
+        "tel.listen",
+        "tel.mock",
+        "tel.sim_call",
+        "tel.sim_sms",
+        "tel.send_sms",
+        "wire.doctor",
+        "wire.ingest_pcap",
+        "wire.probe",
+        "wire.report",
+        "wire.recipe",
+        "wire.space_export",
+        "moq.video_relay",
+        "net.seal",
+        "net.eval_sealed"
+      ]
     },
     "I": {
       "label": "Substrate / Hardening",
-      "commands": ["context.plan", "context.kv_registry", "context.selector_smoke", "context.kv_compare", "capability.registry", "space.open", "space.put", "space.attach", "time.schedule", "time.rerun", "compress.family", "kvcache.ancestry", "netlist.seal", "netlist.eval_sealed", "violence.coupling_test"]
+      "commands": [
+        "context.plan",
+        "context.kv_registry",
+        "context.selector_smoke",
+        "context.kv_compare",
+        "context.kv_verify",
+        "capability.registry",
+        "space.open",
+        "space.put",
+        "space.attach",
+        "time.schedule",
+        "time.rerun",
+        "compress.family",
+        "kvcache.ancestry",
+        "netlist.seal",
+        "netlist.eval_sealed",
+        "violence.coupling_test"
+      ]
     }
   },
   "generated_artifacts": [

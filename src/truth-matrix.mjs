@@ -85,6 +85,7 @@ const NATIVE_COMMANDS = new Map([
   ["context.kv_registry",      "akai context kv-registry"],
   ["context.selector_smoke",   "akai context selector-smoke"],
   ["context.kv_compare",       "akai context kv-compare"],
+    ["context.kv_verify",        "akai context kv-verify"],
   // brief / publish
   ["brief.generate",            "akai brief generate"],
   ["publish.chain",             "akai publish chain --in"],

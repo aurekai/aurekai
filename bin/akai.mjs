@@ -73,6 +73,7 @@ const NATIVE_CAPABILITY_COMMANDS = new Set([
   "context.kv_registry",
   "context.selector_smoke",
   "context.kv_compare",
+  "context.kv_verify",
 ]);
 
 function printHelp() {
@@ -114,6 +115,7 @@ function printHelp() {
   console.log("  akai context kv-registry [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--hot-budget-blocks N] [--membrane-budget-blocks N] [--compress-budget-blocks N] [--evict-budget-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1] [--objective balanced|latency|continuity|fidelity] [--w-attention X] [--w-state X] [--w-witness X] [--w-continuity X] [--w-layer X] [--w-recency X] [--w-objective X] [--w-memory-cost X] [--w-residual X]");
   console.log("  akai context selector-smoke [--mode dense|compressed|membrane|state|hybrid] [--required-witnesses N] [--residual-delta X] [--residual-threshold X] [--buried-fail 0|1] [--proof-hash 0|1] [--high-residual 0|1] [--low-risk 0|1]");
   console.log("  akai context kv-compare [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--hot-budget-blocks N] [--membrane-budget-blocks N] [--compress-budget-blocks N] [--evict-budget-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1] [--w-attention X] [--w-state X] [--w-witness X] [--w-continuity X] [--w-layer X] [--w-recency X] [--w-objective X] [--w-memory-cost X] [--w-residual X]");
+    console.log("  akai context kv-verify  [--mode dense|compressed|membrane|state|hybrid] [--layers N] [--heads N] [--tokens N] [--block-tokens N] [--top-blocks N] [--hot-budget-blocks N] [--membrane-budget-blocks N] [--compress-budget-blocks N] [--evict-budget-blocks N] [--required-witnesses N] [--base-residual X] [--continuity-fail-rate 0..1] [--objective balanced|latency|continuity|fidelity] [--w-attention X] [--w-state X] [--w-witness X] [--w-continuity X] [--w-layer X] [--w-recency X] [--w-objective X] [--w-memory-cost X] [--w-residual X] [--residual-threshold X] [--kv-budget-mb X]");
   console.log("  akai meter record    --event <name> [--model <name>] [--quantity <n>] [--unit <unit>] [--json]");
   console.log("  akai meter list      [--model <name>] [--since <iso>] [--json]");
   console.log("  akai meter summary   [--model <name>] [--since <iso>] [--json]");
