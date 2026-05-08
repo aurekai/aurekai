@@ -175,6 +175,7 @@
         "context.plan",
         "context.kv_registry",
         "context.selector_smoke",
+        "context.kv_compare",
         "capability.registry",
         "space.open",
         "space.put",
@@ -250,7 +251,7 @@
     },
     "I": {
       "label": "Substrate / Hardening",
-      "commands": ["context.plan", "context.kv_registry", "context.selector_smoke", "capability.registry", "space.open", "space.put", "space.attach", "time.schedule", "time.rerun", "compress.family", "kvcache.ancestry", "netlist.seal", "netlist.eval_sealed", "violence.coupling_test"]
+      "commands": ["context.plan", "context.kv_registry", "context.selector_smoke", "context.kv_compare", "capability.registry", "space.open", "space.put", "space.attach", "time.schedule", "time.rerun", "compress.family", "kvcache.ancestry", "netlist.seal", "netlist.eval_sealed", "violence.coupling_test"]
     }
   },
   "generated_artifacts": [
