@@ -1,3 +1,9 @@
+# Historical Akai and Bonfyre distribution compatibility
+
+This describes old published CLI/ABI/formats. It **does not** merge the current Aurekai business with the independent Bonfÿre engine. No implicit software, domain or data rights are granted. [Identity](OWNERSHIP.md) · [Migration](MIGRATION.md)
+
+---
+
 # Compatibility — Aurekai / Bonfyre
 
 This document covers ABI compatibility, dual-manifest rules, legacy `.bf*` format support, and command alias preservation during the Bonfyre → Aurekai migration.

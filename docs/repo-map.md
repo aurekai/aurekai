@@ -1,3 +1,9 @@
+# Current business/source map
+
+Aurekai is the business/operator. [Bonfÿre](https://github.com/Nickgonzales76017/bonfyre) owns the reusable engine. This repository holds [Aurekai deployment](../deploy/), [Aurekai site presentation](../sites/) and [business records](../business/); its legacy Akai runtime packages are kept for package compatibility, not as business architecture. [Source transfer ledger](business-source-migration.tsv).
+
+---
+
 # Repo Map — Aurekai
 
 ## Core

@@ -1,48 +1,18 @@
-# Branding — Aurekai
+# Aurekai — business brand
 
-## Names
+**Aurekai is the operating business. Bonfÿre is separate, reusable software.**
 
-| Term              | Value                          |
-|-------------------|--------------------------------|
-| Product           | Aurekai                        |
-| CLI               | `akai`                         |
-| Internal codename | Bonfyre                        |
-| Main npm package  | `@aurekai/runtime`             |
-| Main container    | `ghcr.io/aurekai/runtime`      |
-| Manifest schema   | `aurekai.deploy.v1`            |
-| Helm chart        | `aurekai-runtime`              |
-| VS Code extension | Aurekai Workbench              |
-| HuggingFace org   | `aurekai`                      |
+**Primary business expression:** Every brand is built on software. The ones everyone talks about are built on Aurekai.
 
-## Brand architecture
+The Aurekai identity belongs on its business and product sites, marketing, client delivery, media and creator experiences, commercial offers, customer communications and exact brand-owned assets. The native Bonfÿre engine, generic code, ABI and developer release do not inherit this branding.
 
-| Layer               | Name                  |
-|---------------------|-----------------------|
-| Platform            | Aurekai Platform      |
-| Runtime             | Aurekai Runtime       |
-| Intake              | Aurekai Intake        |
-| Intelligence        | Aurekai Intelligence  |
-| Memory              | Aurekai Memory        |
-| Proof               | Aurekai Proof         |
-| Wire                | Aurekai Wire          |
-| Commerce            | Aurekai Commerce      |
-| Publish             | Aurekai Publish       |
-| Edge                | Aurekai Edge          |
+## Brand carriers
 
-## Tagline
+- [Aurekai logo](assets/aurekai-logo.svg).
+- [WORK](https://aurekai.work), [LIVE](https://aurekai.live), [SHOP](https://aurekai.shop), [LIFE](https://aurekai.life).
+- [Aurekai host bindings](deploy/tenant-hosts.tsv), [publication copy](sites/content/territory-presentations.jsonl), [house and design tokens](sites/content/territory-houses.json), [presentation variants](sites/presentation/).
+- [Aurekai business opportunities and finished-work programs](business/).
 
-> Aurekai is the operating fabric for intelligent work — runtime, model memory, proof, semantic cache, and provider-neutral integrations for modern AI systems.
+**Historical packages:** @aurekai/runtime, akai, aurekai and bonfyre aliases have been distributed in earlier runtime branding. Their names and formats are compatibility obligations, not a claim that the modern Bonfÿre engine is the Aurekai company.
 
-## Codename policy
-
-The Bonfyre codename is preserved in:
-- CLI compatibility aliases (`bonfyre` → `akai`)
-- Legacy artifact formats (`.bfmodel`, `.bfsae`, `.bffpqx`)
-- The `bonfyre.manifest.json` compatibility manifest shipped in every release
-
-The Bonfyre name does **not** appear in:
-- Public package names
-- User-facing documentation titles
-- Marketing copy
-
-See [`COMPATIBILITY.md`](./COMPATIBILITY.md) for the full compatibility surface.
+[Prior runtime-first branding (archived)](docs/archive/BRANDING-runtime-20261113.md) · [Ownership](OWNERSHIP.md) · [Compatibility](COMPATIBILITY.md)

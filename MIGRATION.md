@@ -1,67 +1,24 @@
-# Migration — Bonfyre → Aurekai
+# Aurekai / Bonfÿre separation — source, deployment and package compatibility
 
-This document is for operators, pipeline authors, and integration maintainers moving from the Bonfyre codename surface to Aurekai public APIs.
+The earlier instructions to rename every "Bonfyre" occurrence to "Akai" are **superseded**. Global source/ABI replacement would break distinct engines, runtime interfaces, published package users and customer deployments. The exact prior document is [archived](docs/archive/MIGRATION-runtime-20261113.md) for history.
 
-## Summary
+## Already done: ownership and content source migration
 
-| What changed         | Before (Bonfyre)             | After (Aurekai)              |
-|----------------------|------------------------------|------------------------------|
-| CLI binary           | `bonfyre`, `bonfyre-hyper`   | `akai`                       |
-| Package              | (internal)                   | `@aurekai/runtime` (npm)     |
-| Model format         | `.bfmodel`                   | `.akmodel` (`.bfmodel` still read) |
-| SAE format           | `.bfsae`                     | `.aksae` (`.bfsae` still read) |
-| FPQx format          | `.bffpqx`                    | `.akfpqx` (`.bffpqx` still read) |
-| Manifest             | `bonfyre.manifest.json` only | Both manifests shipped       |
-| Manifest schema      | (internal)                   | `aurekai.deploy.v1`          |
+- Aurekai owns [deploy/tenant-hosts.tsv](deploy/tenant-hosts.tsv) and the copied [historical nginx carrier](deploy/nginx/aurekai-surfaces.conf).
+- Aurekai owns copied site front-door records, house tokens, route presentations, Stitch choices, acquisition qualification and work-sample definitions.
+- [Source ledger](docs/business-source-migration.tsv) preserves original Bonfÿre paths and exact blob identity.
+- Bonfÿre has a tenant-host reader and SSO/presentation/profile isolation tests. **No source copy or engine test is a live-site cutover.**
 
-## Step-by-step migration
+## Next: real installation and release
 
-### 1. Replace the CLI
+1. Verify the ledger and schema sources using the included business boundary checker.
+2. Verify the approved destination-specific Bonfÿre binary reads the Aurekai tenant host file. A raw hostname is not sufficient authority.
+3. Move CMS/source import consumers to exact Aurekai-owned revisions without losing original source and publication history.
+4. Validate public WORK/LIVE/SHOP/LIFE fronts, authenticated account hosts, design tokens, articles, profile owners, and actual user actions against the chosen release.
+5. Only after acceptance retire obsolete Bonfÿre-hosted Aurekai source into explicit history or compatibility tests; preserve rollback and existing active domains.
 
-```bash
-# Remove old binary (if installed manually)
-rm -f /usr/local/bin/bonfyre
+## Keep legacy runtime compatibility separate
 
-# Install Aurekai
-bun add -g @aurekai/runtime
-akai doctor --deep
-```
+The npm @aurekai/runtime package, akai CLI, older Bonfyre aliases, formats, manifests, extension packages and native-runtime lineage have shipped historically. Do not remove or globally rewrite them. Any runtime-package ownership move needs its own revisioned distribution, ABI/readback and downstream user test.
 
-### 2. Update scripts
-
-Replace `bonfyre` → `akai` and `bonfyre-hyper` → `akai` in all shell scripts, Makefiles, and CI pipelines.
-
-```bash
-# Quick replacement in a repo
-grep -rl 'bonfyre' . | xargs sed -i 's/\bbonfyre\b/akai/g'
-```
-
-Review changes — some references to the codename in comments or docs may be intentional.
-
-### 3. Update manifest references
-
-If you validate against `bonfyre.manifest.json`, no action is required — it ships in every Aurekai release. If you want to adopt the new schema:
-
-```json
-{
-  "$schema": "aurekai.deploy.v1"
-}
-```
-
-### 4. File format — no conversion needed
-
-Aurekai reads `.bfmodel`, `.bfsae`, and `.bffpqx` files transparently. Rename at your own pace; both extensions remain valid.
-
-### 5. Update integration repo CI
-
-Integration repos generated with the seed scaffold use `validate.yml` which tests against `akai`. If you have legacy CI using `bonfyre` commands, update the `bash_command` strings to use `akai`.
-
-## Rollback
-
-The dual-manifest guarantee means you can roll back to any Bonfyre-compatible operator by pointing at a release that includes `bonfyre.manifest.json`. No data migration is required.
-
-## Further reading
-
-- [`COMPATIBILITY.md`](./COMPATIBILITY.md) — formats, aliases, ABI details
-- [`CHANGELOG.md`](./CHANGELOG.md) — version history
-- [`registry/integrations.json`](./registry/integrations.json) — full integration registry
+**No live changes:** This GitHub source migration does not change DNS, Cloudflare, nginx, secrets, existing active binaries, or account rights. [Current ownership agreement](OWNERSHIP.md) · [Deployment](deploy/README.md) · [Historical compatibility](COMPATIBILITY.md)
