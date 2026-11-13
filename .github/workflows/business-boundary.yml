@@ -41,3 +41,5 @@ jobs:
         run: sh deploy/tests/owned-cms-content-test.sh
       - name: Reconcile full business route cohort idempotently against isolated SQLite
         run: python3 deploy/tests/route-import-test.py
+      - name: Refuse duplicate front-door and Stitch template imports
+        run: python3 deploy/tests/presentation-import-test.py
