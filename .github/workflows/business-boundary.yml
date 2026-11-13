@@ -39,6 +39,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify migrated Aurekai source and separate Bonfyre runtime identity
         run: python3 scripts/check-business-boundary.py
+      - name: Reconcile external 97-reference cohort without duplicate or cross-tenant writes
+        run: python3 deploy/tests/design-import-test.py
       - name: Validate exact 91 Stitch names, six later observations and review-only states
         run: |
           python3 scripts/check-stitch-references.py
