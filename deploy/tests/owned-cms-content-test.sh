@@ -9,6 +9,8 @@ cmd="$root/deploy/install-owned-cms-content.sh"
 sh "$cmd" check houses | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 sh "$cmd" check work-examples | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 sh "$cmd" check front-doors | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
+sh "$cmd" check route-presentations | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
+sh "$cmd" check stitch-template | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 
 # Applying content without an explicit authorized database and binary must fail.
 if (unset BONFYRE_CMS_DB BONFYRE_CMS_BINARY; sh "$cmd" apply houses) >"$tmp/refused" 2>&1; then
@@ -16,9 +18,10 @@ if (unset BONFYRE_CMS_DB BONFYRE_CMS_BINARY; sh "$cmd" apply houses) >"$tmp/refu
 fi
 
 touch "$tmp/cms.db" "$tmp/house-installer.mjs" "$tmp/authored-installer.mjs"
+mkdir "$tmp/schemas"
 cat > "$tmp/cms-binary" <<'EOF'
 #!/bin/sh
-exit 100
+printf '%s\n' "$@" > "$OWNED_SOURCE_INVOKE_LOG"
 EOF
 cat > "$tmp/mock-bun" <<'EOF'
 #!/bin/sh
@@ -35,6 +38,7 @@ export BONFYRE_CMS_BINARY="$tmp/cms-binary"
 export BONFYRE_HOUSES_INSTALLER="$tmp/house-installer.mjs"
 export BONFYRE_AUTHORED_ROWS_INSTALLER="$tmp/authored-installer.mjs"
 export BONFYRE_CMS_NAMESPACE="aurekai"
+export BONFYRE_CMS_SCHEMAS="$tmp/schemas"
 export BONFYRE_WORK_EXAMPLES_INSTALLER="$tmp/work-installer.sh"
 export BONFYRE_BUN_BIN="$tmp/mock-bun"
 export OWNED_SOURCE_INVOKE_LOG="$tmp/invocation.log"
@@ -64,4 +68,18 @@ grep -Fq "db=$tmp/cms.db" "$tmp/invocation.log"
 if grep -Fq '/cmd/BonfyreCMS/data/' "$tmp/invocation.log"; then
     echo "FAIL: business source came from old engine folder" >&2; exit 1
 fi
+# Route composition rows and Stitch design templates are distinct typed CMS
+# imports, with the exact Aurekai-owned source and explicit selected namespace.
+sh "$cmd" apply route-presentations
+grep -Fxq "entry" "$tmp/invocation.log"
+grep -Fxq "route_presentation" "$tmp/invocation.log"
+grep -Fxq "$root/sites/presentation/route-presentation.jsonl" "$tmp/invocation.log"
+grep -Fxq "$tmp/schemas" "$tmp/invocation.log"
+sh "$cmd" apply stitch-template
+grep -Fxq "presentation_template" "$tmp/invocation.log"
+grep -Fxq "$root/sites/presentation/presentation-template-stitch.jsonl" "$tmp/invocation.log"
+if grep -Fq '/packs/aurekai/presentation/' "$tmp/invocation.log"; then
+    echo "FAIL: old engine brand pack still selected" >&2; exit 1
+fi
+
 echo 'AUREKAI_OWNED_CMS_IMPORT_BINDING_PASS'
