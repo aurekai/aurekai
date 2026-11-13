@@ -1,0 +1,39 @@
+name: Aurekai business/engine ownership
+on:
+  push:
+    paths:
+      - "README.md"
+      - "OWNERSHIP.md"
+      - "BRANDING.md"
+      - "MIGRATION.md"
+      - "COMPATIBILITY.md"
+      - "business/**"
+      - "sites/**"
+      - "deploy/**"
+      - "docs/business-source-migration.tsv"
+      - "scripts/check-business-boundary.py"
+      - ".github/workflows/business-boundary.yml"
+  pull_request:
+    paths:
+      - "README.md"
+      - "OWNERSHIP.md"
+      - "BRANDING.md"
+      - "MIGRATION.md"
+      - "COMPATIBILITY.md"
+      - "business/**"
+      - "sites/**"
+      - "deploy/**"
+      - "docs/business-source-migration.tsv"
+      - "scripts/check-business-boundary.py"
+      - ".github/workflows/business-boundary.yml"
+  workflow_dispatch:
+
+jobs:
+  business-source:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify migrated Aurekai source and separate Bonfyre runtime identity
+        run: python3 scripts/check-business-boundary.py
