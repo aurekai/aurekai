@@ -32,9 +32,20 @@ def check() -> None:
         assert dest not in destinations, f"duplicate destination: {dest}"
         destinations.add(dest)
         assert entry["source_repository"] == "Nickgonzales76017/bonfyre", "unexpected source repository"
-        assert entry["disposition"] == "copied_pending_import_and_source_retirement", "false cutover claim"
+        destination_sha = entry["destination_git_blob_sha"]
+        source_sha = entry["source_git_blob_sha"]
+        disposition = entry["disposition"]
+        assert disposition in (
+            "copied_pending_import_and_source_retirement",
+            "reconciled_8_newer_work_routes_pending_CMS_cutover",
+        ), "false cutover claim"
+        if disposition == "reconciled_8_newer_work_routes_pending_CMS_cutover":
+            assert dest == "sites/presentation/route-presentation.jsonl"
+            assert destination_sha != source_sha, "reconciled destination must be an explicit new blob"
+        else:
+            assert destination_sha == source_sha, f"unexpected source drift: {dest}"
         payload = (ROOT / dest).read_bytes()
-        assert blob_sha(payload) == entry["source_git_blob_sha"], f"source identity drift: {dest}"
+        assert blob_sha(payload) == destination_sha, f"destination source identity drift: {dest}"
         if dest.endswith(".json"):
             json.loads(payload)
         if dest.endswith(".jsonl"):
@@ -63,7 +74,9 @@ def check() -> None:
     fronts = read_jsonl(ROOT / "sites/content/territory-presentations.jsonl")
     routes = read_jsonl(ROOT / "sites/presentation/route-presentation.jsonl")
     assert len(fronts) == 4 and {entry["territory"] for entry in fronts} == TERRITORIES
-    assert len(routes) >= 40 and all(entry.get("territory") in hosts for entry in routes)
+    assert len(routes) == 95 and all(entry.get("territory") in hosts for entry in routes)
+    keys = [(entry.get("territory"), entry.get("route"), entry.get("when_query_key") or "") for entry in routes]
+    assert len(keys) == len(set(keys)), "route presentation collisions within Aurekai source"
     for name in ("business/work-samples/work-examples.jsonl",
                  "business/work-samples/work-example-programs.jsonl"):
         assert read_jsonl(ROOT / name), f"missing business records: {name}"
