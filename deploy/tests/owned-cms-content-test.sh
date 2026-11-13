@@ -43,11 +43,21 @@ export BONFYRE_WORK_EXAMPLES_INSTALLER="$tmp/work-installer.sh"
 export BONFYRE_BUN_BIN="$tmp/mock-bun"
 export OWNED_SOURCE_INVOKE_LOG="$tmp/invocation.log"
 
+# The company wrapper must not write into root when the institution selection
+# is missing or malformed, even if the file and CMS binary exist.
+if (unset BONFYRE_CMS_NAMESPACE; sh "$cmd" apply houses) >"$tmp/refused-ns" 2>&1; then
+    echo "FAIL: implicit root namespace was admitted" >&2; exit 1
+fi
+if BONFYRE_CMS_NAMESPACE="bad'institution" sh "$cmd" apply work-examples >"$tmp/refused-unsafe" 2>&1; then
+    echo "FAIL: unsafe namespace was admitted" >&2; exit 1
+fi
 sh "$cmd" apply houses
 grep -Fq "$root/sites/content/territory-houses.json" "$tmp/invocation.log"
 grep -Fq -- '--db' "$tmp/invocation.log"
 grep -Fq "$tmp/cms.db" "$tmp/invocation.log"
 grep -Fq "$tmp/cms-binary" "$tmp/invocation.log"
+grep -Fxq -- '--ns' "$tmp/invocation.log"
+grep -Fxq 'aurekai' "$tmp/invocation.log"
 
 # The third real data path binds authored front-door content via the engine
 # typed JSONL importer, never the old engine fixture pathname.
