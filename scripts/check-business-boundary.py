@@ -46,18 +46,19 @@ def check() -> None:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         fields = line.split()
-        assert len(fields) == 3, "tenant hosts must have three fields"
-        territory, public_host, login_host = fields
+        assert len(fields) == 4, "Aurekai deployment must bind an explicit fourth CMS owner"
+        territory, public_host, login_host, cms_namespace = fields
+        assert cms_namespace == "aurekai", "Aurekai CMS namespace must not inherit root"
         assert territory not in hosts, f"duplicate territory: {territory}"
         assert HOST.fullmatch(public_host) and HOST.fullmatch(login_host), "bad host grammar"
         assert public_host not in known_hosts and login_host not in known_hosts
         assert public_host != login_host
-        hosts[territory] = (public_host, login_host)
+        hosts[territory] = (public_host, login_host, cms_namespace)
         known_hosts.update((public_host, login_host))
     assert set(hosts) == TERRITORIES, f"unknown/missing Aurekai territory: {set(hosts)}"
-    assert hosts["work"] == ("aurekai.work", "signin.aurekai.work"), "wrong work origin"
+    assert hosts["work"] == ("aurekai.work", "signin.aurekai.work", "aurekai"), "wrong work origin"
     for territory in ("life", "live", "shop"):
-        assert hosts[territory] == (f"aurekai.{territory}", f"auth.aurekai.{territory}"), territory
+        assert hosts[territory] == (f"aurekai.{territory}", f"auth.aurekai.{territory}", "aurekai"), territory
 
     fronts = read_jsonl(ROOT / "sites/content/territory-presentations.jsonl")
     routes = read_jsonl(ROOT / "sites/presentation/route-presentation.jsonl")
