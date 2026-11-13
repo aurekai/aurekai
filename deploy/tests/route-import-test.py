@@ -189,7 +189,7 @@ def verify() -> None:
         assert failed.returncode != 0 and count(db) == 95
         extra = call(PROGRAM, db, appended, mock, schemas, env=env)
         assert extra.returncode == 0 and count(db) == 96
-        assert calls.read_text() == "95\n1\n"
+        assert calls.read_text() == initial + "1\n"
         again = call(PROGRAM, db, appended, mock, schemas, env=env)
         assert again.returncode == 0 and count(db) == 96
 
