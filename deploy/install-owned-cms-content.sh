@@ -57,7 +57,12 @@ if [ "$owner" = route-presentations ] || [ "$owner" = stitch-template ]; then
   : "${BONFYRE_CMS_SCHEMAS:?set the matching engine CMS schema directory}"
   [ -d "$BONFYRE_CMS_SCHEMAS" ] || { echo "CMS schema directory not found" >&2; exit 2; }
   if [ "$owner" = route-presentations ]; then
-    exec "$BONFYRE_CMS_BINARY" entry import-jsonl route_presentation "$routes" --ns "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" --schemas "$BONFYRE_CMS_SCHEMAS"
+    # Never re-import all 95 rows as new CMS records. Compare the exact
+    # business-owned source and the selected namespace before any write.
+    exec python3 "$root/deploy/import-owned-routes.py" \
+      --source "$routes" --hosts "$root/deploy/tenant-hosts.tsv" \
+      --db "$BONFYRE_CMS_DB" --namespace "$BONFYRE_CMS_NAMESPACE" \
+      --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
   fi
   exec "$BONFYRE_CMS_BINARY" entry import-jsonl presentation_template "$stitch" --ns "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" --schemas "$BONFYRE_CMS_SCHEMAS"
 fi
