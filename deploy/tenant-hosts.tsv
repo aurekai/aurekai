@@ -1,0 +1,7 @@
+# Aurekai-owned WebAddress tenant installation (source configuration, not a deployment receipt).
+# Format: territory public_host account_host
+# Bonfÿre reads this only when BONFYRE_TENANT_HOSTS_FILE points to an installed copy.
+work aurekai.work signin.aurekai.work
+life aurekai.life auth.aurekai.life
+live aurekai.live auth.aurekai.live
+shop aurekai.shop auth.aurekai.shop
