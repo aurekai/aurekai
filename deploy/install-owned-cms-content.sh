@@ -6,12 +6,14 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 action=${1:-}
 owner=${2:-}
 case "$action:$owner" in
-  check:houses|check:front-doors|check:work-examples|apply:houses|apply:front-doors|apply:work-examples) ;;
-  *) echo "usage: sh deploy/install-owned-cms-content.sh check|apply houses|front-doors|work-examples" >&2; exit 2 ;;
+  check:houses|check:front-doors|check:route-presentations|check:stitch-template|check:work-examples|apply:houses|apply:front-doors|apply:route-presentations|apply:stitch-template|apply:work-examples) ;;
+  *) echo "usage: sh deploy/install-owned-cms-content.sh check|apply houses|front-doors|route-presentations|stitch-template|work-examples" >&2; exit 2 ;;
 esac
 python3 "$root/scripts/check-business-boundary.py" >/dev/null
 houses="$root/sites/content/territory-houses.json"
 fronts="$root/sites/content/territory-presentations.jsonl"
+routes="$root/sites/presentation/route-presentation.jsonl"
+stitch="$root/sites/presentation/presentation-template-stitch.jsonl"
 work="$root/business/work-samples/work-examples.jsonl"
 programs="$root/business/work-samples/work-example-programs.jsonl"
 
@@ -40,6 +42,15 @@ if [ "$owner" = front-doors ]; then
   : "${BONFYRE_CMS_NAMESPACE:?select a current authorized CMS namespace}"
   [ -f "$BONFYRE_AUTHORED_ROWS_INSTALLER" ] || { echo "authored-row importer not found" >&2; exit 2; }
   exec "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_AUTHORED_ROWS_INSTALLER" --type territory_presentation --dataset-file "territory_presentation=$fronts" --apply --db "$BONFYRE_CMS_DB" --cms "$BONFYRE_CMS_BINARY" --ns "$BONFYRE_CMS_NAMESPACE"
+fi
+if [ "$owner" = route-presentations ] || [ "$owner" = stitch-template ]; then
+  : "${BONFYRE_CMS_NAMESPACE:?select a current authorized CMS namespace}"
+  : "${BONFYRE_CMS_SCHEMAS:?set the matching engine CMS schema directory}"
+  [ -d "$BONFYRE_CMS_SCHEMAS" ] || { echo "CMS schema directory not found" >&2; exit 2; }
+  if [ "$owner" = route-presentations ]; then
+    exec "$BONFYRE_CMS_BINARY" entry import-jsonl route_presentation "$routes" --ns "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" --schemas "$BONFYRE_CMS_SCHEMAS"
+  fi
+  exec "$BONFYRE_CMS_BINARY" entry import-jsonl presentation_template "$stitch" --ns "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" --schemas "$BONFYRE_CMS_SCHEMAS"
 fi
 : "${BONFYRE_WORK_EXAMPLES_INSTALLER:?set the matching Bonfyre work example importer path}"
 [ -f "$BONFYRE_WORK_EXAMPLES_INSTALLER" ] || { echo "work importer not found" >&2; exit 2; }
