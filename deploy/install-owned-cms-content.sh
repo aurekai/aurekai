@@ -6,8 +6,8 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 action=${1:-}
 owner=${2:-}
 case "$action:$owner" in
-  check:houses|check:front-doors|check:route-presentations|check:stitch-template|check:work-examples|apply:houses|apply:front-doors|apply:route-presentations|apply:stitch-template|apply:work-examples) ;;
-  *) echo "usage: sh deploy/install-owned-cms-content.sh check|apply houses|front-doors|route-presentations|stitch-template|work-examples" >&2; exit 2 ;;
+  check:houses|check:front-doors|check:route-presentations|check:stitch-template|check:stitch-references|check:work-examples|apply:houses|apply:front-doors|apply:route-presentations|apply:stitch-template|apply:stitch-references|apply:work-examples) ;;
+  *) echo "usage: sh deploy/install-owned-cms-content.sh check|apply houses|front-doors|route-presentations|stitch-template|stitch-references|work-examples" >&2; exit 2 ;;
 esac
 python3 "$root/scripts/check-business-boundary.py" >/dev/null
 houses="$root/sites/content/territory-houses.json"
@@ -20,6 +20,9 @@ programs="$root/business/work-samples/work-example-programs.jsonl"
 if [ "$action" = check ]; then
   if [ "$owner" = houses ] && [ -n "${BONFYRE_HOUSES_INSTALLER:-}" ]; then
     "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_HOUSES_INSTALLER" --data "$houses" --check
+  fi
+  if [ "$owner" = stitch-references ]; then
+    exec python3 "$root/scripts/check-stitch-references.py"
   fi
   if [ "$owner" = front-doors ] && [ -n "${BONFYRE_AUTHORED_ROWS_INSTALLER:-}" ]; then
     "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_AUTHORED_ROWS_INSTALLER" --type territory_presentation --dataset-file "territory_presentation=$fronts"
@@ -60,6 +63,13 @@ if [ "$owner" = route-presentations ] || [ "$owner" = stitch-template ]; then
       --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
   fi
   exec python3 "$root/deploy/import-owned-presentations.py" --type presentation_template \
+    --namespace "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" \
+    --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
+fi
+if [ "$owner" = stitch-references ]; then
+  : "${BONFYRE_CMS_SCHEMAS:?set the matching engine CMS schema directory}"
+  [ -d "$BONFYRE_CMS_SCHEMAS" ] || { echo "CMS schema directory not found" >&2; exit 2; }
+  exec python3 "$root/deploy/import-owned-designs.py" \
     --namespace "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" \
     --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
 fi
