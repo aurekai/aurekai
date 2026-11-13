@@ -16,27 +16,56 @@ PROGRAM = ROOT / "deploy/import-owned-routes.py"
 SOURCE = ROOT / "sites/presentation/route-presentation.jsonl"
 HOSTS = ROOT / "deploy/tenant-hosts.tsv"
 FIELDS = ("territory", "route", "when_query_key", "pattern", "template",
-          "status", "reference_source", "cannot_infer")
+          "status", "reference_source", "cannot_infer",
+          "design_fingerprint", "design_namespace", "design_html_sha256")
 MOCK = r'''#!/usr/bin/env python3
 import json, os, sqlite3, sys
 args = sys.argv[1:]
-assert args[:3] == ["entry","import-jsonl","route_presentation"],args
+assert args[:3] == ["entry","import-jsonl","route_presentation"], args
 ns=args[args.index("--ns")+1]
 db=args[args.index("--db")+1]
 assert ns=="aurekai"
+mode=args[args.index("--mode")+1] if "--mode" in args else "create"
 source=args[3]
 if os.environ.get("MOCK_CMS_FAIL") == "1":
     sys.exit(2)
-names=("territory","route","when_query_key","pattern","template","status","reference_source","cannot_infer")
+names=("territory","route","when_query_key","pattern","template","status",
+       "reference_source","cannot_infer","design_fingerprint",
+       "design_namespace","design_html_sha256")
 rows=[json.loads(x) for x in open(source, encoding="utf-8") if x.strip()]
+updated=0
+skipped=0
 with sqlite3.connect(db) as conn:
     for row in rows:
-        conn.execute("INSERT INTO route_presentation(namespace," + ",".join(names) + ") "
-                     "VALUES (" + ",".join("?" for _ in range(len(names)+1)) + ")",
-                     [ns]+[row.get(k) for k in names])
+        if mode == "create":
+            conn.execute("INSERT INTO route_presentation(namespace," + ",".join(names) + ") "
+                         "VALUES (" + ",".join("?" for _ in range(len(names)+1)) + ")",
+                         [ns]+[row.get(k) for k in names])
+        elif mode == "update":
+            current=conn.execute("SELECT * FROM route_presentation WHERE namespace=? AND id=?",
+                                 (row.get("namespace",ns),row["id"])).fetchone()
+            if current is None:
+                skipped+=1
+                continue
+            cond=conn.execute("SELECT 1 FROM route_presentation WHERE namespace=? AND id=? "
+                              "AND COALESCE(design_fingerprint,'')=? AND pattern=?",
+                              (ns,row["id"],row["if_value"],row["if_value2"])).fetchone()
+            if not cond:
+                skipped+=1
+                continue
+            attrs=row["attributes"]
+            conn.execute("UPDATE route_presentation SET " +
+                         ",".join(k+"=?" for k in attrs) + " WHERE namespace=? AND id=?",
+                         [*attrs.values(),ns,row["id"]])
+            updated+=1
+        else:
+            raise RuntimeError("unknown mode")
 with open(os.environ["MOCK_CMS_CALLS"],"a",encoding="utf-8") as log:
-    log.write(str(len(rows))+"\n")
-print('{"imported":' + str(len(rows)) + '}')
+    log.write(("u"+str(updated) if mode=="update" else str(len(rows)))+"\n")
+if mode == "update":
+    print(json.dumps({"updated":updated,"skipped":skipped}))
+else:
+    print(json.dumps({"imported":len(rows)}))
 '''
 
 
@@ -87,6 +116,21 @@ def verify() -> None:
         initial = calls.read_text()
         assert initial == "95\n"
 
+        # A previously imported 95-route cohort is upgraded without recreating
+        # route owners. Only an exact blank reviewed-pin slot may be filled.
+        with sqlite3.connect(db) as con:
+            con.execute("UPDATE route_presentation SET design_fingerprint=NULL,"
+                        "design_namespace=NULL,design_html_sha256=NULL "
+                        "WHERE namespace='aurekai' AND territory='work' AND route='/listen'")
+        pinned = call(PROGRAM, db, SOURCE, mock, schemas, env=env)
+        assert pinned.returncode == 0, pinned.stderr
+        assert "pin_upgrades=1" in pinned.stdout and "pins_upgraded=1" in pinned.stdout
+        assert calls.read_text() == initial + "u1\n"
+        with sqlite3.connect(db) as con:
+            assert con.execute("SELECT design_html_sha256 FROM route_presentation "
+                               "WHERE namespace='aurekai' AND territory='work' AND route='/listen'").fetchone()[0]
+        initial = calls.read_text()
+
         repeat = call(PROGRAM, db, SOURCE, mock, schemas, env=env)
         assert repeat.returncode == 0 and "existing=95 missing=0" in repeat.stdout
         assert calls.read_text() == initial, "rerun must never invoke CMS create"
@@ -97,6 +141,27 @@ def verify() -> None:
 
         source_rows = [json.loads(line) for line in SOURCE.read_text().splitlines() if line.strip()]
         edited = folder / "changed.jsonl"
+        # A mutable-looking but source-incompatible digest cannot become a
+        # reviewed route binding, including on first import into an empty CMS.
+        bad_digest = folder / "bad-digest.jsonl"
+        revisions = [dict(x) for x in source_rows]
+        selected = next(x for x in revisions if x.get("design_fingerprint"))
+        selected["design_html_sha256"] = "0" * 64
+        bad_digest.write_text("".join(json.dumps(x) + "\n" for x in revisions))
+        rejected_digest = call(PROGRAM, db, bad_digest, mock, schemas, env=env)
+        assert rejected_digest.returncode != 0
+        assert "changed design reference" in rejected_digest.stderr
+        assert calls.read_text() == initial
+
+        partial = folder / "partial-pin.jsonl"
+        revisions = [dict(x) for x in source_rows]
+        next(x for x in revisions if x.get("design_fingerprint")).pop("design_namespace")
+        partial.write_text("".join(json.dumps(x) + "\n" for x in revisions))
+        rejected_partial = call(PROGRAM, db, partial, mock, schemas, env=env)
+        assert rejected_partial.returncode != 0
+        assert "partial design reference" in rejected_partial.stderr
+        assert calls.read_text() == initial
+
         source_rows[0]["pattern"] = "wrong-review-variation"
         edited.write_text("".join(json.dumps(x) + "\n" for x in source_rows))
         conflict = call(PROGRAM, db, edited, mock, schemas, env=env)
