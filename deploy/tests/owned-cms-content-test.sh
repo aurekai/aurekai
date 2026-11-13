@@ -11,6 +11,7 @@ sh "$cmd" check work-examples | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 sh "$cmd" check front-doors | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 sh "$cmd" check route-presentations | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
 sh "$cmd" check stitch-template | grep -q 'AUREKAI_SOURCE_CHECK_PASS'
+sh "$cmd" check stitch-references | grep -q 'AUREKAI_STITCH_REFERENCE_PASS'
 
 # Applying content without an explicit authorized database and binary must fail.
 if (unset BONFYRE_CMS_DB BONFYRE_CMS_BINARY; sh "$cmd" apply houses) >"$tmp/refused" 2>&1; then
@@ -69,7 +70,8 @@ root = Path(root)
 files = [
   ("territory_presentation",root/"sites/content/territory-presentations.jsonl"),
   ("route_presentation",root/"sites/presentation/route-presentation.jsonl"),
-  ("presentation_template",root/"sites/presentation/presentation-template-stitch.jsonl")
+  ("presentation_template",root/"sites/presentation/presentation-template-stitch.jsonl"),
+  ("design_fingerprint",root/"sites/design/stitch-fingerprints.jsonl")
 ]
 with sqlite3.connect(db) as conn:
     for kind, path in files:
@@ -110,6 +112,15 @@ stitch_receipt=$(sh "$cmd" apply stitch-template)
 printf '%s\n' "$stitch_receipt" | grep -Fq 'AUREKAI_PRESENTATION_PLAN type=presentation_template reviewed=1 present=1 missing=0 namespace=aurekai'
 cmp -s "$tmp/invocation.log" "$tmp/invocation-before-routes" || {
     echo "FAIL: duplicate Stitch template create was invoked" >&2; exit 1;
+}
+
+# Repeat design fingerprint installation must preserve the complete source
+# cohort and coexist with any separate tenant's reference library.
+cp "$tmp/invocation.log" "$tmp/pre-design-invocation"
+design_receipt=$(sh "$cmd" apply stitch-references)
+printf '%s\n' "$design_receipt" | grep -Fq 'AUREKAI_DESIGN_PLAN observations=97 present=97 missing=0 namespace=aurekai'
+cmp -s "$tmp/invocation.log" "$tmp/pre-design-invocation" || {
+    echo "FAIL: duplicate design reference create was invoked" >&2; exit 1;
 }
 
 echo 'AUREKAI_OWNED_CMS_IMPORT_BINDING_PASS'
