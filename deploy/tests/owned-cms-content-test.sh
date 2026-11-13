@@ -80,11 +80,30 @@ if grep -Fq '/cmd/BonfyreCMS/data/' "$tmp/invocation.log"; then
 fi
 # Route composition rows and Stitch design templates are distinct typed CMS
 # imports, with the exact Aurekai-owned source and explicit selected namespace.
-sh "$cmd" apply route-presentations
-grep -Fxq "entry" "$tmp/invocation.log"
-grep -Fxq "route_presentation" "$tmp/invocation.log"
-grep -Fxq "$root/sites/presentation/route-presentation.jsonl" "$tmp/invocation.log"
-grep -Fxq "$tmp/schemas" "$tmp/invocation.log"
+# Simulate a reviewed CMS cohort that already contains all 95 business routes.
+# The application-level importer must verify and skip the full cohort, rather
+# than blindly invoking a second native create generation.
+python3 - "$tmp/cms.db" "$root/sites/presentation/route-presentation.jsonl" <<'PY'
+import json, sqlite3, sys
+db, source = sys.argv[1:]
+names = ("territory","route","when_query_key","pattern","template",
+         "status","reference_source","cannot_infer")
+with sqlite3.connect(db) as conn:
+    conn.execute("CREATE TABLE route_presentation(id INTEGER PRIMARY KEY, namespace TEXT,"
+                 + ",".join(k+" TEXT" for k in names) + ")")
+    for line in open(source,encoding="utf-8"):
+        if not line.strip():continue
+        row=json.loads(line)
+        conn.execute("INSERT INTO route_presentation(namespace," + ",".join(names)
+                     + ") VALUES (" + ",".join("?" for _ in range(len(names)+1)) + ")",
+                     ["aurekai"]+[row.get(k) for k in names])
+PY
+cp "$tmp/invocation.log" "$tmp/invocation-before-routes"
+route_receipt=$(sh "$cmd" apply route-presentations)
+printf '%s\n' "$route_receipt" | grep -Fq 'AUREKAI_ROUTE_PLAN total=95 existing=95 missing=0 namespace=aurekai'
+cmp -s "$tmp/invocation.log" "$tmp/invocation-before-routes" || {
+    echo "FAIL: reimport of 95 already-installed routes triggered a CMS write" >&2; exit 1;
+}
 sh "$cmd" apply stitch-template
 grep -Fxq "presentation_template" "$tmp/invocation.log"
 grep -Fxq "$root/sites/presentation/presentation-template-stitch.jsonl" "$tmp/invocation.log"
