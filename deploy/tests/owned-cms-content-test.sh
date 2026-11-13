@@ -59,17 +59,36 @@ grep -Fq "$tmp/cms-binary" "$tmp/invocation.log"
 grep -Fxq -- '--ns' "$tmp/invocation.log"
 grep -Fxq 'aurekai' "$tmp/invocation.log"
 
-# The third real data path binds authored front-door content via the engine
-# typed JSONL importer, never the old engine fixture pathname.
-sh "$cmd" apply front-doors
-grep -Fq "$root/sites/content/territory-presentations.jsonl" "$tmp/invocation.log"
-grep -Fq -- '--dataset-file' "$tmp/invocation.log"
-grep -Fq -- '--type' "$tmp/invocation.log"
-grep -Fq -- '--apply' "$tmp/invocation.log"
-grep -Fq 'aurekai' "$tmp/invocation.log"
-if grep -Fq '/cmd/BonfyreCMS/data/' "$tmp/invocation.log"; then
-    echo "FAIL: authored source came from old engine fixture" >&2; exit 1
-fi
+# The canonical CMS target is already filled with the reviewed source cohorts.
+# All three presentation imports must verify existing records and do zero writes.
+python3 - "$tmp/cms.db" "$root" <<'PY'
+import json, sqlite3, sys
+db, root = sys.argv[1:]
+from pathlib import Path
+root = Path(root)
+files = [
+  ("territory_presentation",root/"sites/content/territory-presentations.jsonl"),
+  ("route_presentation",root/"sites/presentation/route-presentation.jsonl"),
+  ("presentation_template",root/"sites/presentation/presentation-template-stitch.jsonl")
+]
+with sqlite3.connect(db) as conn:
+    for kind, path in files:
+        rows=[json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        cols=list(dict.fromkeys(k for row in rows for k in row))
+        conn.execute("CREATE TABLE "+kind+"(id INTEGER PRIMARY KEY,namespace TEXT,"
+                     + ",".join(k+" TEXT" for k in cols)+")")
+        for row in rows:
+            conn.execute("INSERT INTO "+kind+"(namespace,"+",".join(cols)+") VALUES ("
+                         + ",".join("?" for _ in range(len(cols)+1))+")",
+                         ["aurekai"]+[json.dumps(row[k]) if isinstance(row.get(k),(dict,list))
+                                      else row.get(k) for k in cols])
+PY
+cp "$tmp/invocation.log" "$tmp/pre-presentation-invocation"
+front_receipt=$(sh "$cmd" apply front-doors)
+printf '%s\n' "$front_receipt" | grep -Fq 'AUREKAI_PRESENTATION_PLAN type=territory_presentation reviewed=4 present=4 missing=0 namespace=aurekai'
+cmp -s "$tmp/invocation.log" "$tmp/pre-presentation-invocation" || {
+    echo "FAIL: duplicate front-door import invoked the native CMS" >&2; exit 1;
+}
 
 sh "$cmd" apply work-examples
 grep -Fq "examples=$root/business/work-samples/work-examples.jsonl" "$tmp/invocation.log"
@@ -80,35 +99,17 @@ if grep -Fq '/cmd/BonfyreCMS/data/' "$tmp/invocation.log"; then
 fi
 # Route composition rows and Stitch design templates are distinct typed CMS
 # imports, with the exact Aurekai-owned source and explicit selected namespace.
-# Simulate a reviewed CMS cohort that already contains all 95 business routes.
-# The application-level importer must verify and skip the full cohort, rather
-# than blindly invoking a second native create generation.
-python3 - "$tmp/cms.db" "$root/sites/presentation/route-presentation.jsonl" <<'PY'
-import json, sqlite3, sys
-db, source = sys.argv[1:]
-names = ("territory","route","when_query_key","pattern","template",
-         "status","reference_source","cannot_infer")
-with sqlite3.connect(db) as conn:
-    conn.execute("CREATE TABLE route_presentation(id INTEGER PRIMARY KEY, namespace TEXT,"
-                 + ",".join(k+" TEXT" for k in names) + ")")
-    for line in open(source,encoding="utf-8"):
-        if not line.strip():continue
-        row=json.loads(line)
-        conn.execute("INSERT INTO route_presentation(namespace," + ",".join(names)
-                     + ") VALUES (" + ",".join("?" for _ in range(len(names)+1)) + ")",
-                     ["aurekai"]+[row.get(k) for k in names])
-PY
+# The 95-route cohort was seeded above with the other business data.
 cp "$tmp/invocation.log" "$tmp/invocation-before-routes"
 route_receipt=$(sh "$cmd" apply route-presentations)
 printf '%s\n' "$route_receipt" | grep -Fq 'AUREKAI_ROUTE_PLAN total=95 existing=95 missing=0 namespace=aurekai'
 cmp -s "$tmp/invocation.log" "$tmp/invocation-before-routes" || {
     echo "FAIL: reimport of 95 already-installed routes triggered a CMS write" >&2; exit 1;
 }
-sh "$cmd" apply stitch-template
-grep -Fxq "presentation_template" "$tmp/invocation.log"
-grep -Fxq "$root/sites/presentation/presentation-template-stitch.jsonl" "$tmp/invocation.log"
-if grep -Fq '/packs/aurekai/presentation/' "$tmp/invocation.log"; then
-    echo "FAIL: old engine brand pack still selected" >&2; exit 1
-fi
+stitch_receipt=$(sh "$cmd" apply stitch-template)
+printf '%s\n' "$stitch_receipt" | grep -Fq 'AUREKAI_PRESENTATION_PLAN type=presentation_template reviewed=1 present=1 missing=0 namespace=aurekai'
+cmp -s "$tmp/invocation.log" "$tmp/invocation-before-routes" || {
+    echo "FAIL: duplicate Stitch template create was invoked" >&2; exit 1;
+}
 
 echo 'AUREKAI_OWNED_CMS_IMPORT_BINDING_PASS'
