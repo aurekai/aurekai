@@ -43,3 +43,33 @@ jobs:
         run: python3 deploy/tests/route-import-test.py
       - name: Refuse duplicate front-door and Stitch template imports
         run: python3 deploy/tests/presentation-import-test.py
+  installed-engine-host-map:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: aurekai-business
+      - uses: actions/checkout@v4
+        with:
+          repository: Nickgonzales76017/bonfyre
+          ref: 8ff85bd2bb2a0b2c867e9b1ea4adc5776ab84575
+          path: bonfyre-engine
+          sparse-checkout: |
+            cmd/BonfyreWebAddress/src
+            cmd/BonfyreWebAddress/tools/check_tenant_hosts.c
+      - name: Validate Aurekai four-apex owner map with pinned native Bonfyre parser
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -pedantic \
+            -Ibonfyre-engine/cmd/BonfyreWebAddress/src \
+            bonfyre-engine/cmd/BonfyreWebAddress/tools/check_tenant_hosts.c \
+            -o /tmp/bonfyre-tenant-hosts-check
+          /tmp/bonfyre-tenant-hosts-check \
+            aurekai-business/deploy/tenant-hosts.tsv --require-scoped \
+            > /tmp/aurekai-installation-readback.tsv
+          grep -Fq 'TENANT_HOST_MAP_VALID entries=4 scoped=1' /tmp/aurekai-installation-readback.tsv
+          for territory in work life live shop; do
+            grep -Eq "^$territory[[:space:]][^[:space:]]+[[:space:]][^[:space:]]+[[:space:]]aurekai$" \
+              /tmp/aurekai-installation-readback.tsv
+          done
