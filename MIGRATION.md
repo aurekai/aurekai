@@ -5,7 +5,7 @@ The earlier instructions to rename every "Bonfyre" occurrence to "Akai" are **su
 ## Already done: ownership and content source migration
 
 - Aurekai owns [deploy/tenant-hosts.tsv](deploy/tenant-hosts.tsv) and the copied [historical nginx carrier](deploy/nginx/aurekai-surfaces.conf).
-- Aurekai owns copied site front-door records, house tokens, route presentations, Stitch choices, acquisition qualification and work-sample definitions.
+- Aurekai owns site front-door records, house tokens, route presentations, Stitch template choices, and the 97 observed Stitch reference records (91 distinct design names, six later observations). Excluded reference folders remain excluded. It also owns acquisition qualification and work-sample definitions.
 - [Source ledger](docs/business-source-migration.tsv) preserves original Bonfÿre paths and exact blob identity.
 - Bonfÿre has a tenant-host reader and SSO/presentation/profile isolation tests. **No source copy or engine test is a live-site cutover.**
 
@@ -13,7 +13,7 @@ The earlier instructions to rename every "Bonfyre" occurrence to "Akai" are **su
 
 1. Verify the ledger and schema sources using the included business boundary checker.
 2. Verify the approved destination-specific Bonfÿre binary reads the Aurekai tenant host file. A raw hostname is not sufficient authority.
-3. Use [the destination-owned CMS importer](deploy/install-owned-cms-content.sh) to select the five actual Aurekai source families (house, front-door, route, Stitch, work) with explicit database, namespace, binary and authority. Preview via its check operation first. Preserve original source and publication history; an apply operation requires its own release approval.
+3. Use [the destination-owned CMS importer](deploy/install-owned-cms-content.sh) to select the six actual Aurekai source families (house, front-door, route, Stitch template, Stitch reference, work) with explicit database, namespace, binary and authority. Preview via its check operation first. Preserve original source and publication history; an apply operation requires its own release approval.
 4. Validate public WORK/LIVE/SHOP/LIFE fronts, authenticated account hosts, design tokens, articles, profile owners, and actual user actions against the chosen release.
 5. Only after acceptance retire obsolete Bonfÿre-hosted Aurekai source into explicit history or compatibility tests; preserve rollback and existing active domains.
 
