@@ -32,10 +32,19 @@ fi
 : "${BONFYRE_CMS_BINARY:?set the tested Bonfyre CMS binary path}"
 [ -f "$BONFYRE_CMS_DB" ] || { echo "CMS DB must already exist; no implicit database creation" >&2; exit 2; }
 [ -x "$BONFYRE_CMS_BINARY" ] || { echo "CMS binary must be executable" >&2; exit 2; }
+: "${BONFYRE_CMS_NAMESPACE:?select an authorized tenant CMS namespace for any business write}"
+case "$BONFYRE_CMS_NAMESPACE" in
+  [a-zA-Z]* ) ;;
+  * ) echo "invalid tenant CMS namespace" >&2; exit 2 ;;
+esac
+case "$BONFYRE_CMS_NAMESPACE" in
+  *[!a-zA-Z0-9_-]* ) echo "invalid tenant CMS namespace" >&2; exit 2 ;;
+esac
+[ "${#BONFYRE_CMS_NAMESPACE}" -le 64 ] || { echo "tenant CMS namespace too long" >&2; exit 2; }
 if [ "$owner" = houses ]; then
   : "${BONFYRE_HOUSES_INSTALLER:?set the matching engine house importer path}"
   [ -f "$BONFYRE_HOUSES_INSTALLER" ] || { echo "house importer not found" >&2; exit 2; }
-  exec "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_HOUSES_INSTALLER" --data "$houses" --db "$BONFYRE_CMS_DB" --cms "$BONFYRE_CMS_BINARY"
+  exec "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_HOUSES_INSTALLER" --data "$houses" --db "$BONFYRE_CMS_DB" --cms "$BONFYRE_CMS_BINARY" --ns "$BONFYRE_CMS_NAMESPACE"
 fi
 if [ "$owner" = front-doors ]; then
   : "${BONFYRE_AUTHORED_ROWS_INSTALLER:?set the matching engine authored-row importer path}"
