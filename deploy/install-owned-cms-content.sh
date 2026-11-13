@@ -46,12 +46,7 @@ if [ "$owner" = houses ]; then
   [ -f "$BONFYRE_HOUSES_INSTALLER" ] || { echo "house importer not found" >&2; exit 2; }
   exec "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_HOUSES_INSTALLER" --data "$houses" --db "$BONFYRE_CMS_DB" --cms "$BONFYRE_CMS_BINARY" --ns "$BONFYRE_CMS_NAMESPACE"
 fi
-if [ "$owner" = front-doors ]; then
-  : "${BONFYRE_AUTHORED_ROWS_INSTALLER:?set the matching engine authored-row importer path}"
-  : "${BONFYRE_CMS_NAMESPACE:?select a current authorized CMS namespace}"
-  [ -f "$BONFYRE_AUTHORED_ROWS_INSTALLER" ] || { echo "authored-row importer not found" >&2; exit 2; }
-  exec "${BONFYRE_BUN_BIN:-bun}" "$BONFYRE_AUTHORED_ROWS_INSTALLER" --type territory_presentation --dataset-file "territory_presentation=$fronts" --apply --db "$BONFYRE_CMS_DB" --cms "$BONFYRE_CMS_BINARY" --ns "$BONFYRE_CMS_NAMESPACE"
-fi
+
 if [ "$owner" = route-presentations ] || [ "$owner" = stitch-template ]; then
   : "${BONFYRE_CMS_NAMESPACE:?select a current authorized CMS namespace}"
   : "${BONFYRE_CMS_SCHEMAS:?set the matching engine CMS schema directory}"
@@ -64,7 +59,16 @@ if [ "$owner" = route-presentations ] || [ "$owner" = stitch-template ]; then
       --db "$BONFYRE_CMS_DB" --namespace "$BONFYRE_CMS_NAMESPACE" \
       --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
   fi
-  exec "$BONFYRE_CMS_BINARY" entry import-jsonl presentation_template "$stitch" --ns "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" --schemas "$BONFYRE_CMS_SCHEMAS"
+  exec python3 "$root/deploy/import-owned-presentations.py" --type presentation_template \
+    --namespace "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" \
+    --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
+fi
+if [ "$owner" = front-doors ]; then
+  : "${BONFYRE_CMS_SCHEMAS:?set the matching engine CMS schema directory}"
+  [ -d "$BONFYRE_CMS_SCHEMAS" ] || { echo "CMS schema directory not found" >&2; exit 2; }
+  exec python3 "$root/deploy/import-owned-presentations.py" --type territory_presentation \
+    --namespace "$BONFYRE_CMS_NAMESPACE" --db "$BONFYRE_CMS_DB" \
+    --cms "$BONFYRE_CMS_BINARY" --schemas "$BONFYRE_CMS_SCHEMAS" --apply
 fi
 : "${BONFYRE_WORK_EXAMPLES_INSTALLER:?set the matching Bonfyre work example importer path}"
 [ -f "$BONFYRE_WORK_EXAMPLES_INSTALLER" ] || { echo "work importer not found" >&2; exit 2; }
