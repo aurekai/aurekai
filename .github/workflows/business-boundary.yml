@@ -39,3 +39,5 @@ jobs:
         run: python3 scripts/check-business-boundary.py
       - name: Verify actual CMS import selection without touching an account database
         run: sh deploy/tests/owned-cms-content-test.sh
+      - name: Reconcile full business route cohort idempotently against isolated SQLite
+        run: python3 deploy/tests/route-import-test.py
